@@ -1,0 +1,205 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>c2c待处理订单列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+//所有游戏【查询条件】
+$(function() {
+	var url = "../product/allgameList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='gameId'] option").remove();
+		var def =  "<option value=''>请选择</option>";
+		$("select[name='gameId']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='gameId']").append(options);
+		}
+
+	});
+
+});
+  
+function allgamesearch(){
+	var gameid = $("select[name='gameId']").val();
+	selectsub(gameid);
+}
+//选择游戏
+function game_select() {
+	window.open(
+					'../game/gameList_select',
+					'',
+					'width=1200,height=500,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+}
+
+//游戏选择回调游戏id和名称
+function selectGameCallBack(gameId,gameName){
+	$("#g_id_receiver").attr("value",gameId);
+	$("#g_name_receiver").html(gameName);
+    selectsub(gameId);
+}
+
+function selectsub(gameId){
+	$("#server_sel").show();
+	$("#area_sel").show();
+	$.ajax({
+		url : '../game/selectGameAreaDetail',
+		data : {
+			gameId : gameId
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+		var area_select =  $("#g_id_area_receiver");
+		var server_select =  $("#g_id_serverid_receiver");
+
+		var checkIndex=area_select.get(0).selectedIndex;
+		var checkIndex2=server_select.get(0).selectedIndex;
+
+		//先清理上次分区残留选项
+		var maxindex=$("select[name='partitionId']").find("option:last").index();
+		if(maxindex>=1){
+			for(var j =1;j<=maxindex;j++){
+				 $("#g_id_area_receiver option:last").remove();
+			}
+		}
+
+		//先清理上次服务器残留选项
+		var maxindex2=$("select[name='serverId']").find("option:last").index();
+		if(maxindex2>=1){
+			for(var j =1;j<=maxindex2;j++){
+				 $("#g_id_serverid_receiver option:last").remove();
+			}
+		}
+			//添加选项
+			if(typeof data.total!="undefined"){
+
+				for(var i = 0 ;i<data.total;i++){
+
+					var patition_id = data.rows[i].partitionId;
+					if((typeof patition_id=="undefined")){
+						//有分区
+						$("#area_sel").show();
+						 area_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>");
+					}else{
+						//没分区 隐藏分区
+						$("#area_sel").hide();
+						server_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>");
+					}
+
+
+				}
+
+			}
+		}
+	});
+}
+function _search(){
+	$("#searchForm").submit();
+}
+function cleanSearch() {
+	$("#searchForm").find('input').val('');
+	$("#searchForm").find('select').val('');
+	$("#uid").attr("value",'${uid!''}');
+	$("#status").attr("value",'1');
+	$("#searchForm").submit();
+
+}
+</script>
+<style>
+	#table {
+		width: 96%;
+		border-collapse: collapse;
+	}
+	#table thead {
+		background: #E8F2ff;
+	}
+	#table td, #table th {
+		border: 1px solid #ccc;
+		padding: 0 5px;
+	}
+</style>
+</head>
+<body class="easyui-layout" style="line-height: 25px;">
+<div region="center" align="center" border="false">
+	<table id="table">
+		<thead>
+			<th align="center">订单号</th>
+			<th align="center">订单商品</th>
+			<th align="center">订单金额</th>
+			<th align="center">买家</th>
+			<th align="center">卖家</th>
+			<th align="center">卖家名称</th>
+			<th align="center">游戏</th>
+			<th align="center">快速发货</th>
+			<th align="center">区/服</th>
+			<th align="center">是否支付</th>
+			<th align="center">订单状态</th>
+			<th align="center">流程状态</th>
+			<th align="center">接手客服</th>
+			<th align="center">接手物服</th>
+			<th align="center">创建时间</th>
+			<th align="center">完成时间</th>
+			<th align="center">渠道</th>
+			<th align="center">操作</th>
+		</thead>
+		<#list data.rows as item>
+		<tr <#if (item_index%2 == 1)>bgcolor="#E8F2FE"</#if>>
+			<td align="center">${item.orderId!''}</td>
+			<td align="center">${item.goodsName!''}</td>
+			<td align="center">${item.orderAmount!''}</td>
+			<td align="center">${item.orderBuyUid!''}</td>
+			<td align="center">${item.orderSellUid!''}</td>
+			<td align="center">${item.orderSellName!''}</td>
+			<td align="center">${item.gameName!''}</td>
+			<td align="center">
+				<#if item.quickDeliverFlag==1><font color="red">支持</font><#else>不支持</#if>
+			</td>
+			<td align="center">
+				<#if item.gameAreaName??>
+					<#if item.gameServerName?? && item.gameServerName!=''>${item.gameAreaName}/${item.gameServerName}<#else>${item.gameAreaName}</#if>
+				</#if>
+				<#if item.gameServerName??>${item.gameServerName}</#if>
+			</td>
+			<td align="center">
+				<#if item.orderIspay==1><font color="red">己支付</font><#else>未支付</#if>
+			</td>
+			<td align="center">
+				<#if item.orderStatus==-1>己删除</#if>
+				<#if item.orderStatus==0>等待付款</#if>
+				<#if item.orderStatus==2>待发货</#if>
+				<#if item.orderStatus==4>待确认收货</#if>
+				<#if item.orderStatus==6>交易成功</#if>
+				<#if item.orderStatus==7>待转账</#if>
+				<#if item.orderStatus==8>交易取消</#if>
+				<#if item.orderStatus==10>己退费</#if>
+			</td>
+			<td align="center">
+				<#if item.orderC2cStatus==1>主管/系统分单</#if>
+				<#if item.orderC2cStatus==2>客服派单</#if>
+				<#if item.orderC2cStatus==3>物服发货</#if>
+				<#if item.orderC2cStatus==4>己完成</#if>
+				<#if item.orderC2cStatus==5>己撤销</#if>
+				<#if item.orderC2cStatus==6>客服审撤</#if>
+				<#if item.orderC2cStatus==7>重新发货</#if>
+				<#if item.orderC2cStatus==8>待转账</#if>
+				<#if item.orderC2cStatus==9>转单卖家</#if>
+			</td>
+			<td align="center">${item.customerServiceName!''}</td>
+			<td align="center">${item.physicServiceName!''}</td>
+			<td align="center">${item.orderTime!''}</td>
+			<td align="center">${item.getGoodsTime!''}</td>
+			<td align="center">${item.orderFr!''}</td>
+			<td>
+			<#if item.orderBuyQq??>
+				<a href="javascript:window.external.openQQWin('${item.orderBuyQq}','${item.orderId}')">联系买家</a></td>
+			</#if>
+		</tr>
+		</#list>
+	</table>
+</div>
+<div id="totalNum" style="display:none"><input type="hidden" name="count" id="count" value="${count!'0'}"/></div>
+</body>
+</html>

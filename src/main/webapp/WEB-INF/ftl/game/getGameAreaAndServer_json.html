@@ -1,0 +1,51 @@
+<#macro show>
+	<#nested>
+</#macro>
+[
+<#if showList??>
+<#list showList as item>{"id":${item.gamePartitionId},
+"text":"${item.partitionName} 【区Id:${item.gamePartitionId}，权重:${item.weight}，状态:<#if item.status==0>隐藏<#else>显示</#if>】",
+"iconCls":"icon-add", 
+"attributes":{"name":"${item.partitionName}","gameId":"${item.gameId}","weight":${item.weight},"status":${item.status}}
+	<#if childrenList??>
+		<#assign idx = 0>
+		<#list childrenList as gitem>
+			<#assign idx = 0>
+			<#list gitem as sitem>
+				<#assign total = sitem?size>
+				<#if (total > 0)>
+					<@show>
+						<#if item.gamePartitionId == sitem.gamePartitionId>
+							<#if (idx=0)>,"state":"closed","children":[</#if>
+								{
+									"id":${sitem.gameServerId},
+									"text":"${sitem.gameServerName}",
+									"attributes":{"name":"${sitem.gameServerName}","gameId":"${sitem.gameId}",
+									"weight":${sitem.weight},
+									"partitionId":${sitem.gamePartitionId},
+									"status":${sitem.status}}
+									
+								}
+								<#t><#if sitem_has_next>,<#else>]<#assign idx = 0></#if>
+						</#if>
+						<#assign idx=idx+1>
+					</@show>
+				</#if><#t>
+			</#list>
+		</#list>
+	</#if>
+}<#t>
+<#if item_has_next>,</#if></#list>
+</#if>
+<#if gameServerList??>
+	<#list gameServerList as sitem>
+		{
+			"id":${sitem.gameServerId},
+			"text":"${sitem.gameServerName}",
+			"attributes":{"gameId":"${sitem.gameId}","weight":${sitem.weight},"partitionId":${sitem.gamePartitionId},"status":${sitem.status}},
+			"iconCls":"icon-add"
+		}
+		<#t><#if sitem_has_next>,</#if>
+	</#list>
+</#if>
+]

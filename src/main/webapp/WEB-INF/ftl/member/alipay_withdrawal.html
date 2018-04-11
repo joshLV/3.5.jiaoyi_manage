@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>支付宝提现列表</title> <#include "../common.html"/>
+<style>
+.table_line tr td {
+	border-bottom: #999 1px dashed;
+}
+</style>
+<script type="text/javascript">
+	var datagrid;
+	var addDialog;
+	var addForm;
+	var editDialog;
+	var editForm;
+	var searchForm;
+	function formatterStatus(value, row, index) {
+		if (value == 0) {
+			return "订单新建";
+		} else if (value == 1) {
+			return "提交支付宝成功";
+		} else if (value == 2) {
+			return "提交支付宝失败";
+		} else if (value == 3) {
+			return "提现成功";
+		} else if (value == 4) {
+			return "提现失败";
+		} else if (value == 5) {
+			return "已退款";
+		} else {
+			return "未知状态";
+		}
+	}
+
+	$(function() {
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid')
+				.datagrid(
+						{
+							url : 'alipay_withdrawalJson',
+							title : '支付宝提现列表',
+							singleSelect : true,
+							pagination : true,
+							pagePosition : 'bottom',
+							rownumbers : true,
+							pageSize : 100,
+							pageList : [ 100, 120, 140, 160 ],
+							fit : true,
+							fitColumns : false,
+							nowrap : true,
+							border : false,
+							idField : 'id',
+							sortName : 'create_time',
+							sortOrder : 'desc',
+							columns : [ [
+									{
+										field : 'id',
+										title : 'ID',
+										align : 'center',
+										sortable : true
+									},
+									{
+										field : 'paymentId',
+										title : '支付单流水号',
+										align : 'center'
+									},
+									{
+										field : 'uid',
+										title : '用户UID',
+										align : 'center'
+									},
+									{
+										field : 'alipayAccount',
+										title : '支付宝帐号',
+										align : 'left'
+									},
+									{
+										field : 'alipayUsername',
+										title : '支付宝姓名',
+										align : 'center'
+									},
+									{
+										field : 'totalAmount',
+										title : '申请提现金额',
+										align : 'center'
+									},
+									{
+										field : 'amount',
+										title : '实际到帐金额',
+										align : 'center'
+									},
+									{
+										field : 'createTime',
+										title : '支付单生成时间',
+										align : 'center'
+									},
+									{
+										field : 'notifyTime',
+										title : '支付宝结果通知时间',
+										align : 'center'
+									},
+									{
+										field : 'status',
+										title : '支付单状态',
+										align : 'center',
+										formatter : formatterStatus
+									},
+									{
+										field : 'remark',
+										title : '备注信息',
+										align : 'center'
+									},
+									{
+										field : 'operation',
+										title : '操作',
+										align : 'center',
+										formatter : function(value, row, index) {
+											if (row.status == 4 ||row.status == 2) {
+												return '<a href="javascript:void(0)" onclick="alipayWithDrawalRefund(\''
+														+ row.paymentId
+														+ '\')" >退款</a>';
+											}
+										}
+									}
+
+							] ],
+							//双击事件
+							onDblClickRow : function(rowIndex, rowData) {
+								$(this).datagrid('unselectAll');
+								$(this).datagrid('selectRow', rowIndex);
+								edit();
+							}
+						});
+	});
+	function _search() {
+		datagrid.datagrid("unselectAll");
+		datagrid.datagrid('load', sy.serializeObject(searchForm));
+	}
+
+	function cleanSearch() {
+		datagrid.datagrid('load', {});
+		searchForm.find('input').val('');
+	}
+	function alipayWithDrawalRefund(paymentId) {
+		$.messager.confirm('请确认', '您确定该支付单支付宝提现失败，需要退款给用户吗？', function(r) {
+			if (r) {
+				$.ajax({
+					url : 'alipayWithDrawalRefund.do',
+					data : {
+						paymentId : paymentId
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(response) {
+						if (response.success) {
+							datagrid.datagrid("reload");
+							$.messager.show({
+								title : '支付宝提现失败退款成功!',
+								msg : response.msg
+							});
+						} else {
+							datagrid.datagrid("reload");
+							$.messager.show({
+								title : '支付宝提现失败退款失败!',
+								msg : response.msg
+							});
+						}
+					}
+				});
+			}
+		});
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="north" border="false" title="搜索条件"
+		style="height: 65px; overflow: hidden;" align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+					<td>用户UID:<input name="uid" id="uid" style="width: 100px;" />&nbsp;
+					</td>
+					<td><a href="javascript:void(0);" class="easyui-linkbutton"
+						onclick="_search();">搜索</a> <a href="javascript:void(0);"
+						class="easyui-linkbutton" onclick="cleanSearch();">取消</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+
+	<div region="center" border="false">
+		<table id="datagrid"></table>
+	</div>
+</body>
+</html>

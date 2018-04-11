@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>商品购买规则列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'productBuyList_json',
+			title : '商品购买规则列表',
+			//iconCls : 'icon-save',
+			pagination : false,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			/* pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ], */
+			fit : true,
+			fitColumns :true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'weight',
+			sortOrder : 'asc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.obid;
+						}
+			   },
+			   {field:'id',title:'ID',align:'center'},
+			   {field:'name',title:'规则名称',align:'center',width:80},
+			   {field:'className',title:'类名',align:'center',width:80},
+			   {field:'paramDesc',title:'参数说明',align:'center',width:80},
+			   {field:'weight',title:'权重',align:'center',width:80,sortable:true},
+			   {field:'remark',title:'备注',align:'center',width:100}
+						
+			
+			 ] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '修改',
+				iconCls : 'icon-edit',
+				handler : function() {
+					edit();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+		
+			
+	  //双击事件
+	   onDblClickRow:function (rowIndex,rowData){
+		   $(this).datagrid('unselectAll');
+		   $(this).datagrid('selectRow', rowIndex);	
+		   edit();
+	   }
+		});
+		editForm = $('#editForm').form({
+			url : 'productBuy_update.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '规则编辑',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					$.messager.confirm('请确认', '您确定要修改规则?', function(r) {
+						if (r) {	
+					editForm.submit();
+					
+						}
+					});
+				}
+			} ]
+		}); 
+		
+		addForm = $('#addForm').form({
+			url : 'productBuy_add.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加新规则',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					/* var name =$("#cancelReason_add").val();
+					var discretion =$("#status_add").val();
+					if(name==""){
+						$.messager.alert("提示","请输入订单取消原因");
+						return false;
+					}
+					if(discretion==""){
+						$.messager.alert("提示","请输入状态");
+						return false;
+					} */
+					
+					$.messager.confirm('请确认', '您要添加新规则吗?', function(r) {
+						if (r) {	
+					addForm.submit();
+					
+						}
+					});
+					
+				}
+			} ]
+		});
+
+});
+
+function add() {
+	addDialog.dialog('open');
+	addForm.find("input[type='text']").val("");
+}
+function del() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].id);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'prodcutBuy_del.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						//var d = JSON.parse(response);
+						
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});	
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	} 
+}
+function edit() {
+	var rows = datagrid.datagrid('getSelections');
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'productBuy_edit.do',
+			data : {
+				id : rows[0].id
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				editForm.form('clear');
+				editForm.form('load', response);
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<!--添加表单-->
+<div id="addDialog" style="display: none;width: 600px;height: 300px;" align="center">
+	<form id="addForm" method="post" style="padding: 5px 10px">
+		   <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">规则名称：</td>
+		      <td><input type="text" name="name"  size="40" maxlength="50"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写规则名称" /></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">类名：</td>
+		      <td><input type="text" name="className"  size="40" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写类名" /></td>
+			 </tr>
+			  <tr>
+		      <td class="lable">参数说明：</td>
+		      <td><input type="text" name="paramDesc"  size="40" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写参数说明" /></td>
+			 </tr>
+			  <tr>
+		      <td class="lable">权重：</td>
+		      <td><input type="text" name="weight"  size="40" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写权重" /></td>
+			 </tr>
+			  <tr>
+		      <td class="lable">备注：</td>
+		      <td><input type="text" name="remark"  size="40" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写备注" /></td>
+			 </tr>
+			  
+		  </table> 
+	</form>
+</div>
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 600px;height: 300px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px" class="pageForm required-validate">
+		<input type="hidden" name="id" />
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">规则名称：</td>
+		      <td><input type="text" name="name"  size="40" maxlength="50"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写规则名称" /></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">类名：</td>
+		      <td><input type="text" name="className"  size="40" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写类名" /></td>
+			 </tr>
+			  <tr>
+		      <td class="lable">参数说明：</td>
+		      <td><input type="text" name="paramDesc"  size="40" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写参数说明" /></td>
+			 </tr>
+			  <tr>
+		      <td class="lable">权重：</td>
+		      <td><input type="text" name="weight"  size="40" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写权重" /></td>
+			 </tr>
+			  <tr>
+		      <td class="lable">备注：</td>
+		      <td><input type="text" name="remark"  size="40" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写备注" /></td>
+			 </tr>
+		  </table> 
+	</form>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>ios代充订单</title>
+<#include "../common.html"/>
+<script type="text/javascript" src="${request.contextPath}/js/jquery.zclip.js"></script>  
+<script type="text/javascript">
+window.onload   = function () 
+{ 
+$('#showCustomAttributesWindow').window('close');
+$('#customerCancelDialogwin').window('close');
+$('#sendOrderDialogwin').window('close');
+//初始化复制按钮功能
+copyinfo();
+
+}
+
+//显示更多备注
+function showMoreRemark(){
+	var orderId=$("#orderId_val").val();
+	var link = "${request.contextPath}/order/followOrder/"+orderId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"订单"+orderId+"操作备注"
+			};
+	parent.parent.addTab(node);
+}
+
+//撤单窗口
+function cancel(){
+    var html ="<table style='text-align:left'><tr>";
+    html+="<td>撤单原因：<select id='customerCancelReason'>";
+    html+="<option value='' >-请选择-</option>";
+    html+="<#if customerReasonList??>"
+    html+="<#list customerReasonList as reason>";
+    html+="<option value='${reason.cancelReason}' >${reason.cancelReason}</option>";
+    html+="</#list>"
+    html+="</#if>"
+    html+="</select>";
+    html+="</td></tr>";
+    html+="<tr><td>";
+    html+="撤单备注：<textarea rows='' cols='30' id='customerCancelReasonRemark'></textarea>";
+    html+="</td></tr>";
+    html+="<tr><td  align='right' colspan='2'>";
+    html+="<input type='button' value='撤单' onclick='customerCancel();'/>"
+    html+="</td></tr></table>";
+	$('#customerCancelDialogwin').window({
+		title : "直接撤单",
+		content:html
+	});
+	$('#customerCancelDialogwin').window('open');
+
+}
+
+//撤单
+function customerCancel(){
+	var orderId=$("#orderId_val").val();
+	var reason  = $("#customerCancelReason").val();
+	var remark = $("#customerCancelReasonRemark").val();
+	if(reason == ""){
+		$.messager.confirm('提示', '请选择取消原因');
+		$("#customerCancelReason").focus();
+		return ;
+	}
+	if(confirm('确定撤单?')){
+		$.ajax({
+			url : '../orderTy/orderCancel',
+			type : 'POST',
+			data : {
+				orderId : orderId,
+				reason : reason,
+				remark : remark
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+				if (data.success) {
+				
+					$.messager.show({
+						title : '成功',
+						msg : data.msg
+					});
+					$('#customerCancelDialogwin').window('close');
+					closeDetail();//跨域关闭订单详情
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : data.msg
+					});
+				}
+			}
+		});
+	}
+}
+
+
+
+
+
+
+//复制信息
+function copyinfo(){
+    $('#chat_copy_buttom').zclip({  
+        path:'${request.contextPath}/js/ZeroClipboard.swf',  
+        copy: function(){
+       	   var html ="";
+       	   var oid =  $('#orderId_val').val() ;
+       	   var oidname = "订单编号：" + oid + "\r\n";
+       	   if(typeof(oid) == "undefined"){
+       		   html="暂无订单信息";
+       	   }else{
+       		   var model =  ${orderC2cForm.orderModel!'0'};
+       		   var html = "游戏版本：" + $("#gameVersion").val() + "\r\n";
+       		       html+= "商品名称：" + $("#goodsName_val").val() + "\r\n";
+       		       html+= "游戏名称：" + $("#gameName_val").val() + "\r\n";
+       		       html+= "游戏区服：" + $("#gameAreaServer_val").val()+ "\r\n";
+       		       html+= "游戏账号：" + $("#buyAccount_val").val() + "\r\n";
+       		       if(model ==112){
+       		    	  html+= "游戏密码：" + $("#buyAccountPwd_val").val() + "\r\n";
+       		       }
+       		       html+= "角色名：" +  $("#orderBuyGameRoleName_val").val() + "\r\n";
+       		       //html+= "角色等级：" + $("#orderBuyGameRoleLevel_val").val() + "\r\n";
+       		       html+= "购买件数：" + $("#goodsCount_val").val() + "\r\n";
+       			 
+       	   }
+       	 
+       	   return html;
+        }
+    });  
+	//return oid;
+}
+
+
+function fetchOrderDetail(){
+	location.reload();
+}
+
+
+
+//跨域调用聊天记录
+function openChatLog(){
+	var orderId="";
+	var link ="tt";
+	var type ="openchatLog";
+	outhostlink(orderId,link,type);//外部链接
+}
+
+
+
+//跨域调用关闭订单详情页面
+function closeDetail(){
+	var orderId="--";
+	var link ="tt";
+	var type ="cancelorder";
+	outhostlink(orderId,link,type);//外部链接
+}
+
+//跨域调用 
+function outhostlink(orderId,link,type){
+	var url = "${request.contextPath}/webDate/linkto_kefu_callback_js.jsp?orderid="+orderId +"&link="+link+"&type="+type;
+	console.log(url);
+	if(typeof(exec_obj)=='undefined'){
+		exec_obj = document.createElement('iframe');
+		exec_obj.name = 'tmp_frame';
+		exec_obj.src = url;
+		exec_obj.style.display = 'none';
+		document.body.appendChild(exec_obj);
+	}else{
+		exec_obj.src = url;
+	}
+}
+
+
+function cancleOperate(){
+	$('#sendOrderDialogwin').window('close');
+}
+
+//转账
+function transfer(){
+	var orderId=$("#orderId_val").val();
+	var param = {"orderId":orderId,"tyCajia":0,"realPriceTotail":0};
+	if(confirm('确定给卖家转账?')){
+	$.ajax({
+		url : '${request.contextPath}/orderTy/orderSuccess',
+		type : 'POST',
+		data : param,
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+			if (data.success) {
+				$.messager.show({
+					title : '成功',
+					msg : data.msg
+				});
+				returnMoneyDialog.dialog('close');
+				datagrid.datagrid('reload');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : data.msg
+				});
+			}
+		}
+	});
+	}
+}
+
+</script>
+</head>
+<body >
+
+<!-- 操作菜单 -->
+<div   style="width:80px;height: 630px;float: left;padding:1px 1px;" >
+<div id="order_op" class="easyui-panel" title="操作菜单"  style="width:80px;height:630px;padding:1px;background:#fafafa;float: left;">
+    <p style="padding-bottom: 10px;"><a href="javascript:void(0);" id="fetchOrderDetail_buttom"class="easyui-linkbutton" onclick="fetchOrderDetail();" style="text-align: right;">刷新订单</a></p>
+    
+    <#if orderC2cForm??>
+    <#if orderC2cForm.orderModel==112>
+     <p style="padding-bottom: 10px;"><a href="javascript:void(0);" id="cancel_buttom" class="easyui-linkbutton" onclick="cancel();" style="text-align: right;">撤销订单</a></p>
+    <p style="padding-bottom: 10px;"><a href="javascript:void(0);" id="changeUser_buttom" class="easyui-linkbutton" onclick="transfer();" style="text-align: right;">转账卖家</a></p>    
+     </#if>  
+     </#if>
+    <p style="padding-bottom: 10px;"><a href="javascript:void(0);" id="showMoreRemark_buttom" class="easyui-linkbutton" onclick="showMoreRemark();" style="text-align: right;">历史备注</a></p>  
+    <p style="padding-bottom: 10px;"><a href="javascript:void(0);" id="openChatLog_buttom" class="easyui-linkbutton" onclick="openChatLog();" style="text-align: right;">聊天记录</a></p>
+    <p style="padding-bottom: 10px;"><a href="javascript:void(0);" id ="chat_copy_buttom" onclick="copyinfo();" class="easyui-linkbutton"  style="text-align: right;">复制信息</a></p>
+    
+    
+</div>
+</div>
+<!--浏览页面-->
+ <#if orderC2cForm??>
+<div   style="width:400px;height: 630px;float: left;padding:1px 1px;" >
+<div class="easyui-panel" title="订单详情"  style="width: 400px;height: 630x; background-color: #fafafa;;float:left;" >
+    <input type="hidden" name="orderStatuskey" value="${orderC2cForm.orderStatus!'0'}" id="orderStatuskey" />
+    <input type="hidden" name="orderC2cStatuskey" value="${orderC2cForm.orderC2cStatus!'1'}" id="orderC2cStatuskey" />
+    <input type="hidden" name="goodsPositionkey" value="${orderC2cForm.goodsPosition!'0'}" id="goodsPositionkey" />
+    <input type="hidden" name="orderIspaykey" value="${orderC2cForm.orderIspay!'0'}" id="orderIspaykey" />
+	<div style="padding: 5px 2px;">
+		<b>【订单信息】 </b>		
+		 <#if orderC2cForm.orderModel==111>
+		  <font color="red"><b>IOS代充7881</b></font>
+		 <#elseif orderC2cForm.orderModel==112>
+		  <font color="blue"><b>IOS代充8868</b></font>
+		 <#else>
+		 <font color="blue">未知</font>
+		 </#if><br/>
+		订单编号：<input type="text" id="orderId_val" name="orderId" size="25" value="${orderC2cForm.orderId}" maxlength="50" readonly style="border:thin; background-color: #f2f2f2"/>
+		
+
+		 
+		<br/>
+		订单总额：<input type="text" id="orderAmountForm" name="orderAmountForm" value="${orderC2cForm.orderAmount}" size="5" maxlength="50" readonly style="border:thin; background-color: #f2f2f2"/><br/>
+	
+	</div>
+	
+	
+	<div style="border-top:1px dashed #666; padding: 5px 2px;">
+		<b>【买家信息】</b><br/>
+		买家UID：<input type="text" name="orderBuyUid" value="${orderC2cForm.orderBuyUid!''}"  size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+
+	    <br/>
+	            买家手机：<input type="text" name="orderBuyPhonenum" value="${orderC2cForm.orderBuyPhonenum!''}" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		买家QQ：<input type="text" name="orderBuyQq" value="${orderC2cForm.orderBuyQq!''}" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+	</div>
+	
+
+
+	<div style="border-top:1px dashed #666; ">	
+		<b>【充值信息】</b><br/>
+		游戏版本：<input type="text" id="gameVersion" name="gameVersion" value="${orderC2cForm.gameVersion!''}"  size="40" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/><br/>
+		商品名称：<input type="text" id="goodsName_val" name="goodsName" value="${orderC2cForm.goodsName!''}"  size="40" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/><br/>
+		购买件数：<input type="text" id="goodsCount_val" name="goodsCount" value="${orderC2cForm.goodsCount!'--'}"  size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/><br/>
+		游戏名称：<input type="text" id="gameName_val" name="gameName" value="${orderC2cForm.gameName!''}" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2 "/><br/>
+		游戏区服：<input type="text" id = "gameAreaServer_val" name="gameAreaServer" value="${orderC2cForm.gameAreaServer!''}" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/><br/>
+		
+		游戏账号：<input type="text" id="buyAccount_val" name="buyAccount" value="${orderC2cForm.buyAccount!'--'}"  size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		<#if orderC2cForm.orderModel==112>
+		游戏密码：<input type="text" id="buyAccountPwd_val" name="buyAccountPwd" value="${orderC2cForm.buyAccountPwd!'--'}"  size="8" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/><br/>
+		</#if>
+		角色名称：<input type="text" id="orderBuyGameRoleName_val" name="orderBuyGameRoleName" value="${orderC2cForm.orderBuyGameRoleName!''}" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+	<!-- 角色等级：<input type="text" id="orderBuyGameRoleLevel_val" name="orderBuyGameRoleLevel" value="${orderC2cForm.orderBuyGameRoleLevel!''}" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/><br/>
+	 -->	
+	
+		
+	
+	</div>
+	
+	<!-- 历史备注信息 -->
+	<div style="border-top:1px dashed #666; padding: 5px 2px;">
+		订单状态：
+		<#if orderC2cForm.orderStatus ==0>
+		等待付款
+		<#elseif orderC2cForm.orderStatus ==2>
+		等待发货
+		<#elseif orderC2cForm.orderStatus ==4>
+		待确认收货
+		<#elseif orderC2cForm.orderStatus ==5>
+		申请仲裁
+		<#elseif orderC2cForm.orderStatus ==6>
+		订单成功
+		<#elseif orderC2cForm.orderStatus ==7>
+		已发货
+		<#elseif orderC2cForm.orderStatus ==8>
+		交易取消
+		<#elseif orderC2cForm.orderStatus ==10>
+		己退款
+		<#elseif orderC2cForm.orderStatus ==-1>
+		己删除
+		<#else>
+		未知
+		</#if>
+	<br/>
+	        取消原因：<input type="text" id="orderRevokeCause" name="orderRevokeCause" value="${orderC2cForm.orderRevokeCause!'--'}" size="40" maxlength="50" readonly style="border:thin; background-color: #f2f2f2"/><br/>
+	</div>
+  
+
+</div>
+<#else>
+<div>
+<div>
+订单不存在。。
+</div>
+
+</div>
+</#if>
+</div>
+
+
+<!-- 撤单 -->
+<div id="customerCancelDialogwin"  class="easyui-window" title="客服撤单" style="width: 400px;height: 200px; background-color: #f2f2f2" align="center" ></div>
+
+    <!-- 派单物服 -->
+<div id="sendOrderDialogwin"  class="easyui-window" title="客服撤单"  style="width: 400px;height: 200px; ">
+		<div id="sendOrderInfo"></div>
+</div>
+</body>
+</html>

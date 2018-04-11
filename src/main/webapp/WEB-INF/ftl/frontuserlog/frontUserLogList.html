@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<title>用户行为日志</title> <#include "../common.html"/>
+<script type="text/javascript">
+	var datagrid;
+	var searchForm;
+	$(function() {
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid').datagrid({
+			url : 'frontUserLogList_json',
+			title : '用户行为日志',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'create_time',
+			sortOrder : 'desc',
+			columns : [ [ {
+				field : 'id',
+				title : 'ID',
+				align : 'center',
+				sortable : true
+			}, {
+				field : 'uid',
+				title : '访问用户(UID)',
+				align : 'center',
+				sortable : true
+			}, {
+				field : 'logIp',
+				title : '访问IP',
+				align : 'center',
+				width : 20,
+				sortable : true
+			}, {
+				field : 'logType',
+				title : '日志类型',
+				align : 'center',
+				sortable : true
+			}, {
+				field : 'logRemark',
+				title : '事件',
+				align : 'center',
+				width : 80,
+				sortable : true
+			}, {
+				field : 'createTime',
+				title : '创建时间',
+				align : 'center',
+				sortable : true
+			}, ] ]
+		});
+		$('#beginTime').datetimebox({
+			required : true,
+			validType : 'md[\'\']'
+		});
+		$('#endTime').datetimebox({
+			required : true,
+			validType : 'md[\'\']'
+		});
+	});
+	function _search() {
+		datagrid.datagrid("unselectAll");
+		var uid = $("#searchForm input[name='uid']").val();
+		if (uid != 0) {
+			var beginTime = $('#beginTime').datetimebox('getValue');
+			var endTime = $('#endTime').datetimebox('getValue');
+			if (beginTime > endTime && beginTime != "" && endTime != "") {
+				$.messager.show({title:'提示', msg:'请选择正确的时间段'});
+				return false;
+			} else {
+				if (beginTime.length != 0 || endTime.length != 0) {
+					$.messager.progress();
+					$('#searchForm').form('submit', {
+						url : 'frontUserLogList_json',
+						onSubmit : function() {
+							var isValid = $(this).form('validate');
+							if (!isValid) {
+								$.messager.progress('close');
+							}
+							return isValid;
+						},
+						success : function() {
+							datagrid.datagrid({
+								queryParams : {
+									uid : uid + "",
+									beginTime : beginTime + "",
+									endTime : endTime + ""
+								}
+							});
+							datagrid.datagrid('reload');
+							$.messager.progress('close');
+						}
+					});
+				} else {
+					datagrid.datagrid({
+						queryParams : {
+							uid : uid
+						}
+					});
+				}
+				datagrid.datagrid('reload');
+			}
+		} else {
+			$.messager.show({
+				title : '温馨提示',
+				msg : '请填写访问用户（UID）,只能是数字'
+			});
+		}
+
+	}
+
+	function cleanSearch() {
+		datagrid.datagrid('reload');
+		searchForm.find('input').val('');
+		datagrid.datagrid({
+			queryParams : {}
+		});
+		datagrid.datagrid('reload');
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div
+		region="north"
+		border="false"
+		title="搜索条件"
+		style="height: 65px; overflow: hidden;"
+		align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+					<td>UID:<input
+						type="text"
+						name="uid"
+						size="20"
+						maxlength="50"
+						class="easyui-numberbox"
+						data-options="required:true"
+						missingMessage="请填写访问用户（UID）,只能是数字" />&nbsp;
+					</td>
+					<td>起止时间: <input
+						id="beginTime"
+						type="text"
+						name="beginTime"
+						style="width: 150px">- <input
+						id="endTime"
+						type="text"
+						name="endTime"
+						style="width: 150px">
+					</td>
+					<td><a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="_search();">搜索</a> <a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="cleanSearch();">取消</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+
+	<div
+		region="center"
+		border="false">
+		<table id="datagrid"></table>
+	</div>
+</body>
+</html>

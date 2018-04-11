@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>上传xls</title>
+ <script type="text/javascript">
+  
+ 
+      function doBusiness(){    
+    	  parent.location.reload();
+      }
+      
+      function imgupload(){
+          var uploadfile = document.getElementById("uploadfilename").value;
+          if(uploadfile!=""){
+        	  uploadform.submit();
+          }else{
+            alert("请选择上传的xls文件！");
+          }
+      }
+
+  </script>
+</head>
+  <body style="padding: 0; margin: 0;">
+ <font style="font-size:8px;color:red;">	${msg!'请上传xls模板文件'} </font>
+
+
+ <form action="upload" method="post" enctype="multipart/form-data" name="uploadform">  
+  <input name="file" id="uploadfilename" type="file" /> 
+  	<input type="hidden" name="fileUrl" id="fileUrlid" value="${picvalue!''}">
+  	<input type="button" value="批量导入" onClick="javascript:imgupload();">
+  	<input type="hidden" name ="gameId" id ="gameId_upload" value="${gameId!'0'}" />
+  	<input type="hidden" name ="versionId" id ="versionId_upload" value="${versionId!'0'}" />
+</form>  
+ <SCRIPT type="text/javascript">
+ var msg = '${msg!''}';
+ if(msg.indexOf("批量导入成功,共导入行数") >= 0){
+	 parent.location.reload();
+ }
+ //doBusiness();
+ 
+ </SCRIPT>
+</body>
+
+
+</html>

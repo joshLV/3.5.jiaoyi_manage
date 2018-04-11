@@ -1,0 +1,24 @@
+<#if pageInfo.items??>
+{"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+
+{
+"id":${item.id},
+"onMemberNum":${item.onMemberNum!'0'},
+"onProductNum":${item.onProductNum!'0'},
+"offProductNum":${item.offProductNum!'0'},
+"storeTotal":${item.storeTotal!'0'},
+<#if item.countDay??>
+"countDay":"${item.countDay?string('yyyy-MM-dd')!''}"
+<#else>
+"countDay":""
+</#if>
+
+}
+<#t>
+<#if item_has_next>,</#if>
+</#list>
+]}
+  <#else>
+  {"total":0,"rows":[]}
+</#if>

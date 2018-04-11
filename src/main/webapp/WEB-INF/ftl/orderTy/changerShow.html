@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>修改c2c订单账号信息</title>
+<#include "../common.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+
+
+function resetshow() {
+	var order_id = $("#order_id").val();
+	
+	if(order_id==""){
+		$.messager.alert("错误提示","请填写订单号!");
+		return false;
+	}
+	
+	searchForm.submit();
+     
+}
+
+function modifyorderc2cinfo(){
+
+var remark = $('#remark').val();
+var selluser_game_account = $('#selluser_game_account').val();
+var selluser_game_account_pwd = $('#selluser_game_account_pwd').val();
+
+
+if(selluser_game_account == ""){
+	$.messager.alert("提示","请填写卖家账号");
+	return;
+}
+
+if(selluser_game_account_pwd == ""){
+	$.messager.alert("提示","请填写卖家账号密码");
+	return;
+}
+
+if(remark == ""){
+	$.messager.alert("提示","请填写操作备注");
+	return;
+}
+
+$.messager.confirm('确认框','您确认要修改卖家账号信息?',function(r){  
+   if (r){ 
+
+		$.ajax({
+			url : 'changer.do',
+			data : $("#form1").serialize(),
+			dataType : 'json',
+			success : function(response) {
+				$.messager.show({
+					title : '提示',
+					msg : response.msg
+				});
+				//setTimeout("reload()",1000);
+				
+			}
+		});
+		   }
+		});
+}
+
+
+
+function   check()   
+{   
+var chkObjs = document.getElementsByName("kefuuid");
+for(i=0;i<chkObjs.length;i++)   
+if(chkObjs[i].checked)   {
+	return chkObjs[i].value;
+}
+
+}  
+
+
+
+function reload(){
+	location.reload();
+}
+
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="center" border="false" title="请输入订单号码" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm" action="changerShow" name="sform">
+		<table >
+			<tr>
+				<td >订单号:<input name="orderId" value="${orderId!''}" style="width:200px;" id="order_id"/>&nbsp;</td>
+	
+				
+				<td style="border-bottom:#999 1px dashed;">
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="resetshow()" >查询</a>
+				</td>
+		
+			</tr>
+		</table>
+	</form>
+	
+	<#if order??>
+	  <form action="" name="form1" id="form1" >
+			<table  class="table_line" >
+			<tr>
+			<td colspan="2" ><b>订单信息</b></td>
+			</tr>
+			<tr>
+				<td style="text-align: right">订单:</td>
+				<td>
+				<p id="order_id">${order.orderId!''}</p>
+				</td>
+			</tr>
+			
+			<tr>
+				<td style="text-align: right">商品:</td>
+				<td>
+				<p>${order.goodsName!''}</p>
+				</td>
+			</tr>
+			<tr>
+				<td style="text-align: right">游戏:</td>
+				<td>
+				<p>${order.gameName!''}/${order.gameAreaName!''}</p>
+				</td>
+			</tr>
+			
+			<tr>
+				<td style="text-align: right">渠道:</td>
+				<td>
+				<p>${channelName!''}</p>
+				</td>
+			</tr>
+			
+			<tr>
+				<td style="text-align: right">订单类型:</td>
+				<td>
+				<p>${gameProductTypeName!''}</p>
+				</td>
+			</tr>
+		<!-- 
+			<tr>
+				<td style="text-align: right">订单金额:</td>
+				<td>
+				<p>${order.orderAmount!''}</p>
+				</td>
+			</tr>
+			
+			<tr>
+				<td style="text-align: right">卖家:</td>
+				<td>
+				<p>${order.orderSellUid!''}</p>
+				</td>
+			</tr>
+			
+						<tr>
+				<td style="text-align: right">买家:</td>
+				<td>
+				<p>${order.orderBuyUid!''}</p>
+				</td>
+			</tr>
+			<#if orderc2c??>
+				<td style="text-align: right">客服ID:</td>
+				<td>
+				<p style="color: red">${orderc2c.customerServiceId!''}</p>
+				</td>
+			</tr>
+			
+			<tr>
+				<td style="text-align: right">物服ID:</td>
+				<td>
+				<p>${orderc2c.physicServiceId!''}</p>
+				</td>
+			</tr>
+           
+            </#if>
+             -->	 
+          <#if flag == 0>
+           <tr>
+           <td>卖家</td>
+           <td>
+
+         
+           <input type="hidden" name="order_id_reset"  value="${order.orderId!''}"/>
+           <input type="hidden" name="order_kefuid_reset"  value="${orderc2c.customerServiceId!''}"/>
+   
+                      账号：&nbsp;<input type="text" name ="selluser_game_account" id="selluser_game_account"/><br/>
+                      密码：&nbsp;<input type="text" name ="selluser_game_account_pwd" id="selluser_game_account_pwd"/><br/>
+                      安全锁:<input type="text" name ="selluser_game_safekey" id="selluser_game_safekey"/>
+           </td>
+           
+           </tr>
+           <#if goodscount??>
+           <#if goodscount gt 1>
+           <tr>
+           <td>账号：
+           </td>
+           <td>
+           <textarea rows="" cols="50" name ="accounts"></textarea><br/>批量账号记录到首充白名单，以逗号隔开,如：aaa,bbb,ccc
+           </td>
+           </#if>
+           </#if>
+           
+           <tr>
+           <td>备注</td>
+           <td>
+           <textarea rows="5" cols="50" id="remark" name="remark"></textarea>  
+          	<a href="javascript:void(0);" class="easyui-linkbutton" onclick="modifyorderc2cinfo();">确认修改</a>
+           </td>
+		    </#if>
+          </tr>
+
+       
+		</table>
+		</form>
+		<#else>
+		<table  class="table_line">
+		<tr>
+		<td>
+		<font color="red">暂无订单,请输入正确的查询条件</font>
+		</td>
+		</tr>
+		</table>
+		</#if>
+</div> 
+
+
+
+
+	
+</body>
+</html>

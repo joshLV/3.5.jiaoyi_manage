@@ -1,0 +1,392 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>订单列表</title>
+<#include "../common.html"/>
+<style type="text/css">
+body{ padding:0px; margin:0px; font-size:13px; line-height:160%;}
+.box{ width:70%; border:1px solid #95b8e7; margin:10px auto 0px auto;}
+	.box th{ line-height:26px; color:#0e2d5f; text-align:left; text-indent:10px; border-bottom:1px solid #95b8e7; background-image: -moz-linear-gradient(top, #eff5ff, #e0ecff); /* Firefox */background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #eff5ff), color-stop(1, #e0ecff)); /* Saf4+, Chrome */filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#eff5ff', endColorstr='#e0ecff', GradientType='0'); /* IE*/}
+	.box td{ padding:5px; color:#000000; text-align:left; vertical-align:top;}
+		.box td b{ font-weight:normal; color:#F00;}
+		.box td span{ color:#0000FF;}
+		.box .td1{ text-align:right; line-height:26px; border-top:1px solid #dddddd; background:#f4f4f4;}
+</style>
+<script type="text/javascript">
+var showCustomAttributesWindow;
+$(function() {
+	showCustomAttributesWindow = $('#showCustomAttributesWindow');
+	showCustomAttributesWindow.css("display","none");
+	showCustomAttributesWindow.dialog('close');
+});
+
+function showProductProperty(){
+	var orderId = $("#orderIdForm").val();
+	$.ajax({
+		url : '${request.contextPath}/order/queryOrderProductProperty.do',
+		data : {
+			orderId :orderId,
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			if(response != null){
+				showProperty(response);
+			}else{
+				alert("当前订单商品无相关自定义属性!");
+			}
+		}
+	});
+}
+
+function showProperty(response){
+	var ppStr = "";
+	var ppStr = "";
+	var pp = response.productProperty
+	if(pp != null && pp != ''){
+		for(var i=0;i<pp.length;i++){
+			ppStr+="<span style=\"display:inline-block;width:125px\">"+pp[i].key+": </span>"+pp[i].value+"<br>";
+		}
+	}
+	var spStr="";
+	var sp=response.sellProperty;
+	if(sp != null && sp != ''){
+		for(var i=0;i<sp.length;i++){
+			spStr+="<span style=\"display:inline-block;width:75px\">"+sp[i].key+": </span>"+sp[i].value+"<br>";
+		}
+	}
+	var bpStr="";
+	var bp = response.buyProperty;
+	if(bp != null && bp !=''){
+		for(var i=0;i<bp.length;i++){
+			bpStr+="<span style=\"display:inline-block;width:75px\">"+bp[i].key+": </span>"+bp[i].value+"<br>";
+		}
+	}
+	$('#showCustomAttributesWindow').window({
+		title : "温馨提示：属性过多浏览不全时，请点击窗口最大话",
+		content : "商品属性: <div>"+ppStr+"</div><br>"+
+				  "卖家属性: <div>"+spStr+"</div><br>"+
+				  "买家属性: <div>"+bpStr+"</div>"
+	});
+	$('#showCustomAttributesWindow').css("display","block");
+	$('#showCustomAttributesWindow').window('open');
+}
+
+//查看用户账号信息
+function showUserAccountInfo(){
+	var orderId=$("#orderIdForm").val();
+	if(confirm('确认要查看卖家账户信息?')){
+		$.ajax({
+			url : 'showUserAccountInfo',
+			type : 'POST',
+			data : {
+				orderId : orderId,
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+			   if(data != null){
+				   if(data.status == 0){
+					   var html="<b>";
+						html+="游戏账号：<font color='red'>"+data.sellUserGameAccount+"<font>&nbsp;";
+						html+= "游戏密码：<font color='red'>"+data.sellUserGameAccountPwd+"<font>&nbsp;";
+						html+="<b>"
+						$("#userAccountInfo").html(html);
+				   }else{
+					   alert(data.msg);
+				   }
+			   }else{
+				   alert("查看账户信息出错，请联系管理员");
+			   }
+			}
+		});
+	}
+}
+
+function showMoreRemark(){
+	var orderId=$("#orderIdForm").val();
+	var link = "${request.contextPath}/order/followOrder/"+orderId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"订单"+orderId+"操作详情"
+			};
+	parent.addTab(node);
+}
+
+function autoSendGoods(){
+	var orderId=$("#orderIdForm").val();
+	if(confirm("确定生成发货链接？")){
+		if(orderId == null || orderId == ''){
+			alert('发货订单ID为空');
+		}else{
+			$.ajax({
+				url : 'getAutoSendGoodsDate',
+				data : {
+					orderId : orderId,
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(response) {
+					if(response != null){
+						window.open(encodeURI("c2cclient://"+response.date+"/"));
+					}else{
+						alert("获取发货token失败,请联系管理员");
+					}
+				}
+			});	
+		}
+	}
+}
+
+//发货成功
+function sendGoodsSuccess(){
+	var orderId=$("#orderIdForm").val();
+	if(confirm('是否确认发货成功?')){
+		$.ajax({
+			url : 'sendGoodsSuccess',
+			type : 'POST',
+			data : {
+				orderId : orderId,
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+				if (data.success) {
+					$.messager.show({
+						title : '成功',
+						msg : data.msg
+					});
+					var title = "订单"+orderId+"发货页面";
+					var parentTitle = "待处理";
+					//更新父菜单的数据
+					if(parent.centerTabs.tabs('exists','待处理')){
+						//如果当前TAB处于打开状态
+						updateParentTab()
+					}
+					//关闭当前操作TAB
+					parent.centerTabs.tabs('close',title);
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : data.msg
+					});
+				}
+			}
+		});
+	}
+}
+
+function updateParentTab(){
+	var path = '${request.contextPath}/orderC2c/orderC2cListNoSuccess';
+	for(var i=0;i < parent.window.length;i++){
+		if(parent.window[i] != null){
+			if(parent.window[i].location != null && parent.window[i].location.pathname == path){
+				parent.window[i].datagrid.datagrid('reload');
+			}
+		}
+	}
+}
+
+//申请撤单
+function cancelOrderRequest(){
+	var cancelReason=$("#cancelReason").val();
+	var cancelReasonRemark=$("#cancelReasonRemark").val();
+	var orderId=$("#orderIdForm").val();
+	if(cancelReason == null || cancelReason ==''){
+		alert("请选择撤单原因");
+	}else{
+		if(confirm('是否确认申请撤单?')){
+			$.ajax({
+				url : 'cancelOrderRequest',
+				type : 'POST',
+				data : {
+					orderId : orderId,
+					reasonId : cancelReason,
+					reasonRemark : cancelReasonRemark
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(data) {
+					if (data.success) {
+						$.messager.show({
+							title : '成功',
+							msg : data.msg
+						});
+						var title = "订单"+orderId+"发货页面";
+						var parentTitle = "待处理";
+						//更新父菜单的数据
+						if(parent.centerTabs.tabs('exists','待处理')){
+							//如果当前TAB处于打开状态
+							updateParentTab()
+						}
+						//关闭当前操作TAB
+						parent.centerTabs.tabs('close',title);
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : data.msg
+						});
+					}
+				}
+			});
+		}
+	}
+}
+</script>
+</head>
+<body class="easyui-layout" style="line-height: 10px;">
+<div region="center" border="false">
+<!--浏览页面-->
+<form id="editForm" method="post" style="padding: 5px 5px">
+<table border="0" cellpadding="0" cellspacing="0" width="600px" align="center" class="box">
+	<input type="hidden" name="orderId"  id="orderIdForm" value ="${orderC2Form.orderId}"/>
+	<tr>
+		<td colspan="4"><b>【订单信息】</b></td>
+	</tr>
+	<tr>
+		<td>订单号：${orderC2Form.orderId!''}</td>
+		<td>订单总额：${orderC2Form.orderAmount!''}</td>
+		<td>订单状态：
+		<#if orderC2Form.orderStatus==0>等待付款</#if>
+		<#if orderC2Form.orderStatus==2>等待发货</#if>	
+		<#if orderC2Form.orderStatus==4>待确认收货</#if>
+		<#if orderC2Form.orderStatus==6>订单成功</#if>
+		<#if orderC2Form.orderStatus==7>待转账</#if>
+		<#if orderC2Form.orderStatus==8>交易取消</#if>
+		<#if orderC2Form.orderStatus==10>己退款</#if>
+		<#if orderC2Form.orderStatus==-1>己删除</#if></td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>流程状态：
+		<#if orderC2Form.orderC2cStatus==1>主管/系统分单</#if>
+		<#if orderC2Form.orderC2cStatus==2>客服派单</#if>
+		<#if orderC2Form.orderC2cStatus==3>物服发货</#if>
+		<#if orderC2Form.orderC2cStatus==4>完成</#if>
+		<#if orderC2Form.orderC2cStatus==5>撤销</#if>
+		<#if orderC2Form.orderC2cStatus==6>客服审撤</#if>
+		<#if orderC2Form.orderC2cStatus==7>物服重发货</#if>
+		<#if orderC2Form.orderC2cStatus==8>转账给卖家</#if></td>
+		<td>订单渠道：${orderC2Form.orderFr!''}</td>
+		<td></td>
+		<td></td>
+	</tr>
+	<tr>
+		<td colspan="4">备注：${orderC2Form.remark!''}</td>
+	</tr>
+	<tr>
+		<td colspan="4"><b>【游戏信息】</b></td>
+	</tr>
+	<tr>
+		<td>游戏名：${orderC2Form.gameName!''}</td>
+		<td>区服：${orderC2Form.gameAreaServer!''}</td>
+		<td>游戏渠道：${orderC2Form.gameChannelName!''}</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td colspan="4"><b>【买家账号信息】</b></td>
+	</tr>
+	<tr>
+		<td>角色名称：${orderC2Form.orderBuyGameRoleName!''}</td>
+		<td>角色id：${orderC2Form.orderBuyGameRoleId!''}</td>
+		<td>角色等级：${orderC2Form.orderBuyGameLevel!''}</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td colspan="4"><b>【商品信息】</b></td>
+	</tr>
+	<tr>
+		<td>商品编号：${orderC2Form.goodsId!''}</td>
+		<td>商品名称：${orderC2Form.goodsName!''}</td>
+		<td>商品类型：${orderC2Form.goodsTypeName!''}</td>
+		<td></td>
+	</tr>
+	<tr id="goodsSingleDiv">
+		<td>单件数量：${orderC2Form.goodsSingleNumber!''}</td>
+		<td>单价：${orderC2Form.goodsSinglePrice!''}</td>
+		<td>商品总数：${orderC2Form.totalGoodsNumber!''}</td>
+		<td></td>		
+	</tr>
+	<tr>
+		<td>商品备注：${orderC2Form.goodsRemark!''}</td>
+		<td>商品存放：		
+		 <#if orderC2Form.goodsPosition==1>交易所</#if>
+		 <#if orderC2Form.goodsPosition==2>仓库</#if>
+		 <#if orderC2Form.goodsPosition==3>邮箱</#if>
+		 <#if orderC2Form.goodsPosition==4>包裹</#if></td>
+		<td><a href="javascript:void()" onclick="showProductProperty();">商品属性</a></td>
+		<td></td>
+	</tr>
+	<tr>
+		<td colspan="4"><b>【卖家账号信息】</b></td>
+	</tr>
+	<tr>
+		<td>角色名称：${orderC2Form.orderSellGameRoleName!''}</td>
+		<td>角色ID：${orderC2Form.orderSellGameRoleId!''}</td>
+		<td>角色等级：${orderC2Form.orderSellGameRoleLevel!''}</td>
+		<td>安全锁：${orderC2Form.selluserGameSafekey!''}</td>
+	</tr>
+	<tr>
+		<td colspan="4"><b>【卖家信息】</b></td>
+	</tr>
+	<tr>
+		<td>卖家UID：${orderC2Form.orderSellUid!''}</td>
+		<td>姓名：${orderC2Form.orderSellRealName!''}</td>
+		<td>联系QQ：${orderC2Form.orderSellQq!''}</td>
+		<td>手机号码：${orderC2Form.orderSellRealPhone!''}</td>
+	</tr>
+	<tr>
+		<td colspan="4"><b>【买家信息】</b></td>
+	</tr>
+	<tr>
+		<td>买家UID：${orderC2Form.orderBuyUid!''}</td>
+		<td>姓名：${orderC2Form.orderBuyRealName!''}</td>
+		<td>联系QQ：${orderC2Form.orderBuyQq!''}</td>
+		<td>手机号码：${orderC2Form.orderBuyRealPhone!''}</td>
+	</tr>
+	<tr>
+		<td colspan="4"><b>【历史备注信息】</b><a href="javascript:void()" onclick="showMoreRemark();">查看更多</a></td>
+	</tr>
+	<#if (orderC2Form.remark)??>
+	<tr>
+		<td colspan="4">备注：<font color="red" >${orderC2Form.remark!''}</font></td>
+	</tr>
+	</#if>
+	<#if orderC2Form.orderC2cStatus==7 || orderC2Form.orderC2cStatus==3 >
+		<tr>
+		<td><a href="javascript:void()" onclick="showUserAccountInfo();">查看卖家账户信息</a></td>
+		<td colspan="3"><div id="userAccountInfo"></div></td>
+		</tr>
+		<tr>
+			<td >撤单原因：<select id="cancelReason">
+				<option value="" >-请选择-</option>
+				<#list reasonList as reason>
+					<option value="${reason.id }" >${reason.cancelReason}</option>
+				</#list>
+				</select>
+			</td>
+			<td colspan="3">
+				备注:<textarea rows="" cols="60" id="cancelReasonRemark"></textarea>
+			</td>
+			</tr>
+		<tr>
+		<td align="right" colspan="4">
+			<input type="button" value="生成发货链接" onclick="autoSendGoods();"/>
+			<input type="button" value="发货成功" onclick="sendGoodsSuccess();"/>
+			<input type="button" value="申请撤单" onclick="cancelOrderRequest();"/>
+		</td>
+	</tr>
+	</#if>
+</table>
+</form>
+	<!-- 自定义属性详细窗口 -->
+<div id="showCustomAttributesWindow" class="easyui-window" title="自定义属性信息"
+		data-options="modal:true" 
+		style="width: 800px; height: '550px'; padding: 10px; line-height:15px; display: none">详细信息内容</div>
+</div>
+</body>
+</html>

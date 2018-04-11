@@ -1,0 +1,106 @@
+<beans xmlns="http://www.springframework.org/schema/beans" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:p="http://www.springframework.org/schema/p" 
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util-3.1.xsd
+        http://www.springframework.org/schema/beans 
+        http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+        http://www.springframework.org/schema/context 
+        http://www.springframework.org/schema/context/spring-context-3.1.xsd
+        http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd" >
+    
+    <!-- 开启controller注解支持 -->
+    <!-- 注：如果base-package=cn.javass 则注解事务不起作用 TODO 读源码 -->
+    <context:component-scan base-package="cn.jugame.admin.web.controller">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+     
+	<mvc:annotation-driven />
+	
+	<!-- 拦截器设置-->
+ 	<mvc:interceptors>
+		<bean class="cn.jugame.admin.web.inteceptor.AdminInteceptor"/>
+    </mvc:interceptors> 
+
+    <mvc:view-controller path="/" view-name="forward:/index"/>
+    <!-- 当在web.xml 中   DispatcherServlet使用 <url-pattern>/</url-pattern> 映射时，能映射静态资源 -->
+    <mvc:default-servlet-handler/>
+    <!-- 静态资源映射 
+    <mvc:resources mapping="/images/**" location="/WEB-INF/images/" />
+    <mvc:resources mapping="/css/**" location="/WEB-INF/css/" />
+    <mvc:resources mapping="/js/**" location="/WEB-INF/js/" />-->
+
+    <!-- ========================= VIEW定义 ========================= -->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/jsp/" />
+		<property name="suffix" value=".jsp" />
+		<property name="order" value="4" />
+	</bean>
+	<!-- freemarker -->
+	<bean id="freeMarkerConfig" class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+		<property name="templateLoaderPath" value="/WEB-INF/ftl/" />
+		<property name="freemarkerSettings">
+			<props>
+				<prop key="template_update_delay">0</prop>
+				<prop key="default_encoding">UTF-8</prop>
+				<prop key="locale">zh_CN</prop>
+				<prop key="number_format">0.##</prop>
+			</props>
+		</property>
+	</bean>
+	<bean class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+		<property name="viewClass" value="org.springframework.web.servlet.view.freemarker.FreeMarkerView" />
+		<property name="contentType" value="text/html; charset=utf-8" />
+		<property name="cache" value="true" />
+		<property name="suffix" value=".html" />
+		<property name="requestContextAttribute" value="request"/>
+		<property name="order" value="1" />
+	</bean>
+	
+	<!-- 增加JS的freemarker解析 -->
+	<bean class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+		<property name="viewClass" value="org.springframework.web.servlet.view.freemarker.FreeMarkerView" />
+		<property name="contentType" value="application/x-javascript; charset=utf-8" />
+		<property name="cache" value="true" />
+		<property name="suffix" value=".js" />
+		<property name="requestContextAttribute" value="request"/>
+		<property name="order" value="2" />
+	</bean>
+	
+	<!-- 增加CSS的freemarker解析 -->
+	<bean class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+		<property name="viewClass" value="org.springframework.web.servlet.view.freemarker.FreeMarkerView" />
+		<property name="contentType" value="text/css; charset=utf-8" />
+		<property name="cache" value="true" />
+		<property name="suffix" value=".css" />
+		<property name="requestContextAttribute" value="request"/>
+		<property name="order" value="3" />
+	</bean>
+	
+	<bean id="fmXmlEscape" class="freemarker.template.utility.XmlEscape" />
+
+    <!-- json view -->
+    <bean id="defaultJsonView" class="org.springframework.web.servlet.view.json.MappingJacksonJsonView"/>
+    
+    <!-- 文件上传相关 -->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <!--one of the properties available;the maximum file size in bytes-->
+        <property name="maxUploadSize" value="2000000"/>
+    </bean>
+     
+    <!-- 控制器异常处理 -->
+    <bean id="exceptionResolver" class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+        <property name="exceptionMappings">
+              <props>
+                  <prop key="org.springframework.web.multipart.MaxUploadSizeExceededException">error_maxupload</prop>
+                  <prop key="java.lang.Exception">error_all</prop>
+            </props>
+        </property>
+    </bean>
+
+</beans>

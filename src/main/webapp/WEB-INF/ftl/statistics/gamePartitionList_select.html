@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>区列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+function getQueryString(name) {
+	var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+	var r = window.location.search.substr(1).match(reg);
+	if (r != null) return unescape(r[2]); return null;
+	}
+var gameId = getQueryString('gameId');
+var datagrid;
+$(function() {
+	datagrid = $('#datagrid').datagrid({
+			url : 'queryPartitionListByGameId.do?gameId='+${gameId!''},
+			title : '区列表',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 500,
+			pageList : [ 100, 200, 400, 500 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'gamePartitionId',
+			sortName : 'gamePartitionId',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.obid;
+						}
+					},
+			   {field:'gamePartitionId',title:'区ID',align:'center',sortable:true},				
+			   {field:'partitionName',title:'区名称',align:'center',width:100}
+			 ] ],
+			toolbar : [ {
+				text : '确认选择',
+				iconCls : 'icon-edit',
+				handler : function() {
+					select();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			}
+		});
+		
+
+});
+function select(){
+	try{
+		var rows = datagrid.datagrid('getSelections');
+		var gpIds="";
+		if (rows.length>0) {
+				for(var i=0;i<rows.length;i++){
+					if(i==rows.length-1){
+						gpIds=gpIds+rows[i].gamePartitionId;
+					}else{
+						gpIds=gpIds+rows[i].gamePartitionId+",";
+					}
+				}	
+			//将参数回调到页面
+			window.opener.selectedGPIdsCallBack(gpIds);
+			window.close();
+		} else {
+			$.messager.alert('提示', '请选择一条记录！', 'error');
+		}
+	}catch(e){
+		alert(e);
+	}
+}
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+</body>
+</html>

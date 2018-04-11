@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>职责分派列表</title>
+<#include "../common_new.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+ 
+ body,div,ul,li{
+ margin:0 auto;
+ padding:0;
+}
+body{
+ font:12px "宋体";
+ text-align:center;
+}
+ a:link{
+ color:#00F;
+ text-decoration:none;
+}
+a:visited {
+ color: #00F;
+ text-decoration:none;
+}
+a:hover {
+ color: #c00;
+ text-decoration:underline;
+}
+ul{
+ list-style:none;
+}
+.main{
+ clear:both;
+ padding:8px;
+ text-align:center;
+}
+
+/*第二种形式*/
+#tabs1{
+ text-align:left;
+ width:800px;
+}
+.menu1box{
+ position:relative;
+ overflow:hidden;
+ height:26px;
+ width:800px;
+ text-align:left;
+}
+#menu1{
+ position:absolute;
+ top:0;
+ left:0;
+ z-index:1;
+}
+#menu1 li{
+ float:left;
+ display:block;
+ cursor:pointer;
+ width:72px;
+ text-align:center;
+ line-height:25px;
+ height:25px;
+}
+#menu1 li.hover{
+ background:#fff;
+ border-left:1px solid #999;
+ border-top:1px solid #999;
+ border-right:1px solid #999;
+}
+.main1box{
+ clear:both;
+ margin-top:-1px;
+ border:1px solid #999;
+ width:800px;
+}
+
+
+</style>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'customerList_json',
+			title : '用户列表',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : '',
+			sortName : '',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.obid;
+						}
+					},
+			   {field:'uids',title:'用户ID',align:'center'},				
+			   {field:'customerServiceId',title:'客服岗位号',align:'left',width:100},				
+			   {field:'loginName',title:'交易后台账号',align:'left',width:100},				
+			   {field:'fullName',title:'姓名',align:'left',width:70},
+			   {field:'workStatus',title:'工作状态',align:'left',width:50,
+				   formatter:function(value,row,index){
+						if(row.workStatus==1){
+							return "休息";
+						}else if(row.workStatus==2){
+							return "<font color=red>接单</font>";
+						}else if(row.workStatus==3){
+							return "会议";
+						}else if(row.workStatus==4){
+							return "吃饭";
+						}else if(row.workStatus==5){
+							return "WC";
+						}else{
+							return "未知";
+						}
+						}  
+			   },
+			   {field:'onDuty',title:'上班状态',align:'left',width:60,
+				   formatter:function(value,row,index){
+						if(row.onDuty==0){
+							return "下班";
+						}else if(row.onDuty==1){
+							return "<font color=red>上班</font>";
+						}else{
+							return "未知";
+						}
+						}  
+			   },
+			   /**
+			   {field:'isCustomer',title:'是客服',align:'left',width:40,
+				   formatter:function(value,row,index){
+						if(row.isCustomer==0){
+							return "不是";
+						}else if(row.isCustomer==1){
+							return "是";
+						}else{
+							return "未知";
+						}
+						}  
+			   },
+			   {field:'isObjectCustomer',title:'是物服',align:'left',width:40,
+				   formatter:function(value,row,index){
+						if(row.isObjectCustomer==0){
+							return "不是";
+						}else if(row.isObjectCustomer==1){
+							return "是";
+						}else{
+							return "未知";
+						}
+						}  
+			   },
+			   **/
+			   {field:'hh',title:'客服类型',align:'left',width:20,
+				   formatter:function(value,row,index){
+						if(row.isCustomer==1 && row.isObjectCustomer==0){
+							return "客服";
+						}else if(row.isCustomer==0 && row.isObjectCustomer==1){
+							return "物服";
+						}else if(row.isCustomer==1 && row.isObjectCustomer==1){
+							return "客服/物服";
+						}else if(row.isInvestmentService==1){
+							return "咨询客服";
+						}else if(row.isInvestmentService==2){
+							return "APP咨询客服";
+						}else if(row.isInvestmentService==10){
+							return "咨询/APP客服";
+						}else{
+							return "未知";
+						}
+						}  
+			   },
+			   {field:'payCount',title:'已支付单数',align:'center'},
+			   {field:'unPayCount',title:'未支付单数',align:'center'},
+			   {field:'headImg',title:'头像',align:'center',width:30,
+				   formatter:function(value,row,index){
+					   return "<img src='"+value+"' height=40 width=40>"
+				   }
+			   
+			   }
+			   //,
+			  // {field:'businessType',title:'业务类型',align:'left',width:70},
+			   //{field:'businessModel',title:'交易模式',align:'left',width:100},
+			   //{field:'userType',title:'用户类型',align:'left',width:100},
+			  // {field:'productTypeids',title:'商品类型',align:'left',width:130},
+			   //{field:'gameids',title:'游戏',align:'left',width:180}
+		
+			 ] ],
+			toolbar : [{
+				text : '修改',
+				iconCls : 'icon-edit',
+				handler : function() {
+					edit();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+		
+			  //双击事件
+			   onDblClickRow:function (rowIndex,rowData){
+				   $(this).datagrid('unselectAll');
+				   $(this).datagrid('selectRow', rowIndex);	
+				   edit();
+			   }
+		});
+		editForm = $('#editForm').form({
+			url : 'duty_edit.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '工作职责权限分派',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					//上架游戏商品类型权限
+					var node = $('#tt2').tree('getChecked');  
+		            var cnodes='';  
+		            var pnodes='';  
+		            var result='';  
+		             var prevNode=''; //保存上一步所选父节点  
+		            for(var i=0;i<node.length;i++){  
+		                 
+		                if($('#tt2').tree('isLeaf',node[i].target)){  
+		                    cnodes+=node[i].id+',';    
+		                      
+		                    var pnode = $('#tt2').tree('getParent',node[i].target); //获取当前节点的父节点  
+		                   if(prevNode!=pnode.id) //保证当前父节点与上一次父节点不同  
+		                   {  
+		                        pnodes+=pnode.id+',';  
+		                        prevNode = pnode.id; //保存当前节点  
+		                   }
+		                    
+		                }  
+		            }  
+		            cnodes = cnodes.substring(0,cnodes.length-1);  
+		            pnodes = pnodes.substring(0,pnodes.length-1); 
+		            result =cnodes+","+pnodes;
+		            //alert(result);
+					editForm.find("input[name='pers']").val(result);
+					
+					//售中游戏商品类型权限
+					var node3 = $('#tt3').tree('getChecked');  
+		            var cnodes3='';  
+		            var pnodes3='';  
+		            var result3='';  
+		             var prevNode3=''; //保存上一步所选父节点  
+		            for(var j=0;j<node3.length;j++){  
+		                 
+		                if($('#tt3').tree('isLeaf',node3[j].target)){  
+		                    cnodes3+=node3[j].id+',';    
+		                      
+		                    var pnode3 = $('#tt3').tree('getParent',node3[j].target); //获取当前节点的父节点  
+		                   if(prevNode3!=pnode3.id) //保证当前父节点与上一次父节点不同  
+		                   {  
+		                        pnodes3+=pnode3.id+',';  
+		                        prevNode3 = pnode3.id; //保存当前节点  
+		                   }
+		                    
+		                }  
+		            }  
+		            cnodes3 = cnodes3.substring(0,cnodes3.length-1);  
+		            pnodes3 = pnodes3.substring(0,pnodes3.length-1); 
+		            result3 =cnodes3+","+pnodes3;
+		            //alert(result3);
+					editForm.find("input[name='persOnsale']").val(result3);
+					
+					
+					editForm.submit();
+				}
+			} ]
+		}); 
+		
+	
+
+});
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('select').val('-1');
+	searchForm.find('input').val('');
+}
+
+
+
+function edit() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	for ( var i = 0; i < rows.length; i++) {
+		ids.push(rows[i].uids);
+	}
+	var len = ids.length;
+	$('#udate_user_ids').val(ids);
+	if (rows.length >= 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'customerduty_json.do',
+			data : {
+				uids : ids.join(',')
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				showtab(1);
+				editForm.form('clear');
+				editForm.form('load', response);
+				console.log(response.headImg);
+			
+				cleanTree();//清除
+				if(len == 1){
+					$("#head_img_table").show();
+					var img = response.headImg;
+					if(img !=""){
+						$("#image1url").attr('src',img);
+					}
+				}else{
+					$("#head_img_table").hide();
+				}
+			
+				//$('#tt2').css("display","block");
+				//$('#tt3').show();
+			
+// 				//上架游戏商品类型
+// 				var typeids = response.productTypeids;
+// 				for(i=0;i<typeids.length;i++){
+// 					var node = $("#tt2").tree("find","per_"+typeids[i]);
+// 					if(node!=null){
+// 						$("#tt2").tree("check",node.target);
+// 					}
+// 				}
+// 				//售中游戏商品类型
+// 				var typeids2 = response.productTypeids2;
+// 				//alert(typeids2);
+// 				for(j=0;j<typeids2.length;j++){
+// 					var node2 = $("#tt3").tree("find","per_"+typeids2[j]);
+// 					if(node2!=null){
+// 						$("#tt3").tree("check",node2.target);
+// 					}
+// 				}
+				
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+
+function showRoleSelect(formName,value){
+	if (value == 0){
+		$("#"+formName+" .roleSelect").hide();
+	}else{
+		$("#"+formName+" .roleSelect").show();
+	}
+}
+
+$(function() {
+	var url = "../personnelManagement/allCategoryList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='isOnlineStatus'] option").remove();
+		var def =  "<option value='-1'>请选择</option>";
+		$("select[name='isOnlineStatus']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='isOnlineStatus']").append(options);
+		}
+
+	});
+	
+});
+
+$(function() {
+	var url = "allproducttypeList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='role_product_type'] option").remove();
+		var def =  "<option value='-1'>请选择</option>";
+		$("select[name='role_product_type']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='role_product_type']").append(options);
+		}
+
+	});
+	
+});
+
+function showtab(m){
+	if(m==1){
+	$('#verify_status').show();
+	$('#onsale_status').hide();
+	$('#onsale_tab').removeClass("hover");
+	$('#product_verify_tab').addClass("hover");
+
+	}else{
+	$('#verify_status').hide();
+	$('#onsale_status').show();	
+	$('#product_verify_tab').removeClass("hover");
+	$('#onsale_tab').addClass("hover");
+	
+	}
+}
+
+
+function cleanTree(){
+	//获取所有选中的节点
+	var nodes=$("#tt2").tree('getChecked');
+	var nodes3=$("#tt3").tree('getChecked');
+	if(nodes!=null&&nodes.length>0){
+		for(var i=0;i<nodes.length;i++){
+			if(nodes[i]!=null){
+				$("#tt2").tree("uncheck",nodes[i].target);
+			}	
+		}	
+	}
+	
+	if(nodes3!=null&&nodes3.length>0){
+		for(var j=0;j<nodes3.length;j++){
+			if(nodes3[j]!=null){
+				$("#tt3").tree("uncheck",nodes3[j].target);
+			}	
+		}	
+	}
+}
+
+//上传图片回调函数
+function setImageurl(f,t,picshowurl){
+	//图片名称
+	$("#image1value").val(picshowurl);
+	//设置图片路径
+	$("#image1url").attr('src',picshowurl);
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 95px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+			<td>
+			<!-- 
+			  上班状态: <select name="isOnlineStatus" >
+                    <option value="-1">请选择</option>
+				    <option value="1">休息</option>
+				    <option value="2">接单</option>
+				    <option value="3">会议</option>
+				    <option value="4">吃饭</option>
+				    <option value="5">WC</option>
+				    
+				</select>
+				 -->
+					工作状态:<select id="workStatus"	name="isOnlineStatus" nonchange="javascript:updateWorkStatus();" style="width: 66px">
+		            </select> 
+				
+				  上班状态: <select name="isOnDuty" >
+                    <option value="-1">请选择</option>
+				    <option value="1">上班</option>
+				    <option value="0">下班</option>
+				
+				    
+				</select>
+					<!-- 
+			  业务过程: <select name="role_bus_type" >
+                    <option value="-1">请选择</option>
+				    <option value="1">上架</option>
+				    <option value="2">售中</option>
+				</select>
+				 交易模式:<select name="role_trademodel" >
+                    <option value="-1">请选择</option>
+				    <option value="1">寄售</option>
+				    <option value="2">API</option>
+				    <option value="3">担保</option>
+				</select>
+			
+				商品类型:<select id="role_product_type_search"	name="role_product_type" nonchange="javascript:showproducttypesearch();" style="width: 66px">
+	            </select> 
+				 -->
+				</td>
+				</tr>
+				<tr> <td>
+			
+				<!-- 
+				商品类型: <select name="role_product_type" >
+                    <option value="-1">请选择</option>
+				    <option value="1">虚拟游戏币</option>
+				    <option value="2">装备</option>
+				    <option value="3">道具</option>
+				</select>
+				
+				 用户级别:<select name="role_usertype" >
+                    <option value="-1">请选择</option>
+				    <option value="1">普通会员</option>
+				    <option value="2">VIP会员</option>
+				</select>
+				</select>
+				-->
+				 客服类型:<select name="sysusertype" >
+                    <option value="-1">请选择</option>
+				    <option value="0">寄售客服</option>
+				    <option value="1">寄售物服</option>
+				    <option value="2">审核员</option>
+				    <option value="3">咨询客服</option>
+				    <option value="4">APP咨询客服</option>
+				    <option value="5">咨询/APP客服</option>
+				</select>
+		    
+				岗位号:<input name="customer_id" style="width:100px;" />&nbsp;
+				姓名:<input name="fullname" style="width:100px;" />&nbsp;
+				
+				</td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+	<div onclick="edit();" iconCls="icon-edit">编辑</div>
+</div>
+
+
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 900px;height: 450px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="userId" />
+		<input type="hidden" name="uids" id="udate_user_ids"/>
+		<!-- 游戏商品类型[上架] -->
+		<input type="hidden" name="pers" />
+		<!-- 游戏商品类型[售中] -->
+		<input type="hidden" name="persOnsale" />
+		<!--tab开始-->
+		<div id="tabs1" style="padding-top: 15px">
+		
+		 <div class="menu1box">
+		  <ul id="menu1">
+		   <li class="hover" id ="product_verify_tab" onclick="showtab(1)"><a  href="javascript:void(0);" >上架</a></li>
+		   <li onclick="showtab(2)" id ="onsale_tab"><a  href="javascript:void(0);" >售中</a></li>
+	
+		  </ul>
+		 </div>
+		
+		 <div class="main1box">
+		  <div class="main" id="main1">
+		  
+		  
+		   <ul class="block" style="text-align: left;" id = "verify_status">
+		   <li style="padding-top: 10px;">业务模式：
+<!--            <input type="checkbox" name="businessModel" value="1"> 寄售  -->
+<!--            <input type="checkbox" name="businessModel" value="3"> 担保 -->
+<!--            <input type="checkbox" name="businessModel" value="2"> API -->
+<!--            <input type="checkbox" name="businessModel" value="10"> 首冲 -->
+<!--            <input type="checkbox" name="businessModel" value="20"> 退游 -->
+<!--            <input type="checkbox" name="businessModel" value="30"> 换游 -->
+<!--            <input type="checkbox" name="businessModel" value="99"> 差价1 -->
+              <#list modelList as list>
+		       <input type="checkbox" name="businessModel" id="businessModel${list.modelId}" value="${list.modelId}" /><label for="businessModel${list.modelId}">${list.modelName}</label>
+		       </#list> 
+
+           </li>
+          
+          
+          
+          
+          
+		    <li style="padding-top: 5px" >用户级别：
+           <input type="checkbox" name="userType" value="1"> 普通会员
+           <input type="checkbox" name="userType" value="2"> VIP
+		    
+		    <!--  
+		    </li>
+		     <li style="padding-top: 5px">商品类型：
+			   <#list productTypeList as list>
+		       <input type="checkbox" name="productTypeids" id="productTypeids${list.id}" value="${list.id}" /><label for="productTypeids${list.id}">${list.name}</label>
+		       </#list> 
+		     </li >
+		      <li style="padding-top: 5px">活动游戏：
+			   <#list gameList as list>
+		       <input type="checkbox" name="gameids" id="gameids${list.gameId}" value="${list.gameId}" /><label for="gameids${list.gameId}">${list.gameName}</label>
+		       </#list> 
+		      </li>
+		     --> 
+	
+		   
+		     <li style="padding-top: 5px">
+		     责任人:
+		    
+		      <input type="text" name ="selectName" style="border: thin;" disabled="disabled" size="90%"> 
+		    
+		         <!-- 
+		      <textarea rows="3" cols="75%" name ="selectName"  style="border: thin;" ></textarea>
+		      -->
+		     </li>
+    
+<!-- 		     <li> -->
+<!-- 		     <ul id="tt2" class="easyui-tree" data-options="url:'gpType_json',animate:true,checkbox:true"></ul> -->
+<!-- 		     </li> -->
+
+		   </ul>
+       
+ 		   
+           
+         
+             		   
+		   
+		   <ul id="onsale_status" style="text-align: left;">
+		   
+		   <li style="padding-top: 10px;">业务模式：
+<!--            <input type="checkbox" name="businessModel2" value="1"> 寄售  -->
+<!--            <input type="checkbox" name="businessModel2" value="3"> 担保 -->
+<!--            <input type="checkbox" name="businessModel2" value="2"> API -->
+<!--            <input type="checkbox" name="businessModel2" value="10"> 首冲 -->
+<!--            <input type="checkbox" name="businessModel2" value="20"> 退游 -->
+<!--            <input type="checkbox" name="businessModel2" value="30"> 换游 -->
+<!--            <input type="checkbox" name="businessModel2" value="99"> 差价 -->
+            <#list modelList as list>
+		       <input type="checkbox" name="businessModel2" id="businessModel2${list.modelId}" value="${list.modelId}" /><label for="businessModel2${list.modelId}">${list.modelName}</label>
+		       </#list> 
+		   </li>
+		     <li style="padding-top: 5px">用户级别：
+           <input type="checkbox" name="userType2" value="1"> 普通会员
+           <input type="checkbox" name="userType2" value="2"> VIP
+		     </li>
+		     
+		     <!-- 
+		     
+		       <li style="padding-top: 5px">商品类型：
+		     
+			   <#list productTypeList as list>
+		       <input type="checkbox" name="productTypeids2" id="productTypeids2${list.id}" value="${list.id}" /><label for="productTypeids2${list.id}">${list.name}</label>
+		       </#list> 
+		       </li>
+		         <li style="padding-top: 5px">活动游戏：
+		      
+			   <#list gameList as list>
+		       <input type="checkbox" name="gameids2" id="gameids2${list.gameId}" value="${list.gameId}" /><label for="gameids2${list.gameId}">${list.gameName}</label>
+		       </#list> 
+		         </li>
+		    -->
+		       <li style="padding-top: 5px">
+		     责任人:
+		    
+		      <input type="text" name ="selectName" style="border: thin;" size="90%"  disabled="disabled"> 
+		       
+		         <!-- 
+		      <textarea rows="3" cols="75%" name ="selectName"  style="border: thin;" ></textarea>
+		      -->
+		     </li>
+<!-- 		 	 <li> -->
+<!-- 		     <ul id="tt3" class="easyui-tree" data-options="url:'gpType_json',animate:true,checkbox:true"></ul> -->
+<!-- 		     </li> -->
+	       
+
+		     
+		   </ul>
+		   
+		  
+		  <table id="head_img_table">
+		  <tr><td colspan="3" style="text-align: left;color: red"> 图片暂对充值助手咨询客服有效</td></tr>
+		  <tr>
+		  
+		  <td ><input type="text" name="headImg" size="10" maxlength="200" value="" id="image1value" readonly="readonly"  />
+		  </td>
+	      <td ><iframe src="../file/toupload?imgnumid=image1&flag=1" width="100%" height="90" frameborder="0"></iframe></td>  
+          <td><img id="image1url" src="" alt="" width="100" height="80"/></td>   
+             
+         <tr>
+         </table>
+		  </div>
+		 </div>
+		
+		</div>
+		<!-- 
+       <b><select name="roleType" style="border:thin;color:red" disabled="disabled">
+                  <option value="-1">无</option>
+		    <option value="0">寄售客服</option>
+		    <option value="1">寄售物服</option>
+		    <option value="2">审核员</option>
+		</select>
+			</b>
+		 -->
+
+
+
+	</form>
+</div>
+
+</body>
+</html>

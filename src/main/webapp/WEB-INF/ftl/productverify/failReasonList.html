@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>商品上架审核失败原因列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'failReasonList_json.do',
+			title : '商品上架审核失败原因列表',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : '',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.obid;
+						}
+					},
+			   {field:'id',title:'编号',align:'center'},				
+			   {field:'failReson',title:'失败原因',align:'left',width:100},				
+			   {field:'remark',title:'备注',align:'left',width:120}
+			
+			 ] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '修改',
+				iconCls : 'icon-edit',
+				handler : function() {
+					edit();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+		
+			
+	  //双击事件
+	   onDblClickRow:function (rowIndex,rowData){
+		   $(this).datagrid('unselectAll');
+		   $(this).datagrid('selectRow', rowIndex);	
+		   edit();
+	   }
+		});
+		editForm = $('#editForm').form({
+			url : 'failReason_edit.do',
+			success : function(data) {
+				 var data = $.parseJSON(data); 
+				if (data.flag) {
+					$.messager.show({
+						title : '成功',
+						msg : "修改成功"
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : data.msg
+					});
+				}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '上架失败原因编辑',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					$.messager.confirm('请确认', '您要修改该上架失败原因信息?', function(r) {
+						if (r) {	
+					editForm.submit();
+					
+						}
+					});
+				}
+			} ]
+		}); 
+		
+		addForm = $('#addForm').form({
+			url : 'failReason_add.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json.flag) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加上架失败原因',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					var name =$("#failReason_add").val();
+					var discretion =$("#remark_add").val();
+					if(name==""){
+						$.messager.alert("提示","请输入原因");
+						return false;
+					}
+					if(discretion==""){
+						$.messager.alert("提示","请输入备注说明");
+						return false;
+					}
+					
+					$.messager.confirm('请确认', '您要添加商品上架失败原因?', function(r) {
+						if (r) {	
+					addForm.submit();
+					
+						}
+					});
+					
+				}
+			} ]
+		});
+
+});
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+function add() {
+	addDialog.dialog('open');
+	addForm.find("input[type='text']").val("");
+}
+function del() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].id);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'failReason_delete.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						//var d = JSON.parse(response);
+						
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	} 
+}
+function edit() {
+	var rows = datagrid.datagrid('getSelections');
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'failReason_json.do',
+			data : {
+				cpId : rows[0].id
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				editForm.form('clear');
+				editForm.form('load', response);
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+
+function showRoleSelect(formName,value){
+	if (value == 0){
+		$("#"+formName+" .roleSelect").hide();
+	}else{
+		$("#"+formName+" .roleSelect").show();
+	}
+}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<!-- 
+<div region="north" border="false" title="搜索条件" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+			<!-- <td>CP编号:<input name="cpId" style="width:100px;" />&nbsp;</td> 	
+				<td>原因:<input name="reason" style="width:100px;" />&nbsp;</td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+ -->
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+
+
+<!--添加表单-->
+<div id="addDialog" style="display: none;width: 600px;height: 300px;" align="center">
+	<form id="addForm" method="post" style="padding: 5px 10px">
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">失败原因：</td>
+		      <td><input type="text" name="failReson" id="failReason_add" size="20" maxlength="50"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写失败原因" /></td>
+		    </tr>
+		     <tr>
+		      <td class="lable">备注：</td>
+		      <td>
+		      <input type="text" name="remark" id="remark_add" size="20" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写备注" />
+		      
+		      </td>
+		    </tr>
+		 
+		
+		  </table> 
+	</form>
+</div>
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 600px;height: 300px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px" class="pageForm required-validate">
+		<input type="hidden" name="id" />
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">失败原因：</td>
+		      <td><input type="text" name="failReson" size="20" maxlength="50" /></td>
+		      </tr>
+		      <tr>
+		      <td class="lable">备注：</td>
+		      <td><input type="text" name="remark" size="20" maxlength="50" class="easyui-validatebox"/></td>
+		    </tr>
+		 
+	
+		  </table> 
+	</form>
+</div>
+
+</body>
+</html>

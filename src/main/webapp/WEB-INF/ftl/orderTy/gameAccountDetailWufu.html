@@ -1,0 +1,367 @@
+<#assign valaInfo = tyGameAccount['vala_info']?eval/><#t>
+<#assign valuationContent = valaInfo.valuationContent/><#t>
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>退游订单列表</title>
+<#include "../common.html"/>
+<script type="text/javascript" src="../js/order_helper.js"></script>
+<style>
+body{ padding: 0px ;margin: 0px;}
+.table_line{
+	width: 100%;
+	background-color: #fefefe;
+}
+.table_line tr td{
+	border-bottom: #999 1px dashed;
+	line-height: 20px;
+}
+.table_line .title{
+	padding:3px;
+	width:100px;
+	text-align: right;
+}
+.table_line .info{
+	padding:3px;
+}
+.pc{ font-size: 24px;font-family: 微软雅黑; }
+.pc_userPrict{ color: #ff0000 }
+.pc_realPrict{ color: #ff00ff  }
+.pc_cut{ color: #0000ff  }
+.tyBalance{ font-size: 18px;font-family: 微软雅黑;  color: #ff0000}
+.myTille{ padding: 5px; background-color: #ddd; line-height: 25px; font-weight: bold;}
+.myHead{ background-color: #ddd}
+</style>
+<script>
+//打开发货客户端
+function operClient(){
+	var tyid = $("#tyid").val();
+	$.getJSON("getClientUrl?tyid=" + tyid,function(data){
+		if (data.success){
+			window.open(data.data.url);
+		}else{
+			alert(data.msg);
+		}
+	});
+
+}
+function doYianZheng(){
+	var vaStatus = $("#vaStatus").val();
+	if (vaStatus == 1000){//验证通过的
+		//估值后保存
+		doGuZhi();
+	}else{
+		doYanZheng();
+	}
+	
+}
+//验证正常
+function doYanZheng(){
+	var tyid = $("#tyid").val();
+	var orderId = $("#orderId").val();
+	var vaStatus = $("#vaStatus").val();
+	var remark = $("#remark").val();
+	var realPrice = $("#realPrice").val();
+	var gameName = $("#tygamename_for_show").html();
+	var areaid = $("#realAreaId").val();
+	if (vaStatus == 1000){//验证通过的
+		if (realPrice == ""){
+			$.messager.alert('提示',"请先估值",'error');	
+			return; 
+		}
+		if (!confirm("确认要提交？")){
+			return;
+		}
+	}
+	// if (remark == ""){
+	// 	$.messager.alert('提示',"请输入备注",'error');	
+	// 	return; 
+	// }
+	if (vaStatus == -1){
+		$.messager.alert('提示',"请选择处理结果",'error');	
+		return; 
+	}
+	// if (!confirm("确定操作？")){
+	// 	return ;
+	// }
+	var win = $.messager.progress({
+        title:'处理中',
+        msg:'请稍等 ...'
+    });
+
+	var param = {};
+	param.tyid = tyid;
+	param.orderId = orderId;
+	param.vaStatus = vaStatus;
+	param.realPrice = realPrice * 100;
+	param.remark = remark;
+	param.gameName = gameName;
+	param.areaid = areaid;
+	$(".vp,.vn").each(function(){
+		var key = $(this).attr("name");
+		var value = $(this).val();
+		param[key] = value;
+	});
+    $.ajax({
+    	url:"doYianZheng",
+		type:"POST",
+		data:param,
+		dataType:"json",
+		success:function(data){
+			$.messager.progress('close');
+			if (data.success){
+				$.messager.alert('提示',"更新信息成功",'success',function(){
+					document.location.reload();
+				});
+			}else{
+				$.messager.alert('提示',data.msg,'error');
+			}
+		},
+		error:function(req,err,obj){
+			alert("操作失败");
+			$.messager.progress('close');
+		}
+    });
+
+}
+//估值 
+function doGuZhi(){
+	var tyid = $("#tyid").val();
+	var areaId = $("#areaId").val();
+	var realAreaId = $("#realAreaId").val();
+	var param = $(".vp").serialize();
+	param += "&tyid=" + tyid;
+
+	//判断物服输入的信息是否与用户输入的相关，如果相同则以用户的估值有准
+	var isSame = true;
+	$(".vp").each(function(){
+		var myName = $(this).attr("name");
+		var myValue = $(this).val();
+		var myName2 = myName.replace("vp","vn");
+		var value2 =  $("#"+myName2).val();
+		//alert(myName + "," + myValue  + "," + value2)
+		if (myValue != value2){
+			isSame = false;
+		}
+	});
+	if (areaId != realAreaId && realAreaId>0){
+		isSame = false;
+	}
+
+	if (isSame){
+		alert("输入资料与用户一致，以用户的估值为准");
+		$("#realPrice").val($("#userPrice").val());
+		doYanZheng();
+		return;
+	}
+
+	var win = $.messager.progress({
+        title:'处理中',
+        msg:'估值中 ...'
+    });
+	$.ajax({	
+		url:"doGuZhi",
+		type:"POST",
+		data:param,
+		dataType:"json",
+		success:function(data){
+			$.messager.progress('close');
+			if (data.success){
+				if (data.data.result == 1){
+					//$.messager.alert('提示','操作成功!','success');  
+					var pic = data.data.valuation_pic;
+					var obj = data.data.valuation_content;
+					var jsonobj=eval('('+obj+')');  
+					//$("#realPriceTd").html(pic);
+					$("#tygamename_for_show").html(jsonobj.vrName);
+					$("#realPrice").val(pic/100);//元为单位
+					doYanZheng();
+					// alert(pic);
+				}else{
+					$.messager.alert('提示',data.data.msg,'error');	
+				}
+				//alert(JSON.stringify(data));
+			}else{
+				$.messager.alert('提示',data.msg,'error');
+			}
+		},
+		error:function(req,err,obj){
+			alert("操作失败");
+			$.messager.progress('close');
+		}
+	});
+}
+ 
+</script>
+<body >
+<input name="tyid" id="tyid" value="${tyGameAccount['ty_id']}" type="hidden">
+<input name="orderId" id="orderId" value="${orderId!tyGameAccount['order_id']!''}" type="hidden">
+<input name="areaId" id="areaId" value="${areaId!''}" type="hidden">
+<input name="realAreaId" id="realAreaId" value="${realAreaId!''}" type="hidden">
+<#assign status = tyGameAccount['status']/>
+<div class="easyui-panel" title="账号信息 [${tyGameAccount['ty_id']}] <a href='javascript:document.location.reload()'>刷新</a>">
+	<div class="myTille">账号信息：</div>
+	<table class="table_line">
+		<tr>
+			<td class="title">账号名称：</td>
+			<td class="info" colspan="5" id="tygamename_for_show">${tyGameAccount['good_name']}</td>
+		</tr>
+		<tr>
+			<td class="title">状态：</td>
+			<td class="info" colspan="5">
+				<#if status == 1000>
+				${accountStatusMap[tyGameAccount['status']+""]!''}
+				<#else>
+				<font color="#ff0000">${accountStatusMap[tyGameAccount['status']+""]!''}</font>
+				</#if>
+				
+			</td>
+		</tr>
+		<#if gameInfo??>
+		<tr>
+			<td class="title">游戏：</td>
+			<td class="info">${gameInfo['game_name']!''}</td>
+			<td class="title">区/服：</td>
+			<td class="info">${gameInfo['partition_name']!''}</td>
+			<td class="title">角色：</td>
+			<td class="info">${valaInfo.rolename!''}</td>
+		</tr>
+		</#if>
+		
+<!-- 		<#if order??> -->
+<!-- 			<tr> -->
+<!-- 			<td class="title">子渠道：</td> -->
+<!-- 			<td class="info">${order.son_channel_id!''}</td> -->
+<!-- 			<td class="title">子渠道名称：</td> -->
+<!-- 			<td class="info">   -->
+<!-- 			<#if order.son_channel_id??> -->
+<!--  		    <#include "../qudao_name.html"/>  -->
+<!-- 			</#if></td> -->
+<!-- 			<td class="title"></td> -->
+<!-- 			<td class="info">&nbsp;</td> -->
+<!-- 		</tr> -->
+<!-- 		</#if> -->
+	</table>
+	<div class="myTille">
+	卖家信息： &nbsp;&nbsp;
+	<input type="button" value="验证游戏账号密码" onclick="operClient()"/>  &nbsp;&nbsp;
+	<input type="button" value="查看账号密码" onclick="$('#passwdDiv').toggle()"/>
+	</div>
+	<div style="padding:10px 5px;background-color: #eee;" id="passwdDiv">&nbsp;&nbsp;&nbsp;&nbsp;
+		账号:<span style="padding:0 15px;">${tyGameAccount['game_account']!'--'}</span><#t>
+		<#if (gameInfo?? && gameInfo['is_show_pwd'] == 1)><#t>
+		密码：<span style="padding:0 15px;">${tyGameAccount['game_passwd']!'--'}</span><#t>
+		<#else><#t>
+		密码：****<#t>
+		</#if><#t>
+		安全锁：${tyGameAccount['game_safe_lock']!'--'}<#t>
+	</div>
+	<div>
+	
+	验号结果:${tyGameAccount['verify_str']!'--'}
+	
+	</div>
+
+	<#if tyGameAccount['real_vala_info']??>
+		<#assign realValaInfo = tyGameAccount['real_vala_info']?eval/>
+		<#assign realValuationContent = realValaInfo.valuationContent/>
+	<#else>
+		<#assign realValuationContent = valuationContent/>
+	</#if>
+	<table width="100%" class="table_line">
+		<tr style="background-color: #eee;">
+			<td >参数名称</td>
+			<td>用户填写值</td>
+			<td>实际值</td>	
+		</tr>
+		<#list valParamList as item>
+		<tr>
+			<td>${item['name']!''}：</td>
+			<td>
+				<#if (item['param_type']==1)>
+				<select name="vn_${item['id']!''}" class="vn" id="vn_${item['id']!''}">
+					<#list item['param_option']?split(",") as x>
+					<option value="${x?split(':')[0]!'0'}">${x?split(':')[1]!''}</option>
+					</#list>
+				</select>
+				<#else>
+				<input name="vn_${item['id']!''}" class="vn" id="vn_${item['id']!''}" value="" size=12>
+				</#if>
+			</td>
+			<td>
+				<#if (item['param_type']==1)>
+				<select name="vp_${item['id']!''}" class="vp" id="vp_${item['id']!''}">
+					<option value="">-请选择-</option>
+					<#list item['param_option']?split(",") as x>
+					<option value="${x?split(':')[0]}">${x?split(':')[1]!''}</option>
+					</#list>
+				</select>
+				<#else>
+				<input name="vp_${item['id']!''}" id="vp_${item['id']!''}" class="vp" value="" size=12>
+				</#if>
+			</td>
+		</tr>
+		</#list>
+		<tr>
+			<td></td>
+			<td>
+				<input name="user_price" id="userPrice" value="${tyGameAccount['user_price']/100}" type="text"  size=5 style="font-size:24px;padding:1px;color:#ff0000" readonly>
+			</td>
+			<td>
+				<#if tyGameAccount['real_price']??>
+			    			<input name="real_price" id="realPrice" value="${tyGameAccount['real_price']/100}" type="text"  size=5 style="font-size:24px;padding:1px;color:#ff0000" readonly>
+			    			<#else>
+			    			<input name="real_price" id="realPrice" size=5 value="" type="text" style="font-size:24px;padding:1px;color:#ff0000" readonly>
+			    			</#if>
+			</td>
+		</tr>
+	</table>
+	<!--
+	<#if (status >= 20 && status < 1000 )>
+	<div style="text-align: right;">
+		<input name="gz" value=" 估 值 " type="button" onclick="doGuZhi();"/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	</div>
+	</#if>
+	-->
+	<div class="myTille">订单操作：</div>
+	<#if (status < 100)>
+	<table>
+		<tr>
+			<td>
+				 <div>备注：</div>
+				 <textarea name="remark" id="remark" cols="35" rows="5">${tyGameAccount['wufu_remark']!''}</textarea>
+				 <div>处理结果： 
+				 <select id="vaStatus">
+				 	<option value="-1">---请选择---</option>
+				 	<option value="101">帐号或密码错误</option>
+				 	<option value="104">帐号不存在</option>
+				 	<option value="102">帐号异常或被冻结</option>
+				 	<option value="103">账号内无角色</option>
+				 	<option value="105">角色内安全锁错误</option>
+				 	<option value="1000">账号验证完成</option>
+				 </select>
+				 </div>
+				 <div>
+				 	<input type="button" value="  验 证 结 束  " onclick="doYianZheng()"/>
+				 </div>
+			</td>
+		</tr>
+	</table>
+	<#else>
+	<div style="padding:10px;">订单状态，当前不能进行操作</div>
+	</#if>
+</div>
+<script type="text/javascript">
+$('#passwdDiv').toggle();
+
+<#list valuationContent as item2>
+$("#vn_${item2['valueid']}").val("${item2['vpvalue']!'0'}");
+</#list>
+<#list realValuationContent as item2>
+$("#vp_${item2['valueid']}").val("${item2['vpvalue']!'0'}");
+</#list>
+$(".vn").attr("disabled","disabled");
+</script>
+</body>
+</html>

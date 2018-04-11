@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<title>游戏服务器列表</title> <#include "../common.html"/>
+<script type="text/javascript">
+	var datagrid;
+	var addDialog;
+	var addForm;
+	var editDialog;
+	var editForm;
+	var searchForm;
+	$(function() {
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid').datagrid({
+ 			url : 'gameServerList_json.do',
+			queryParams : {
+				gameId:${gameId},
+				gamePartitionId:${gamePartitionId}
+			}, 
+			title : '游戏区ID['+${gamePartitionId}+']服务器列表',
+			rownumbers : true,
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			columns : [ [ {
+				field : 'ck',
+				checkbox : true,
+				formatter : function(value, row, index) {
+					return row.obid;
+				}
+			}, {
+				field : 'gameId',
+				title : '游戏ID',
+				align : 'center'
+			}, {
+				field : 'gamePartitionId',
+				title : '区服ID',
+				align : 'center'
+			}, {
+				field : 'gameServerId',
+				title : '服务器ID',
+				align : 'center',
+				sortable : true
+			}, {
+				field : 'gameServerName',
+				title : '服务器名称',
+				align : 'center'
+			}, {
+				field : 'weight',
+				title : '权重',
+				align : 'center'
+			}, {
+				field : 'status',
+				title : '状态',
+				align : 'center',
+				formatter : function(value, row, index) {
+					if(row.status == 1){
+						return "正常";
+					}
+					if(row.status == 0){
+						return "停服";
+					}
+				} 
+			}
+			] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '修改',
+				iconCls : 'icon-edit',
+				handler : function() {
+					edit();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			},
+
+			//双击事件
+			onDblClickRow : function(rowIndex, rowData) {
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				edit();
+			}
+		});
+		addForm = $('#addForm').form({
+			url : 'gameServer_add',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加服务器',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					closeDialog('您确定要添加该游戏服务器吗?','addForm', 'addDialog');
+				}
+			} ]
+		});
+		
+		editDialog = $('#editDialog').show().dialog({
+			title : '编辑服务器',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					closeDialog('您确定要修改该服务器信息吗?', 'editForm','editDialog');
+				}
+			} ]
+		});
+		editForm = $('#editForm').form({
+			url : 'gameServer_update',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+	});
+	function add() {
+		addDialog.dialog('open');
+		addForm.form('reset');
+	}
+	
+	function del() {
+		var rows = datagrid.datagrid('getSelections');
+		var serverIds =[];
+		var gameId = $('#addForm input[name="gameId"]').val();
+		var gamePartitionId = $('#addForm input[name="gamePartitionId"]').val();
+		if (rows.length > 0) {
+			$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+				if (r) {
+					for (var i = 0; i < rows.length; i++) {
+						serverIds.push(rows[i].gameServerId);
+					}
+					$.ajax({
+						url : 'gameServer_delete',
+						data : {
+							serverIds : serverIds.join(','),
+							gameId : gameId,
+							gamePartitionId : gamePartitionId
+						},
+						dataType : 'json',
+						success : function(response) {
+							datagrid.datagrid('load');
+							datagrid.datagrid('unselectAll');
+							$.messager.show({
+								title : '提示',
+								msg : response.msg
+							});
+
+						}
+					});
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		}
+	}
+
+	function edit() {
+		var rows = datagrid.datagrid('getSelections');
+		if (rows.length == 1) {
+			$.messager.progress({
+				text : '数据加载中....',
+				interval : 100
+			});
+			 $.ajax({
+				url : 'gameServer_edit',
+				data : {
+					gameId : rows[0].gameId,
+					gamePartitionId : rows[0].gamePartitionId,
+					gameServerId : rows[0].gameServerId
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(response) {
+					editForm.form('clear');
+					editForm.form('load', response);
+					$('div.validatebox-tip').remove();
+					editDialog.dialog('open');
+					$.messager.progress('close');
+				}
+			});  
+		} else {
+			$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+		}
+	}
+	
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div
+		region="center"
+		border="false">
+		<table id="datagrid"></table>
+	</div>
+    <div
+		id="menu"
+		class="easyui-menu"
+		style="width: 120px; display: none;">
+		<div
+			onclick="add();"
+			iconCls="icon-add">增加</div>
+		<div
+			onclick="del();"
+			iconCls="icon-remove">删除</div>
+		<div
+			onclick="edit();"
+			iconCls="icon-edit">编辑</div>
+	</div> 
+	<div>
+	<form>
+	</form>
+	</div>
+	<!--添加表单-->
+	<div
+		id="addDialog"
+		style="display: none; width: 700px; height: auto;"
+		align="center">
+		<form id="addForm" method="post" style="padding: 5px 10px">
+			<input type="hidden" name="gameId" value="${gameId}">
+			<input type="hidden" name="gamePartitionId" value="${gamePartitionId}">
+			<table width="100%" border="0" cellspacing="5" cellpadding="5">
+				<tr>
+					<td>服务器名称：</td>
+					<td><input
+						type="text"
+						name="gameServerName"
+						size="20"
+						maxlength="50"
+						class="easyui-validatebox"
+						data-options="required:true"
+						missingMessage="请填区服名称" />
+					</td>
+					<td>权重：</td>
+					<td><input type="text" name="weight" size="20" maxlength="50"
+						class="easyui-numberbox" data-options="required:true,mix:0,max:100"
+						missingMessage="请填写权重" />
+					</td>
+				</tr>
+				<tr>
+					<td>状态：</td>
+					<td><select name="status">
+						<option value="0">停服</option>
+						<option value="1" selected="selected">正常</option>
+						</select>
+					</td>
+				</tr>
+				</table>
+		</form>
+	</div>
+	<!--编辑表单-->
+	<div
+		id="editDialog"
+		style="display: none; width: 700px; height: auto;"
+		align="center">
+		<form
+			id="editForm"
+			method="post"
+			style="padding: 5px 10px"
+			class="pageForm required-validate">
+			<input type="hidden" name="gameId" value="${gameId}" />
+			<input type="hidden" name="gamePartitionId" value="${gamePartitionId}" />
+			<input type="hidden" name="gameServerId" />
+			<table width="100%" border="0" cellspacing="5" cellpadding="5">
+				<tr>
+					<td>服务器名称：</td>
+					<td><input
+						type="text"
+						name="gameServerName"
+						size="20"
+						maxlength="50"
+						class="easyui-validatebox"
+						data-options="required:true"
+						missingMessage="请填区服名称" />
+					</td>
+					<td>权重：</td>
+					<td><input type="text" name="weight" size="20" maxlength="50"
+						class="easyui-numberbox" data-options="required:true,mix:0,max:100"
+						missingMessage="请填写权重" />
+					</td>
+				</tr>
+				<tr>
+					<td>状态：</td>
+					<td><select name="status">
+						<option value="0">停服</option>
+						<option value="1" selected="selected">正常</option>
+						</select>
+					</td>
+				</tr>
+				</table>
+		</form>
+	</div>
+</body>
+</html>

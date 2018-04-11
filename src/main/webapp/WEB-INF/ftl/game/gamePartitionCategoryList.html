@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>游戏分类管理</title> <#include "../common.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+	var datagrid;
+	var addDialog;
+	var addForm;
+	var editDialog;
+	var editForm;
+	var setPartitionCateogoryForm;
+	var setPartitionCateogoryDialog;
+	var searchForm;
+	function getQueryString(name) {
+		var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+		var r = window.location.search.substr(1).match(reg);
+		if (r != null) return unescape(r[2]); return null;
+		}
+	var gameId = getQueryString('gameId');
+	var gameName = decodeURI(getQueryString('gameName'));
+	var vName = '${vName!""}';
+	var versionId = ${versionId!"0"};
+	$(function() {
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid').datagrid({
+			url : 'gamePartitionCategoryList_json.do',
+			queryParams : {
+				gameId: gameId,versionId:versionId
+			},
+			title : '游戏版本[<font color=red>'+vName+'</font>]的分类列表'+versionId,
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'weight',
+			sortOrder : 'desc',
+			columns : [ [ {
+				field : 'ck',
+				checkbox : true,
+				formatter : function(value, row, index) {
+					return row.obid;
+				}
+			}, {
+				field : 'id',
+				title : '编号',
+				align : 'center',
+				width : 30
+			}, {
+				field : 'categoryName',
+				title : '分类名称',
+				align : 'center',
+				width : 300,
+			}, {
+				field : 'gameId',
+				title : '游戏Id',
+				align : 'center',
+				width : 50
+			},  {
+				field : 'gameVersionId',
+				title : '版本ID',
+				align : 'center',
+				sortable : true,
+				width : 50
+			},{
+				field : 'weight',
+				title : '权重',
+				align : 'center',
+				sortable : true,
+				width : 50
+			},
+			
+			{
+				field : 'operate',
+				title : '操作',
+				align : 'center',
+				formatter : function(value, row, index) {
+					if (value == null || value == '') {
+						return "<a href='javascript:void(0)' onclick='setPartitionCategory("+ row.gameId+","+row.gameVersionId + ","+row.id + ")'>设置区所属分类 </a>"
+					}
+				},
+				width : 80
+			}
+
+			] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '修改',
+				iconCls : 'icon-edit',
+				handler : function() {
+					edit();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			//右键菜单 
+// 			onRowContextMenu : function(e, rowIndex, rowData) {
+// 				e.preventDefault();
+// 				$(this).datagrid('unselectAll');
+// 				$(this).datagrid('selectRow', rowIndex);
+// 				$('#menu').menu('show', {
+// 					left : e.pageX,
+// 					top : e.pageY
+// 				});
+// 			},
+
+			//双击事件
+			onDblClickRow : function(rowIndex, rowData) {
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				edit();
+			}
+		});
+		addForm = $('#addForm').form({
+			url : 'gamePartitionCategory_add',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加游戏分类',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					isCategoryNameExist($('#addForm input[name="categoryName"]').val(),$('#addForm input[name="gameId"]').val(),$('#addForm input[name="gameVersionId"]').val(),0,'您确定要添加该游戏分类吗?','addForm', 'addDialog');
+				}
+			} ]
+		});
+		editDialog = $('#editDialog').show().dialog({
+			title : '编辑游戏分类信息',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					isCategoryNameExist($('#editForm input[name="categoryName"]').val(),$('#editForm input[name="gameId"]').val(),versionId,$('#editForm input[name="id"]').val(),'您确定要修改该游戏分类信息吗?','editForm', 'editDialog');
+				}
+			} ]
+		});
+		editForm = $('#editForm').form({
+			url : 'gamePartitionCategory_edit',
+			success : function(data) {
+				var json = $.parseJSON(data);
+
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		setPartitionCateogoryForm = $('#setPartitionCateogoryForm').form({
+			url : 'setPartitionCategory.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		setPartitionCateogoryDialog = $('#setPartitionCateogoryDialog').show().dialog({
+			title : '游戏版本[<font color=red>'+vName+'</font>]分类管理',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					closeDialog('您确定要更改游戏分类吗?', 'setPartitionCateogoryForm', 'setPartitionCateogoryDialog');
+				}
+			} ]
+		}); 
+	});
+	function add() {
+		addDialog.dialog('open');
+		addForm.form('reset');
+		$('#addForm input[type="hidden"][name="gameId"]').val(gameId);
+		$('#addForm input[type="hidden"][name="gameVersionId"]').val(versionId);
+	}
+
+	function del() {
+		var rows = datagrid.datagrid('getSelections');
+		var ids = [];
+		if (rows.length > 0) {
+			$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+				if (r) {
+					for ( var i = 0; i < rows.length; i++) {
+						ids.push(rows[i].id);
+					}
+					console.log(ids.join(','));
+					$.ajax({
+						url : 'gamePartitionCategory_delete',
+						data : {
+							ids : ids.join(','),
+							gameId:gameId
+						},
+						dataType : 'json',
+						success : function(response) {
+							datagrid.datagrid('load');
+							datagrid.datagrid('unselectAll');
+							$.messager.show({
+								title : '提示',
+								msg : response.msg
+							});
+
+						}
+					});
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		}
+	}
+
+	function edit() {
+		var rows = datagrid.datagrid('getSelections');
+		if (rows.length == 1) {
+			editForm.find("input[type='hidden'][name='id']").val(rows[0].id);
+			editForm.find("input[type='hidden'][name='gameId']").val(rows[0].gameId);
+			editForm.find("input[type='hidden'][name='gameVersionId']").val(rows[0].gameVersionId);
+			editForm.find("input[name='categoryName']").val(rows[0].categoryName);
+			editForm.find("input[name='weight']").val(rows[0].weight);
+			editForm.find("input[type='hidden'][name='weight']").val(rows[0].weight);
+			$('div.validatebox-tip').remove();
+			editDialog.dialog('open');
+		} else {
+			$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+		}
+	}
+	function isCategoryNameExist(categoryName,gameId,verid,id,msgContent,form,dialog) {
+		if (categoryName == null || categoryName.length == 0) {
+			return $.messager.show({
+				title : '提示',
+				msg : '请输入游戏分类名称'
+			});
+		}
+		console.log(categoryName + "==" + gameId + "==" + verid + "== " + id);
+		$.ajax({
+			type : 'post',
+			url : 'gamePartitionCategoryNameIsExist',
+			data : {
+				gameId : gameId,
+				categoryName : categoryName,
+				id:id,
+				gameVersionId:verid
+			},
+			dataType : 'json',
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+					closeDialog(msgContent,form,dialog);
+				} else {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+				}
+			}
+		});
+	}
+	function setPartitionCategory(gameId,vid,categoryId) {
+		setPartitionCateogoryDialog.dialog('open');
+		setPartitionCateogoryForm.form('reset');
+		$('#setPartitionCateogoryForm input[name="gameId"]').val(gameId);
+		$('#setPartitionCateogoryForm input[name="categoryId"]').val(categoryId);
+		$('#setPartitionCateogoryForm input[name="gameVersionId"]').val(vid);
+		$.ajax({
+			url : 'gameAllPartition_json.do',
+			data : {
+				gameId : gameId,
+				categoryId:categoryId,
+				gameVersionId:vid
+			},
+			dataType : 'json',
+			success : function(response) {
+				var gcCount = response.total;
+				var html='';
+				html+="<table class='table_line'> "
+				for(var i = 0;i <gcCount;i++){
+					
+					if(i%5==0){
+						if(i != 0){
+							html +="</tr>";
+						}
+						html+="<tr>";
+						html +='<td> 全<input type="checkbox" name="checkAll" id="checkAllpartition" onClick="javascript:CheckAllPar(this);"/></td>';
+						
+					}
+					html+="<td style='display:inline-block;'>";
+					html +='<input type="checkbox" name="gpIds" id="gpIds'+response.rows[i].id+'" value="'+response.rows[i].id+'" "';
+					if(response.rows[i].checked == 'checked'){
+						html += ' checked="checked"';
+					}
+					html+='/><label for="gpIds'+response.rows[i].id+'">'+response.rows[i].name+'</label></span>';
+					html+="</td>";
+				}
+				html+="</table>";
+				$('#allPartition').html(html);
+			}
+		});
+	}
+	
+	
+	//全选/全不选
+	function CheckAllPar(k){
+        var checkb = $(k).prop("checked");
+		var delval = $(k).parent().parent();
+		var input = delval.find("input");
+        for (var i = 0; i < input.length; i++)
+        {
+            if (input[i].type == "checkbox")
+                if((checkb==true)){
+	            input[i].checked = true;
+                }else{
+                input[i].checked = false;
+                }
+        } 
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="center" border="false">
+		<table id="datagrid"></table>
+	</div>
+	<div id="menu" class="easyui-menu" style="width: 120px; display: none;">
+		<div onclick="add();" iconCls="icon-add">增加</div>
+		<div onclick="del();" iconCls="icon-remove">删除</div>
+		<div onclick="edit();" iconCls="icon-edit">编辑</div>
+	</div>
+
+	<!--添加表单-->
+	<div id="addDialog" style="display: none; width: 500px; height: auto;"
+		align="center">
+
+		<form id="addForm" method="post" style="padding: 5px 10px">
+			<input type="hidden" name="gameId">
+			<input type="hidden" name="gameVersionId">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<tr>
+					<td class="lable">分类名称：</td>
+					<td><input type="text" name="categoryName" size="20"
+						maxlength="50" class="easyui-validatebox"
+						data-options="required:true" missingMessage="请填写分类名称" /></td>
+				</tr>
+				<tr>
+					<td class="lable">权重：</td>
+					<td><input type="text" name="weight" size="20" maxlength="50" onkeyup="value=value.replace(/[^\-?\d]/g,'')" />
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<!--编辑表单-->
+	<div id="editDialog" style="display: none; width: 500px; height: auto;"
+		align="center">
+		<form id="editForm" method="post" style="padding: 5px 10px"
+			class="pageForm required-validate">
+			<input type="hidden" name="id" /> 
+			<input type="hidden" name="gameId" />
+			<input type="hidden" name="gameVersionId" />
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<tr>
+					<td class="lable">分类名称：</td>
+					<td><input type="text" name="categoryName" size="20"
+						maxlength="50" class="easyui-validatebox" data-options="required:true" missingMessage="请填写分类名称" /></td>
+				</tr>
+				<tr>
+					<td class="lable">权重：</td>
+					<td><input type="text" name="weight" size="20" maxlength="50" onkeyup="value=value.replace(/[^\-?\d]/g,'')" />
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<!--设置游戏分类表单-->
+	<div id="setPartitionCateogoryDialog"
+		style="display: none; width: 1000px; height: 550px;" align="center">
+		<form id="setPartitionCateogoryForm" method="post" style="padding: 5px 10px">
+			<input type="hidden" name="gameId">
+			<input type="hidden" name="categoryId">
+			<input type="hidden" name="versionId">
+			<!-- 		  <table width="100%" border="0" cellspacing="1" cellpadding="1" > -->
+			<!-- 		     <tr id="allPartition"> -->
+			<!-- 		      </tr> -->
+			<!-- 		  </table>  -->
+			<div id='allPartition'></div>
+		</form>
+	</div>
+
+</body>
+</html>

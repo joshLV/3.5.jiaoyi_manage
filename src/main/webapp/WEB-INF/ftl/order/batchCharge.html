@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=UTF-8">
+<title>批量充值</title> <#include "../common.html"/>
+<script type="text/javascript">
+	var minuts = 60;
+	var intervalFlag;
+	function sendVCode() {
+		$.ajax({
+			type : "POST",
+			url : "sendBatchChargeVerifyCode",
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		$('#getVCode').attr("disabled", "disabled");
+		intervalFlag = setInterval(minutsZero, 1000);
+	}
+	function minutsZero() {
+		minuts--;
+		$('#getVCode').val(minuts + '后可以重新发送');
+		if (minuts == 0) {
+			$('#getVCode').val('点击获取');
+			$('#getVCode').removeAttr("disabled");
+			clearInterval(intervalFlag);
+			minuts = 60;
+		}
+	}
+	
+	var chargeFlag = true;
+	function chargeSubmit(){
+	　　if(true == chargeFlag){
+		chargeFlag = false;
+		$('#submitBTN').attr("disabled","disabled");
+		$('#submitBTN').val("批处理充值中...请耐心等待！");
+		var excelFile = $('#excelFileName');
+			if ($.trim(excelFile).length != 0){
+				$.messager.confirm('请确认', "您确定要运行该批量充值程序？",
+					function(flag){
+						$.ajax({
+							type : "POST",
+							url : "batchCharge.do",
+							data:{
+								excelFile:$('#excelFileName').val(),
+								accountType:$('#batchChargeForm :radio:checked').val(),
+								remark:$('#remark').val(),
+								vcode:$('#vcode').val()
+							},
+							complete:function(){
+								$('#excelFileName').val('');
+								$('#batchChargeForm :radio[value="0"]').attr("checked","checked");
+								$('#remark').val('');
+								$('#vcode').val('');
+							},
+							success : function(msg) {
+								var json = $.parseJSON(msg);
+								if (json && json.success) {
+									$.messager.show({
+										title : '成功',
+										msg : json.msg
+									});
+									$('#submitBTN').removeAttr("disabled");
+									$('#submitBTN').val("提交");
+									$('#getVCode').val('点击获取');
+									$('#getVCode').removeAttr("disabled");
+									clearInterval(intervalFlag);
+									minuts = 60;
+								} else {
+									$.messager.show({
+										title : '失败',
+										msg : json.msg
+									});
+									$('#submitBTN').removeAttr("disabled");
+									$('#submitBTN').val("提交");
+									$('#getVCode').val('点击获取');
+									$('#getVCode').removeAttr("disabled");
+									clearInterval(intervalFlag);
+									minuts = 60;
+								}
+							}
+						});
+					}
+				);
+		}else{
+			$.messager.alert("请选择上传的Excel文件！");
+		}
+	　　	
+	　　}
+	}
+	function modChar(field, countfield, maxlimit) {    
+		if (field.value.length > maxlimit){    
+			field.value = field.value.substring(0, maxlimit);  
+			countfield.html(0);   
+		}else{    
+			countfield.html(maxlimit - field.value.length);    
+		}  
+	}
+</script>
+</head>
+<body>
+	<div>
+		<form
+			id="batchChargeForm"
+			name="batchChargeForm"
+			method="post">
+			<table
+				cellpadding="10"
+				style="min-width: 660px">
+				<tr>
+					<td style="width: 120px;">批量充值Excel文件:</td>
+					<td><input
+						type="text"
+						name="excelFile"
+						id="excelFileName"
+						value="${excelFileName!''}"
+						size=50></td>
+				</tr>
+				<tr>
+					<td>账户类型:</td>
+					<td><input
+						type="radio"
+						name="accountType"
+						value="1"
+						checked="checked">现金账户 <input
+						type="radio"
+						name="accountType"
+						value="2">非现金账户</td>
+				</tr>
+				<tr>
+					<td>备注:</td>
+					<td><input type="text"
+							name="remark"
+							id="remark"
+							size="100"
+							data-options="required:true"
+							class="easyui-validatebox"
+							missingMessage="请填写备注"
+							onKeyDown="modChar(this.form.remark,$('#result_content')30);"
+							onKeyUp="modChar(this.form.remark,$('#result_content'),28);">
+						<font color="red">*(内容长度不超过28个字) 您还可以输入<span id="result_content">28</span>个字符
+				</tr>
+				<tr>
+					<td>短信验证码:</td>
+					<td><input
+						type="text"
+						name="vcode"
+						id="vcode"
+						size="15"> <input
+						type="button"
+						id="getVCode"
+						data-options="required:true"
+						class="easyui-validatebox"
+						missingMessage="请填写校验码"
+						onclick="sendVCode();"
+						value="点击获取"></td>
+				</tr>
+			</table>
+			<input
+				type="button"
+				id="submitBTN"
+				value="提交"
+				onclick="chargeSubmit();">
+		</form>
+	</div>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>上传图片</title>
+ <script type="text/javascript">
+ 
+ 
+      function doBusinessPric(){    
+    	
+        var picurl= document.getElementById("fileUrlid").value;
+        if(picurl != "" ){
+        	if (parent.setImageurl){
+        		parent.setImageurl(picurl,"${imgnumid!''}","${picshowurl!''}");
+        	}else{
+        		parent.document.getElementById("${imgnumid!''}").value = picurl;
+        	}
+  
+        }
+      }
+      
+      function imgupload(){
+          var uploadfile = document.getElementById("uploadfilename").value;
+          if(uploadfile!=""){
+        	  uploadform.submit();
+          }else{
+            alert("请选择上传的图片！");
+          }
+      }
+
+  </script>
+</head>
+  <body style="padding: 0; margin: 0;">
+ <font style="font-size:8px;color:red;">	${msg!''} </font>
+
+
+ <form action="../file/upload" method="post" enctype="multipart/form-data" name="uploadform">  
+  <input name="file" id="uploadfilename" type="file" /> 
+  	<input type="hidden" name="fileUrl" id="fileUrlid" value="${picvalue!''}">
+  	<input type="button" value="上传" onClick="javascript:imgupload();">
+  	<input type="hidden" name ="imgnumid" id ="${imgnumid!''}" value="${imgnumid!''}" />
+  	<input type="hidden" name ="flag" id ="${flag!'0'}" value="${flag!'0'}" />
+</form>  
+ <SCRIPT type="text/javascript">doBusinessPric();</SCRIPT>
+</body>
+
+
+</html>

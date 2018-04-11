@@ -1,0 +1,34 @@
+<#if pageInfo.items??>
+{
+"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+{"id":${item.id},
+"number":"${item.number}",
+"password":"${item.password!''}",
+"denomination":"${item.denomination}",
+"orderId":"${item.orderId!''}",
+"status":"${item.status!''}",
+"type":${item.type!'-1'},
+"operationType":${item.operationType!'0'},
+"balance":${item.balance!'0'},
+"gameAccount":"${item.gameAccount!''}",
+"customer_service_name":"${item.customerServiceName!''}",
+<#if item.rechargeTime??>
+"recharge_time":"${item.rechargeTime?string('yyyy-MM-dd HH:mm:ss')!''}",
+<#else>
+"recharge_time":"",
+</#if>
+<#if item.createTime??>
+"create_time":"${item.createTime?string('yyyy-MM-dd HH:mm:ss')!''}",
+<#else>
+"create_time":"", 
+</#if>
+"status":${item.status}
+}<#t>
+<#if item_has_next>,</#if>
+</#list>
+]
+}
+<#else>
+  {"total":0,"rows":[]}
+</#if>

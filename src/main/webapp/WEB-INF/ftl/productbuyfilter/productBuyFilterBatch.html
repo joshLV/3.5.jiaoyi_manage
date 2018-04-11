@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>配置商品购买规则（批量)</title> <#include "../common.html"/>
+<style>
+body,div,ul,li {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font: 12px "宋体";
+	text-align: left;
+}
+
+a:link {
+	color: #00F;
+	text-decoration: none;
+}
+
+a:visited {
+	color: #00F;
+	text-decoration: none;
+}
+
+a:hover {
+	color: #c00;
+	text-decoration: underline;
+}
+
+ul {
+	list-style: none;
+}
+
+.main {
+	clear: both;
+	padding: 8px;
+	text-align: left;
+}
+/*第二种形式*/
+#tabs1 {
+	text-align: left;
+	width: 680px;
+}
+
+.menu1box {
+	position: relative;
+	overflow: hidden;
+	height: 26px;
+	width: 680px;
+	text-align: left;
+	margin-top: 5px;
+	margin-left: 5px;
+}
+
+#menu1 {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1;
+}
+
+#menu1 li {
+	float: left;
+	display: block;
+	cursor: pointer;
+	width: 110px;
+	text-align: center;
+	line-height: 25px;
+	height: 25px;
+}
+
+#menu1 li.hover {
+	background: #fff;
+	border-left: 1px solid #999;
+	border-top: 1px solid #999;
+	border-right: 1px solid #999;
+}
+
+.main1box {
+	clear: both;
+	margin-top: -1px;
+	border: 1px solid #999;
+	width: 800px;
+	overflow: auto;
+}
+</style>
+<script type="text/javascript">
+    //用于给添加规则计数
+	var count = 1;
+    //保存需要提交的规则数组
+	var jsonArray = new Array();
+    //商品列表页面传送过来的商品ids
+    //var pids = ${pids!''}
+    //console.log("kksdlfjlsdk === " + pids);
+	function batch() {
+		var pids =$('#pids_pass').val();
+		var data = "{\"data\":["
+		$.each(jsonArray, function(i) {
+			if (jsonArray[i] == null) {
+				return true;
+			}
+			//console.log("==post name == " + (i + 1) + "===="	+ jsonArray[i].name + "======post weight== "	+ jsonArray[i].weight);
+			data += "{\"name\":\"" + jsonArray[i].name + "\",\"weight\":"	+ jsonArray[i].weight + "}";
+			if ((jsonArray.length - 1) != i) {
+				data += ",";
+			}
+		});
+		data += "]}";
+
+		console.log("new data == " + data);
+		$.messager.confirm('确认框', '您确认', function(r) {
+			if (r) {
+
+				$.ajax({
+					url : 'batch.do',
+					data : {
+						data : data,pids:pids
+					},
+					dataType : 'json',
+					cache : false,
+					traditional : true,
+					success : function(response) {
+						console.log("=======chenggonge==== " );
+						if (response.success) {
+							$.messager.show({
+								title : '成功',
+								msg : response.msg
+							});
+							datagrid.datagrid('reload');
+							editDialog.dialog('close');
+							editForm.form('load', response);
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : response.msg
+							});
+						}
+					}
+				});
+
+			}
+		});
+	}
+
+	function removetr(t, id) {
+		console.log("-888888-" + id);
+		$(t).parent().parent().remove();
+		//var jsonArray = [ { "tom": 20, "jerry": 21 }, { "tom": 22,"jerry": 23} ];
+		$.each(jsonArray, function(i) {
+			if (jsonArray[i] == null) {
+				return true;
+			}
+			if (jsonArray[i].inx == id) {
+				jsonArray.splice(i, 1);
+				return false
+			}
+			//console.log("==name == "+(i+1) +"====" + jsonArray[i].name + "======weight== " +  jsonArray[i].weight);
+		});
+
+	}
+
+	function add() {
+
+		var index = count++;
+		var name = $('#name_input').val();
+		var weight = $('#weight_input').val();
+		var filterId = $('#filterId_input').val();
+		var param = $('#param_input').val();
+		var errMessage = $('#errMessage_input').val();
+		var remark = $('#remark_input').val();
+		var btime = $('#main1_input').find("table >tbody> tr input[name='beginTime']").val();
+		var etime = $('#main1_input').find("table >tbody> tr input[name='endTime']").val();
+
+		jsonArray[index - 1] = {
+			"inx" : (index - 1),
+			"name" : name + index,
+			"weight" : index
+		};
+
+		var html = "";
+		html += "<tr>";
+		html += "<td>" + index + "</td>";
+		html += "<td>" + name + index + "</td>";
+		html += "<td>" + param + "</td>";
+		html += "<td>" + weight + "</td>";
+		html += "<td>" + btime + "-" + etime + "</td>";
+		html += "<td>" + remark + "</td>";
+		html += "<td><a href='javascript:void(0);'  onclick='removetr(this," + (index - 1) + ")'>删除</a></td>";
+		html += "</tr>";
+		$("#data_table").append(html);
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="center" border="false" title="配置商品购买规则（批量)"
+		style="height: 65px; overflow: hidden;" align="left">
+
+		<!-- 当前商品信息 -->
+		<div style="padding-bottom: 25px;">
+			<div class="menu1box">
+				<ul id="menu1">
+					<li class="hover"><font color="red">当前商品信息</font>(${pCount!'0'})</li>
+				</ul>
+			</div>
+
+			<div class="main1box" style="height: 100px;">
+				<div class="main" id="main1_product_list">
+				<#if pList??>
+				        
+					<table id="prduct_data">
+					 <#list pList as p>
+						<tr>
+							<td>${p}</td>
+						</tr>
+		              </#list>
+
+					</table>
+              </#if>
+				</div>
+			</div>
+		</div>
+
+
+
+
+
+		<!-- 规则管理 -->
+		<div style="padding-bottom: 25px;">
+			<div class="menu1box">
+				<ul id="menu1">
+					<li class="hover"><font color="red">规则管理</font></li>
+				</ul>
+			</div>
+
+			<div class="main1box" style="height: 240px;">
+				<div class="main" id="main1_fiter_list">
+					<table id="data_table">
+						<tr>
+							<th>ID</th>
+							<th>规则名称</th>
+							<th>运行参数</th>
+							<th>排序</th>
+							<th>生效时间</th>
+							<th>备注</th>
+							<th>操作</th>
+						</tr>
+               
+
+					</table>
+
+				</div>
+			</div>
+		</div>
+
+
+		<!-- 添加新规则 -->
+		<div>
+			<div class="menu1box">
+				<ul id="menu1">
+					<li class="hover"><font color="red">添加新规则</font></li>
+				</ul>
+			</div>
+
+			<div class="main1box">
+				<div class="main" id="main1_input">
+					<table>
+						<tr>
+							<td>规则名称:</td>
+							<td>
+							<input type="hidden" name="pids_pass" id="pids_pass" value="${pids!''}" />
+							<input name="name" id="name_input" value="规则名称" /></td>
+
+						</tr>
+						<tr>
+							<td>权重:</td>
+							<td><input name="weight" id="weight_input" value="从小到大" /></td>
+						</tr>
+						<tr>
+							<td>选择规则:</td>
+							<td><select name="filterId" id="filterId_input">
+									<option value="0">正常</option>
+									<option value="1">隐藏</option>
+							</select></td>
+						</tr>
+						<tr>
+							<td>运行参数:</td>
+							<td><input name="param" id="param_input" value="1,2,3" /><font
+								color="black">参数填写说明 （显示所选择规则的参数说明）</font></td>
+						</tr>
+						<tr>
+							<td>生效时间:</td>
+							<td><input name="beginTime" id="beginTime_input"
+								class="easyui-datetimebox" type="text" style="width: 150px;" />
+								—<input name="endTime" id="endTime_input" style="width: 150px;"
+								class="easyui-datetimebox" /></td>
+						</tr>
+						<tr>
+							<td>错误提示:</td>
+							<td><input name="errMessage" id="errMessage_input"
+								value="错误提示" /></td>
+						</tr>
+						<tr>
+							<td>备注:</td>
+							<td><textarea name="remark" id="remark_input">备注</textarea></td>
+						</tr>
+
+
+						<tr>
+							<td colspan="2" style="text-align: center;"><a
+								href="javascript:void(0);" class="easyui-linkbutton"
+								onclick="add();">添加规则</a>&nbsp;&nbsp; <a
+								href="javascript:void(0);" class="easyui-linkbutton"
+								onclick="batch();">完成(保存所有配置)</a></td>
+						</tr>
+
+					</table>
+
+				</div>
+			</div>
+		</div>
+
+
+	</div>
+</body>
+</html>

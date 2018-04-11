@@ -1,0 +1,26 @@
+<#if pageInfo.items??>
+{"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+
+{
+
+"id":${item.id},
+"takeMoneySum":${item.takeMoneySum!'0'},
+"rechargeSum":${item.rechargeSum!'0'},
+"balance1Sum":${item.balance1Sum!'0'},
+"depositAmountSum":${item.depositAmountSum!'0'},
+"balance2Sum":${item.balance2Sum!'0'},
+<#if item.countDay??>
+"countDay":"${item.countDay?string('yyyy-MM-dd')!''}"
+<#else>
+"countDay":""
+</#if>
+
+}
+<#t>
+<#if item_has_next>,</#if>
+</#list>
+]}
+  <#else>
+  {"total":0,"rows":[]}
+</#if>

@@ -1,0 +1,356 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>仲裁处理</title>
+<#include "../common.html"/>
+<style>
+body{padding:0px; margin:0px; font-size:13px; line-height:160%;}
+.box{ width:60%; border:1px solid #95b8e7; margin:10px auto 0px auto;}
+.box th{ line-height:26px; color:#0e2d5f; text-align:left; text-indent:10px; border-bottom:1px solid #95b8e7; background-image: -moz-linear-gradient(top, #eff5ff, #e0ecff); /* Firefox */background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #eff5ff), color-stop(1, #e0ecff)); /* Saf4+, Chrome */filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#eff5ff', endColorstr='#e0ecff', GradientType='0'); /* IE*/}
+.box td{ padding:5px; color:#000000; text-align:left; vertical-align:top;}
+.box td b{ font-weight:normal; color:#F00;}
+.box .td1{ text-align:right; line-height:26px; border-top:1px solid #dddddd; background:#f4f4f4;}
+.btn{width:50px;height:20px;}
+</style>
+<script>
+function changeShow(param){
+	if(param == "1"){
+		$('#backMoneyPart').hide();
+		$('#backMoneyAll').hide();
+	}
+	if(param == "2"){
+		$('#backMoneyPart').show();
+		$('#backMoneyAll').hide();
+	}
+	if(param == "3"){
+		$('#backMoneyAll').show();
+		$('#backMoneyPart').hide();
+	}
+}
+
+function showValue(param){
+	var total = $('#amountTotal').html();
+	var remaining = total-param;
+	if(remaining>0){
+		$('#moneyToTransfer').html(remaining+"元");
+		$('#moneyToTransfer').show();
+	}else{
+		$("#backMoneyAmount").attr("value","");
+		$("#backMoneyAmount").focus();
+		this.alert("超出退款总额，请重新输入");
+	}
+}
+
+//获取元素在数组中的索引
+function getIndex(ele,obj){
+	for(var i=0;i<obj.length;i++){
+		if(obj[i] == ele) {
+			return i;
+		}
+	}
+}
+
+function m_imageUp(){
+	var picUrls = $("#picUrls").html();
+	var picNames = new Array();
+	picNames = picUrls.split(",");
+	var picName = $("#picUrl").attr("src");
+	var index = getIndex(picName,picNames);
+	if(index>0){
+		var next_img = picNames[index-1];
+		$("#picUrl").attr("src",next_img);
+	}else{
+		alert("没有上一张了");
+	}
+}
+
+function m_imageDown(){
+	var picUrls = $("#picUrls").html();
+	var picNames = new Array();
+	picNames = picUrls.split(",");
+	var picName = $("#picUrl").attr("src");
+	var index = getIndex(picName,picNames);
+	if(index<(picNames.length-2)){
+		var next_img = picNames[index+1];
+		$("#picUrl").attr("src",next_img);
+		
+	}else{
+		alert("没有下一张了");
+	}
+} 
+
+function m_viewBigImg(){
+	var picName = $("#picUrl").attr("src");
+	if(picName==null || picName==""){
+		alert("没有图片，无法查看");
+		return ;
+	}
+	var link = "${request.contextPath}/orderc2cAccount/sellProductBigImg.do?picName="+picName;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"商品图片" 
+			};
+	parent.addTab(node);
+}
+
+function w_imageUp(){
+	var images = $("#images").html();
+	var picNames = new Array();
+	picNames = images.split(",");
+	var image = $("#image").attr("src");
+	var picName = image.substr(image.length-17,image.length);
+	var index = getIndex(picName,picNames);
+	if(index > 0){
+		var next_img = picNames[index-1];
+		$("#image").attr("src",image.substr(0,image.length-17)+next_img);
+	}else{
+		alert("没有上一张了");
+	}
+}
+
+function w_imageDown(){
+	var images = $("#images").html();
+	var picNames = new Array();
+	picNames = images.split(",");
+	var image = $("#image").attr("src");
+	var picName = image.substr(image.length-17,image.length);
+	var index = getIndex(picName,picNames);
+	if(index<(picNames.length-2)){
+		var next_img = picNames[index+1];
+		$("#image").attr("src",image.substr(0,image.length-17)+next_img);
+	}else{
+		alert("没有下一张了");
+	}
+}
+
+function w_viewBigImg(){
+	var image = $("#image").attr("src");
+	if(image==null || image==""){
+		alert("没有图片,无法查看");
+		return ;
+	}
+	var link = "${request.contextPath}/orderc2cAccount/sellProductBigImg.do?picName="+image;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"商品图片:" 
+			};
+	parent.addTab(node);
+}
+
+function _submit(){
+	var result_status = $("#result").val();
+	if(result_status == "-1" ){
+		alert("请做出仲裁选择");
+	}
+	var orderId = $("#orderId").html();
+	if(result_status == "1" ){
+		var remark = $("#content").val();
+		if(remark == null || remark == ""){
+			$.messager.alert("提示","请填写备注");
+		}else{
+			$.messager.confirm('请确认', '请确认核对正确了再提交', function(r){
+		        	if (r){
+			        	$.ajax({
+			        		url:'updateForbadReason',
+			        		type : 'POST',
+			        		data:{
+			        			orderId : orderId,
+			        			result_status : 1,
+			        			remark : remark
+			        		},
+				        	dataType : 'json',
+			        		success : function(response) {
+							    alert(response.msg);
+								var title = "订单"+orderId+"仲裁页面";
+								var parentTitle = "待仲裁订单";
+								//更新父菜单的数据
+								if(parent.centerTabs.tabs('exists',parentTitle)){
+									//如果当前TAB处于打开状态
+									updateParentTab()
+								}
+								//关闭当前操作TAB
+								parent.centerTabs.tabs('close',title);
+							} 
+			        	});
+			        }
+			    });
+		}
+	}
+	if(result_status == "2" ){
+		var remark = $("#content").val();
+		if(remark == null || remark == ""){
+			$.messager.alert("提示","请填写备注");
+		}else{
+			$.messager.confirm('请确认', '请确认核对正确了再提交', function(r){
+		        	if (r){
+		        		var backMoney = $("#backMoneyAmount").val();
+			        	$.ajax({
+			        		url:'updatePaybackPart',
+			        		type : 'POST',
+			        		data:{
+			        			orderId : orderId,
+			        			result_status : 2,
+			        			backMoney : backMoney,
+			        			remark : remark
+			        		},
+				        	dataType : 'json',
+			        		success : function(response) {
+			        			alert(response.msg);
+								var title = "订单"+orderId+"仲裁页面";
+								var parentTitle = "待仲裁订单";
+								//更新父菜单的数据
+								if(parent.centerTabs.tabs('exists',parentTitle)){
+									//如果当前TAB处于打开状态
+									updateParentTab()
+								}
+								//关闭当前操作TAB
+								parent.centerTabs.tabs('close',title);
+							} 
+			        	});
+			        }
+			    });
+		}
+		
+	}
+	if(result_status == "3" ){
+		var remark = $("#content").val();
+		if(remark == null || remark == ""){
+			$.messager.alert("提示","请填写备注");
+		}else{
+			$.messager.confirm('请确认', '请确认核对正确了再提交', function(r){
+		        	if (r){
+		        		var orderAmount = $("#orderAmount").html();
+			        	$.ajax({
+			        		url:'updatePaybackTotal',
+			        		type : 'POST',
+			        		data:{
+			        			orderId : orderId,
+			        			result_status : 3,
+			        			backMoney: orderAmount,
+			        			remark : remark
+			        		},
+				        	dataType : 'json',
+			        		success : function(response) {
+			        			alert(response.msg);
+								var title = "订单"+orderId+"仲裁页面";
+								var parentTitle = "待仲裁订单";
+								//更新父菜单的数据
+								if(parent.centerTabs.tabs('exists',parentTitle)){
+									//如果当前TAB处于打开状态
+									updateParentTab()
+								}
+								//关闭当前操作TAB
+								parent.centerTabs.tabs('close',title);
+							} 
+			        	});
+			        }
+			    });
+		}
+	}
+}
+
+//更新父级标签
+function updateParentTab(){
+	var path = '${request.contextPath}/orderC2cAccount/orderc2cArbitrateValidateList';
+	for(var i=0;i < parent.window.length;i++){
+		if(parent.window[i] != null){
+			if(parent.window[i].location != null && parent.window[i].location.pathname == path){
+				parent.window[i].datagrid.datagrid('reload');
+			}
+		}
+	}
+}
+
+</script>
+</head>
+<body class="easyui-layout" style="line-height:25px">
+<div region="center" border="false" style="padding:10px">
+<table border="0" cellpadding="0" cellspacing="0" width="600px" align="center" class="box">
+<tr><td> 
+
+<div style="padding-top:5px;padding-bottom:5px;line-height:120%">
+订单号：<span id="orderId">${orderId}</span>&nbsp;&nbsp; 订单金额：<span id="orderAmount">${orderAmount}</span>元
+</div>
+
+<div style="border-bottom:1px dashed gray">
+<div style="float:left;width:300px" >
+<span style="font-weight:bold;line-height:200%;display:block">卖家角色描述： </span>
+<span style="padding:10px;display:block;background-color:#E8E8E8;line-height:120%">
+  <#if (gameProductPropertyList?? && gameProductPropertyList?size>0)>
+  	<#if gameProductPropertyList.productProperty??>
+ 		<#list gameProductPropertyList.productProperty as item>
+ 	 	<span style="display:block">${item.key!''}&nbsp;:&nbsp;${item.value!''}</span>
+  		</#list>
+  	</#if>
+  </#if>
+</span>
+</div>
+
+<div style="float:left;margin-left:120px">
+<span style="line-height:200%;font-weight:bold">卖家上传的图片:</span>
+<span style="line-height:200%;display:inline;margin-left:10px"><input type="button" name="m_up" value="上一张" class="btn" onclick="m_imageUp()"/></span>
+<span style="line-height:200%;display:inline;margin-left:10px"><input type="button" name="m_down" value="下一张" class="btn"onclick="m_imageDown()"/></span>
+<span style="width:250px;height:250px;display:block"><img src="<#if picUrl_0??>${picUrl_0!''}</#if>" style="width:100%;height:100%" id="picUrl"/>
+<span style="display:none" id="picUrls"><#if picUrls??>${picUrls!''}</#if></span><a href="javascript:void(0)" onclick="m_viewBigImg()" style="float:left;margin-left:90px">查看大图</a>
+</span>
+</div>
+</div>
+
+<div style="clear:both;border-bottom:1px dashed gray">
+<div style="float:left;width:300px">
+<span style="font-weight:bold;display:block;line-height:200%">买家提交的仲裁原因：</span>
+<span style="padding:10px;background-color:#E8E8E8;display:block;white-space: pre-wrap;line-height:120%"><#if cancelReason??>${cancelReason!''}</#if></span>
+</div>
+
+<div style="float:left;margin-left:120px" >
+<span style="line-height:200%;font-weight:bold">物服截图:</span>
+<span style="line-height:200%;display:inline;margin-left:10px"><input type="button" name="w_up" value="上一张" class="btn" onclick="w_imageUp()"/></span>
+<span style="line-height:200%;display:inline;margin-left:10px"><input type="button" name="w_down" value="下一张" class="btn" onclick="w_imageDown()"/></span>
+<span style="width:250px;height:250px;display:block"><img src="<#if image_1??>${image_1!''}</#if>" style="width:100%;height:100%" id="image"/>
+<span style="display:none" id="images"><#if images??>${images!''}</#if></span><a href="javascript:void(0)" onclick="w_viewBigImg()" style="float:left;margin-left:90px">查看大图</a>
+</span>
+</div>
+</div>
+
+<div style="clear:left;line-height:120%">
+<form id="handledResultForm">
+<p style="display:block">
+处理结果：
+<select name="result" onchange="changeShow(this.options[this.options.selectedIndex].value)" id="result">
+	<option value="-1">请选择</option>
+	<option value="1">关闭仲裁，买家无理取闹</option>
+	<option value="2">仲裁成功，部分退款给买家</option>
+	<option value="3">仲裁成功，同意买家退货，并全额退款</option>
+</select>
+</p>
+<div style="padding-top:5px;padding-bottom:5px;display:none;line-height:100%;background-color:#E8E8E8" id="backMoneyPart">
+<p style="display:block;text-indent:20px" >订单总金额：<span id="amountTotal">${orderAmount}</span>元 </p>
+<p style="display:block;text-indent:20px">请输入部分退款给买家的金额：<input type="text" name="backMoneyAmount" id="backMoneyAmount" onChange="showValue(this.value)"/>元</p>
+<p style="display:block;text-indent:20px">转账给卖家的金额：<label id="moneyToTransfer" style="display:none;font-weight:bold"></label></p>
+</div>
+
+
+<div style="display:none;line-height:100%;background-color:#E8E8E8;white-space: pre-wrap;" id="backMoneyAll">
+<p style="color:red;text-indent:20px">请确认客服已将买家收到的账号资料改为初始状态，该操作将全额退款给买家，请谨慎操作。</p>
+</div>
+
+<div style="margin-top:10px">
+备注：
+<textarea rows="3" cols="60" id="content" style="white-space: pre-wrap"></textarea>
+<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_submit();" id="submit">提交</a>
+</div>
+</form>
+</div>
+
+</td></tr>
+</table> 
+</div>
+</body>
+</html>

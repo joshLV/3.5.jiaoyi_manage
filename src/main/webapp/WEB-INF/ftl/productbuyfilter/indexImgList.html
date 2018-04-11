@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>首页图片列表</title> <#include "../common.html"/>
+<style>
+.table_line tr td {
+	border-bottom: #999 1px dashed;
+}
+</style>
+<script type="text/javascript">
+
+var verifyDialog;
+var editForm;
+
+
+//提交数据
+function toSaveAndEdit(){
+
+	$.messager.confirm('确认框','您确认要提交数据?',function(r){  
+	    if (r){ 
+	$.ajax({
+		url : 'imgAddAndEdit.do',
+		data : $("#editForm").serialize(),
+		dataType : 'json',
+		contentType: "application/x-www-form-urlencoded; charset=utf-8", 
+		success : function(response) {
+			
+			$.messager.show({
+				title : '提示',
+				msg : response.msg
+			});
+			if(response.success == true){
+				//var numid = response.msg.split("!!")[1];
+				location.reload();
+				//reloadBannerImg(numid);
+			}
+		
+		}
+	});
+	    }
+	});
+	//editForm.submit();
+}
+
+
+	//上传图片回调函数
+function setImageurl(f,t,picshowurl){
+	//所在图片浏览id
+	var temstr="i"+t;
+	//图片名称
+	$('#'+t).val(picshowurl);
+	//设置图片路径
+	$('#'+temstr).attr('src',picshowurl);
+	}
+
+
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="center" border="false"
+		title="活动首页图片：<font color=red>${name!''}</font>首页所属图片"
+		style="height: 65px;" align="left" id="maincontent">
+		<form id="editForm" action="imgAddAndEdit.do" id="editForm">
+			<table>
+				<tr>
+
+					<td>活动编号：${aid!''} <input name="aid" type="hidden"
+						value="${aid!''}" />
+					</td>
+
+				</tr>
+				<tr>
+					<td>活动名称:${name!''}</td>
+				</tr>
+				
+				<tr>
+					<td>关联游戏:${gameName!''}</td>
+				</tr>
+			</table>
+
+			<table width="99%" border="0" align="center" cellpadding="5" cellspacing="0">
+				<tr>
+					<td align="center"><input name="button" type="button"
+						class="btn05" value="保  存" onclick="toSaveAndEdit();" />&nbsp; 
+					</td>
+				</tr>
+			</table>
+
+			<table width="100%" border="0" align="center" cellpadding="5"
+				cellspacing="0" class="table_line">
+				<tr>
+					<td class="td05" style="padding: 5px;"></td>
+				</tr>
+			</table>
+
+			<div id="luckOption" style="height: 400px">
+				<table border="0" align="left" cellpadding="5" cellspacing="0"
+					class="table_line">
+					<!-- 有图片开始 -->
+					<tr>
+
+						<th style="text-align: left"><b>图片</b><font color=red>*说明:格式【jpeg/png/bmp/gif/jpg】</font></th>
+						<th><b>预览</b></th>
+					</tr>
+
+					<#if imagesList??> <#list imagesList as item> <#if item.type==1>
+					<tr>
+						<td colspan="2">wap首页入口图片</td>
+					</tr>
+					<#elseif item.type ==2>
+					<tr>
+						<td colspan="2">pc首页入口图片</td>
+					</tr>
+					<#else> </#if>
+
+					<tr>
+
+						<td class="field required"><input type="text"
+							name="imageUrl${item_index+1}" size="35" maxlength="200"
+							value="${item.imageUrl!''}" id="image${item_index+1}"
+							readonly="readonly" /> <iframe
+								src="../file/toupload?imgnumid=image${item_index+1}"
+								width="100%" height="60" frameborder="0"></iframe></td>
+						<td><img id="iimage${item_index+1}"
+							src="${item.imageUrl!''}" alt="" width="400" height="120" /></td>
+
+
+
+					</tr>
+					</#list>
+
+
+					<!-- 没图片开始 -->
+					<#else>
+					<tr>
+						<td colspan="2">wap首页入口图片</td>
+					</tr>
+					<tr>
+						<td align="left" class="td05 field required"><input
+							name="imageUrl1" size="35" onchange="viewImage();" id="image1"
+							maxlength="200" readonly="readonly" /> <iframe
+								src="../file/toupload.do?imgnumid=image1" width="100%"
+								height="60" frameborder="0"></iframe></td>
+						<td align="left" class="td05 field required"><img
+							id="iimage1" src="" alt="" width="400" height="120" /></a></td>
+					</tr>
+					<tr>
+						<td colspan="2">pc首页入口图片</td>
+					</tr>
+					<tr>
+						<td align="left" class="td05 field required"><input
+							name="imageUrl2" size="35" onchange="viewImage();" id="image2"
+							maxlength="200" readonly="readonly" /> <iframe
+								src="../file/toupload.do?imgnumid=image2" width="100%"
+								height="60" frameborder="0"></iframe></td>
+						<td align="left" class="td05 field required"><img
+							id="iimage2" src="" alt="" width="400" height="120" /></a></td>
+					</tr>
+					</#if>
+				</table>
+			</div>
+
+
+		</form>
+
+	</div>
+
+
+
+
+</body>
+</html>

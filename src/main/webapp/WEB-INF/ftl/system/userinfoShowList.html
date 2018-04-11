@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>用户列表</title>
+<#include "../common_new.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'userinfoList_json',
+			title : '用户列表',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'userId',
+			sortName : 'userId',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.obid;
+						}
+					},
+			   {field:'userId',title:'用户ID',align:'center',sortable:true},				
+			   {field:'loginid',title:'用户账号',align:'center',width:100,sortable:true},				
+			   {field:'fullname',title:'真实姓名',align:'center',width:120,sortable:true},
+			   {field:'usertype',title:'用户类型',align:'center',sortable:true,
+				   formatter:function(value,row,index){
+					   if (row.usertype==0){
+						   return "超级管理员";
+					   }else{
+						   return "普通管理员";
+					   }
+					}   
+			   },				
+			   {field:'workphone',title:'手机号',align:'center',width:100	},				
+			   {field:'userEmail',title:'邮件',align:'center',width:160,sortable:true},
+			   {field:'userTitle',title:'职位',align:'center',width:160,sortable:true},
+			   {field:'createTime',title:'创建时间',align:'center',width:180,sortable:true},
+			   {field:'lastLoginTime',title:'最后登录时间',align:'center',width:180,sortable:true},
+			   {field:'loginTime',title:'登录次数',align:'center',sortable:true},
+			   {field:'status',title:'状态',align:'center',sortable:true,
+				   formatter:function(value,row,index){
+					   if (row.status==0){
+						   return "<font color='red'>锁定</font>";
+					   }else{
+						   return "正常";
+					   }
+					}   
+			   },
+			   {field:'msgLoginFlag',title:'短信开关',align:'center',sortable:true,
+				   formatter:function(value,row,index){
+					   if (row.msgLoginFlag==0) {
+						   return "关闭";
+					   } else {
+						   return "打开";
+					   }
+				   }
+			   },
+			   {field:'ipLoginFlag',title:'IP开关',align:'center',sortable:true,
+				   formatter:function(value,row,index){
+					   if (row.ipLoginFlag==0) {
+						   return "关闭";
+					   } else {
+						   return "打开";
+					   }
+				   }
+			   }
+// 			   ,
+// 			   {field:'operate',title:'操作',align:'left',width:160,
+// 				   formatter:function(value,row,index){
+					
+// 					var c = '<a href="javascript:void(0)" onclick="systokefu(\''+row.userId+'\')">同步到客服系统</a>';
+// 					return c;
+// 					}
+// 			   	}
+			 ] ],
+// 			toolbar : [ {
+// 				text : '增加',
+// 				iconCls : 'icon-add',
+// 				handler : function() {
+// 					add();
+// 				}
+// 			}, '-', {
+// 				text : '删除',
+// 				iconCls : 'icon-remove',
+// 				handler : function() {
+// 					del();
+// 				}
+// 			}, '-', {
+// 				text : '修改',
+// 				iconCls : 'icon-edit',
+// 				handler : function() {
+// 					edit();
+// 				}
+// 			}, '-', {
+// 				text : '取消选中',
+// 				iconCls : 'icon-undo',
+// 				handler : function() {
+// 					datagrid.datagrid('unselectAll');
+// 				}
+// 			}, '-' ],
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			},
+			  //双击事件
+			   onDblClickRow:function (rowIndex,rowData){
+				   $(this).datagrid('unselectAll');
+				   $(this).datagrid('selectRow', rowIndex);	
+// 				   edit();
+			   }
+		});
+		editForm = $('#editForm').form({
+			url : 'userinfo_edit.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '管理员信息编辑',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					editForm.submit();
+				}
+			} ]
+		}); 
+		
+		addForm = $('#addForm').form({
+			url : 'userinfo_add.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加新管理员',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					addForm.submit();
+				}
+			} ]
+		});
+		
+		
+
+});
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+function add() {
+	addDialog.dialog('open');
+	addForm.form('reset');
+	addForm.find("input[type='text']").val("");
+}
+function del() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].userId);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'userinfo_delete.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						//var d = JSON.parse(response);
+						
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	} 
+}
+function edit() {
+	var rows = datagrid.datagrid('getSelections');
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'userinfo_json.do',
+			data : {
+				userId : rows[0].userId
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				editForm.form('clear');
+				editForm.form('load', response);
+				var isCustomer = response.isCustomer;
+				var isObjectCustomer = response.isObjectCustomer;
+				var isInvestmentService = response.isInvestmentService;
+				var msgFlag = response.msgLoginFlag;
+				var ipLoginFlag = response.ipLoginFlag;
+				if (isCustomer >0 && isObjectCustomer >0) {// 既是客服也是物服(审核员)
+					$("#input[name='serviceTypeIds'][value='3']").attr("checked",'checked');
+				} else if (isObjectCustomer>0) {// 是物服
+					$("#input[name='serviceTypeIds'][value='2']").attr("checked",'checked');
+				} else if (isCustomer >0 ) {// 是客服
+					$("#input[name='serviceTypeIds'][value='1']").attr("checked",'checked');
+				}else if(isInvestmentService>0){
+					$("#input[name='serviceTypeIds'][value='4']").attr("checked",'checked');
+				}
+				//编辑是否显示ip地址输入栏
+				if (ipLoginFlag == 0) {
+					$("#ip3").hide();
+					$("#ip4").hide();
+				} else {
+					$("#ip3").show();
+					$("#ip4").show();
+				}
+				editForm.find('select[name=msgFlag]').val(msgFlag);
+				editForm.find('select[name=ipFlag]').val(response.ipLoginFlag);
+				editForm.find('input[name=ip]').val(response.ipLoginAddress);
+				editForm.find('input[name=userPassword]').val('');//清空登录密码字段
+				editForm.find('input[name=customerPostNo]').val(response.customServiceId);
+				editForm.find('input[name=customerQQ]').val(response.customerQQ);
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+				showRoleSelect('editForm',$("#editUserType").val());
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+
+function showRoleSelect(formName,value){
+	if (value == 0){
+		$("#"+formName+" .roleSelect").hide();
+	}else{
+		$("#"+formName+" .roleSelect").show();
+	}
+}
+//添加是否显示ip地址输入栏
+function ipFlag5() {
+	var ipFlag = $("#ipFlag").val();
+	if (ipFlag != 0) {
+		$("#ip1").show();
+		$("#ip2").show();
+	} else {
+		$("#ip1").hide();
+		$("#ip2").hide();
+	}
+}
+//编辑是否显示ip地址输入栏
+function ipFlag6() {
+	var ipFlag = $("#ipFlag2").val();
+	if (ipFlag != 0) {
+		$("#ip3").show();
+		$("#ip4").show();
+	} else {
+		$("#ip3").hide();
+		$("#ip4").hide();
+	}
+}
+
+
+function systokefu(uid){
+	$.messager.confirm('请确认', '您确认要同步到客服系统吗？', function(r) {
+		if (r) {
+			$.ajax({
+				url : 'userinfo_sync.do',
+				data : {
+					kefuId : uid
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(response) {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+				}
+			});
+		}
+	});
+	
+}
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+			    <td>用户ID:<input name="uid" style="width:100px;" />&nbsp;</td>
+				<td>用户账号:<input name="loginid" style="width:100px;" />&nbsp;</td>
+				<td>真实名称:<input name="fullname" style="width:100px;" />&nbsp;</td>
+<!-- 				<td> 客服类型:<select name="sysusertype" > -->
+<!--                     <option value="0">请选择</option> -->
+<!-- 				    <option value="1">寄售客服</option> -->
+<!-- 				    <option value="2">寄售物服</option> -->
+<!-- 				    <option value="3">投资客服</option> -->
+<!-- 				</select> -->
+<!-- 				</td> -->
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+	<div onclick="add();" iconCls="icon-add">增加</div>
+	<div onclick="del();" iconCls="icon-remove">删除</div>
+	<div onclick="edit();" iconCls="icon-edit">编辑</div>
+</div>
+
+<!--添加表单-->
+<div id="addDialog" style="display: none;width: 1420px;height: 'auto';" align="center">
+	<form id="addForm" method="post" style="padding: 5px 10px">
+		  <input type="hidden" name="isCustomerR" value="0"/>
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">登录账号：</td>
+		      <td><input type="text" name="loginid" size="20" maxlength="50"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写用户名" /></td>
+		      <td class="lable">登录密码：</td>
+		      <td><input type="text" name="userPassword" size="20" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写密码" /></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">真实姓名：</td>
+		      <td><input type="text" name="fullname" size="20" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写真实姓名" /></td>
+		      <td>职 位：</td>
+		      <td><input type="text" name="userTitle" size="20" maxlength="5"/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">手机号码：</td>
+		      <td><input type="text" name="workphone" size="20" maxlength="100" /></td>
+		      <td class="lable">电话：</td>
+		      <td><input type="text" name="telephone" size="20" maxlength="100" /></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">邮 件：</td>
+		      <td><input type="text" name="userEmail" size="20" maxlength="20"/></td>
+		      <td class="lable">联系地址：</td>
+		      <td><input type="text" name="userAddress" size="20" maxlength="100" /></td>
+		    </tr>
+		     <tr>
+		      <td class="lable">管理员类型：</td>
+		      <td>
+		      <select name="usertype"   onchange="showRoleSelect('addForm',this.value)">
+			    <option value="1">普通管理员</option>
+			    <option value="0">超级管理员</option>
+				</select>
+			</td>
+		      <td class="lable">状 态：</td>
+		      <td><select name="status"  >
+				    <option value="1">正常</option>
+				    <option value="0">锁定</option>
+				</select>
+			</td>
+		    </tr>
+		    <tr>
+		      <td class="lable">是否显示微信：</td>
+		      <td>
+				<select name="isVisibleWeiXin" id="isVisibleWeiXin">
+					<option value="0" selected="selected">隐藏</option>
+					<option value="1">显示</option>
+				</select>
+			</td>
+			 <td>短信开关：</td>
+			  <td>
+			  	<select name="msgFlag">
+			  	  <option value="0" selected="selected">关闭</option>
+			  	  <option value="1">打开</option>
+			  	</select>
+			  </td>
+			</tr>
+ 			<tr>
+			  <td>IP开关：</td>
+			  <td>
+			  	<select name="ipFlag" id="ipFlag" class="ipFlag" onchange="ipFlag5()">
+			  	  <option value="0" selected="selected">关闭</option>
+			  	  <option value="1">打开</option>
+			  	</select>
+			  </td>
+			  <td id="ip1" class="ip" style="display: none;">IP：</td>
+			  <td id="ip2" class="ip" style="display: none;">
+			  	<input type="text" name="ip"/>（多个IP用“,”隔开）
+			  </td>
+			</tr>
+		    <tr>
+		      <td class="lable">客服类型：</td>
+		      <td colspan="3">
+<!-- 				<select name="customerType" id="customerType"> -->
+<!-- 					<option value="-1" selected="selected">请选择</option> -->
+<!-- 					<option value="0">寄售客服</option> -->
+<!-- 					<option value="1">寄售物服</option> -->
+<!-- 					<option value="2">审核员</option> -->
+<!-- 					<option value="3">投资客服</option> -->
+<!-- 				</select> -->
+				<span  >
+		       		<input type="checkbox" name="serviceTypeIds" id="serviceTypeIds0" value="1"/>
+		       		<label for="serviceTypeIds0">寄售客服</label>
+                </span>
+                <span  >
+		       		<input type="checkbox" name="serviceTypeIds" id="serviceTypeIds1" value="2"/>
+		       		<label for="serviceTypeIds1">寄售物服</label>
+                </span>
+                <span  >
+		       		<input type="checkbox" name="serviceTypeIds" id="serviceTypeIds2" value="3"/>
+		       		<label for="serviceTypeIds2">审核员</label>
+                </span>
+                <span  >
+		       		<input type="checkbox" name="serviceTypeIds" id="serviceTypeIds3" value="4"/>
+		       		<label for="serviceTypeIds3">咨询客服</label>
+                </span>
+                <span  >
+		       		<input type="checkbox" name="serviceTypeIds" id="serviceTypeIds4" value="5"/>
+		       		<label for="serviceTypeIds4">APP咨询客服</label>
+                </span>
+               <span  >
+		       		<input type="checkbox" name="serviceTypeIds" id="serviceTypeIds6" value="6"/>
+		       		<label for="serviceTypeIds5">咨询/APP客服</label>
+                </span>
+			  </td>
+		    <tr>
+		    <td class="lable">客服岗位号：</td>
+		      <td><input type="text" name="customerPostNo" size="20" maxlength="20"/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">客服昵称：</td>
+		      <td>
+				<input type="text" name="customerNickname" size="20" maxlength="20">
+			  </td>
+			  <td class="lable">客服QQ：</td>
+		      <td><input type="text" name="customerQQ" size="20" maxlength="20"/></td>
+		    </tr>		    
+		  </table> 
+		  
+		 <div style=" height: 400px;">
+		  <table style="width:100%">
+	  	   <tr class="roleSelect">
+	       <td class="lable" style="width:70px">所属角色：</td>
+	       <td colspan="8" >
+		   <#list roleList as role>
+		   	<#if role_index%8 == 0 && role_index !=0>
+	  			<br>
+	  		</#if>
+	  		<span style="display:inline-block;width:150px;">
+	       <input type="checkbox" name="roleids" id="roleids${role.roleId}" value="${role.roleId}" /><label for="roleids${role.roleId}">${role.roleName}</label>
+               </span>
+	       </#list> 
+	       </td>
+	      </tr>
+	      </table>
+	      </div>
+	      
+	</form>
+</div>
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 1420px;height: '700px';" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="userId" />
+		<input type="hidden" name="isCustomerR" value="0"/>
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">登录账号：</td>
+		      <td><input type="text" name="loginid" size="20" maxlength="50" readonly/></td>
+		      <td class="lable">登录密码：</td>
+		      <td><input type="text" name="userPassword" size="20" maxlength="50" class="easyui-validatebox"/>（空为不修改）</td>
+		    </tr>
+		    <tr>
+		      <td class="lable">真实姓名：</td>
+		      <td><input type="text" name="fullname" size="20" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写真实姓名" /></td>
+		      <td class="lable">职 位：</td>
+		      <td><input type="text" name="userTitle" size="20" maxlength="5"/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">电 话：</td>
+		      <td><input type="text" name="workphone" size="20" maxlength="100" /></td>
+		      <td class="lable">手 机：</td>
+		      <td><input type="text" name="telephone" size="20" maxlength="100" /></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">邮 件：</td>
+		      <td><input type="text" name="userEmail" size="20" maxlength="20"/></td>
+		      <td class="lable">联系地址：</td>
+		      <td><input type="text" name="userAddress" size="20" maxlength="100" /></td>
+		    </tr>
+		     <tr>
+		      <td class="lable">管理员类型：</td>
+		      <td>
+		      <select name="usertype" id="editUserType" onchange="showRoleSelect('editForm',this.value)">
+			    <option value="1">普通管理员</option>
+			    <option value="0">超级管理员</option>
+				</select>
+			</td>
+		      <td class="lable">状 态：</td>
+		      <td><select name="status" >
+				    <option value="1">正常</option>
+				    <option value="0">锁定</option>
+				</select>
+			</td>
+		    </tr>
+		    <tr>
+		      <td class="lable">是否显示微信：</td>
+		      <td>
+				<select name="isVisibleWeiXin" id="isVisibleWeiXin">
+					<option value="0">隐藏</option>
+					<option value="1">显示</option>
+				</select>
+			</td>
+			  <td>短信开关：</td>
+			  <td>
+			  	<select name="msgFlag" id="msgFlag">
+			  	  <option value="0" selected="selected">关闭</option>
+			  	  <option value="1">打开</option>
+			  	</select>
+			  </td>
+			</tr>
+ 			<tr>
+			  <td>IP开关：</td>
+			  <td>
+			  	<select name="ipFlag" id="ipFlag2" class="ipFlag" onchange="ipFlag6()">
+			  	  <option value="0" selected="selected">关闭</option>
+			  	  <option value="1">打开</option>
+			  	</select>
+			  </td>
+			  <td id="ip3" class="ip">IP：</td>
+			  <td id="ip4" class="ip">
+			  	<input type="text" name="ip"/>（多个IP用“,”隔开）
+			  </td>
+			</tr>
+		    <tr>
+		      <td class="lable">客服类型：</td>
+		      <td colspan="3">
+<!-- 				<select name="customerType" id="customerType"> -->
+<!-- 					<option value="-1" selected="selected">请选择</option> -->
+<!-- 					<option value="0">寄售客服</option> -->
+<!-- 					<option value="1">寄售物服</option> -->
+<!-- 					<option value="2">审核员</option> -->
+<!-- 					<option value="3">投资客服</option> -->
+<!-- 				</select> -->
+				<span  >
+		       		<input type="checkbox" name="serviceTypeIds" id="serviceTypeIds0" value="1"/>
+		       		<label for="serviceTypeIds0">寄售客服</label>
+                </span>
+                <span  >
+		       		<input type="checkbox" name="serviceTypeIds" id="serviceTypeIds1" value="2"/>
+		       		<label for="serviceTypeIds1">寄售物服</label>
+                </span>
+                <span  >
+		       		<input type="checkbox" name="serviceTypeIds" id="serviceTypeIds2" value="3"/>
+		       		<label for="serviceTypeIds2">审核员</label>
+                </span>
+                <span  >
+		       		<input type="checkbox" name="serviceTypeIds" id="serviceTypeIds3" value="4"/>
+		       		<label for="serviceTypeIds3">投资客服</label>
+                </span>
+                <span  >
+		       		<input type="checkbox" name="serviceTypeIds" id="serviceTypeIds4" value="5"/>
+		       		<label for="serviceTypeIds4">APP咨询客服</label>
+                </span>
+                <span  >
+		       		<input type="checkbox" name="serviceTypeIds" id="serviceTypeIds6" value="6"/>
+		       		<label for="serviceTypeIds5">咨询客服(总)</label>
+                </span>
+			  </td>
+		    <tr>
+		    <td class="lable">客服岗位号：</td>
+		      <td><input type="text" name="customerPostNo" size="20" maxlength="20"/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">客服昵称：</td>
+		      <td>
+				<input type="text" name="customerNickname" size="20" maxlength="20">
+			  </td>
+			  <td class="lable">客服QQ：</td>
+		      <td><input type="text" name="customerQQ" size="20" maxlength="20"/></td>
+		    </tr>	
+	
+		  </table> 
+		  
+		  <div style=" height: 200px;">
+		  <table style="width:100%">
+		  	     <tr class="roleSelect">
+		       <td class="lable" style="width:70px">所属角色：</td>
+		       <td colspan="8" >
+				<#list roleList as role>
+				<#if role_index%8 == 0 && role_index !=0>
+		  			<br>
+		  		</#if>
+		  		<span style="display:inline-block;width:150px;">
+		      		 <input type="checkbox" name="roleids" id="roleids${role.roleId}" value="${role.roleId}" /><label for="roleids${role.roleId}">${role.roleName}</label>
+				</span>
+		       </#list> 
+		       </td>
+		      </tr>
+		  </table>
+		  </div>
+	</form>
+</div>
+
+</body>
+</html>

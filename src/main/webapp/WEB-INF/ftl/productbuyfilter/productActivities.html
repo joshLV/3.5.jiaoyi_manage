@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>活动</title> <#include "../common.html"/>
+<style>
+body,div,ul,li {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font: 12px "宋体";
+	text-align: left;
+}
+
+a:link {
+	color: #00F;
+	text-decoration: none;
+}
+
+a:visited {
+	color: #00F;
+	text-decoration: none;
+}
+
+a:hover {
+	color: #c00;
+	text-decoration: underline;
+}
+
+ul {
+	list-style: none;
+}
+
+.main {
+	clear: both;
+	padding: 8px;
+	text-align: left;
+	overflow: auto;
+}
+/*第二种形式*/
+#tabs1 {
+	text-align: left;
+	width: 680px;
+}
+
+.menu1box {
+	position: relative;
+	overflow: hidden;
+	height: 26px;
+	width: 680px;
+	text-align: left;
+	margin-top: 5px;
+	margin-left: 5px;
+}
+
+#menu1 {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1;
+}
+
+#menu1 li {
+	float: left;
+	display: block;
+	cursor: pointer;
+	width: 200px;
+	text-align: center;
+	line-height: 25px;
+	height: 25px;
+}
+
+#menu1 li.hover {
+	background: #fff;
+	border-left: 1px solid #999;
+	border-top: 1px solid #999;
+	border-right: 1px solid #999;
+}
+
+.main1box {
+	clear: both;
+	margin-top: -1px;
+	border: 1px solid #999;
+	width: 800px;
+	overflow: auto;
+}
+
+.Tab {
+	border-collapse: collapse;
+	width: auto;
+}
+
+.Tab td {
+	border: solid 1px #708090
+}
+
+.Tab th {
+	border: solid 1px #708090;
+	width: 100px
+}
+</style>
+<script type="text/javascript">
+	function removetr(pid) {
+		$.messager.confirm('确认框', '您确认要删除?', function(r) {
+			if (r) {
+				var aid = $("#activitiesId_pass").val();
+				$.ajax({
+					url : 'filterDel',
+					data : {
+						pid : pid,aid:aid
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(response) {
+						if (response.success) {
+							$.messager.show({
+								title : '成功',
+								msg : response.msg
+							});
+							window.setTimeout("window.location.reload();", 1000);
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : response.msg
+							});
+						}
+					}
+				});
+
+			}
+		});
+
+	}
+
+
+
+	//编辑配置
+	function edit(id,configid,productid,productname) {
+		console.log("edit ''' " + id +"==configid==" + configid +"==productid-==" + productid);
+		var aid_add = $("#activitiesId_pass").val();
+		//批量配置
+		if (id == 0 && configid == 0 && productid == 0) {
+			
+			//判断是否选中
+			 var obj = document.getElementsByName("itemOffset");
+			 var objYN = false;
+			 for (var i = 0;i< obj.length;i++){
+			 if (obj[i].checked==true) {
+			 objYN= true;
+			 break;
+			 }}
+			 if (objYN==false) {
+				 $.messager.confirm('提示框','请至少选择一项?');
+				 return false; 
+			 }
+			var pids=[];
+		    $(":checkbox[name='itemOffset']:checked").each(function() {
+                   pids.push(this.value);
+            });
+		    
+            console.log(pids);
+            var filter_id = $('#filter_id_select').val();
+			var filter_name =  $("#filter_id_select").find("option:selected").text();
+			$.ajax({
+				type : "POST",
+		        url : 'productBuyFilterConfigEdit',
+		        data : {
+		        	id : filter_id
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(response) {
+					$('#param_edit_info').html("参数填写说明 （"+response.data.paramDesc+"）");
+					
+					$('#id_edit').val("");
+					$('#name_edit').val(filter_name);
+					$('#weight_edit').val("");
+					$('#param_edit').val("");
+					$('#remark_edit').val("");
+					$('#errMessage_edit').val("");
+					
+					$('#aid_edit').val(aid_add);
+					$('#filterId_edit').val(filter_id);
+					$('#productId_edit').val(pids);
+				}
+			});	
+			
+			$('#editForm').show();
+			$('#editForm').window({
+				width : 900,
+				height : 400,
+				title : '编辑',
+				modal : true
+			});
+			return;
+		}
+		//单个配置
+		$.ajax({
+			type : "POST",
+			url : 'toFilterEdit',
+			data : {
+				id : id,configid:configid,productid:productid,aid:aid_add,productname:productname
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				console.log(response.data.name);
+				$('#id_edit').val(response.data.id);
+				$('#name_edit').val(response.data.name);
+				$('#weight_edit').val(response.data.weight);
+				$('#param_edit').val(response.data.param);
+				$('#remark_edit').val(response.data.remark);
+				$('#title_edit').html("编辑规则["+response.data.name+"]");
+				$('#productId_edit').val(response.data.productId);
+				$('#productName_edit').val(response.data.productName);
+				$('#filterId_edit').val(response.data.filterId);
+				$('#aid_edit').val(response.data.aid);
+				$('#errMessage_edit').val(response.data.errMessage);
+				$('#param_edit_info').html("参数填写说明 （"+response.data.paramDesc+"）");
+				
+
+				$('#editForm').show();
+				$('#editForm').window({
+					width : 900,
+					height : 400,
+					title : '编辑',
+					modal : true
+				});
+			}
+		});
+	}
+
+	//编辑
+	function doedit() {
+		var id = $('#id_edit').val();
+		var name = $('#name_edit').val();
+		var weight = $('#weight_edit').val();
+		var className = $('#className_edit').val();
+		var paramDesc = $('#paramDesc_edit').val();
+		var remark = $('#remark_edit').val();
+		$.ajax({
+			type : "POST",
+			url : 'FilterDoEdit',
+			data : $('#filter_doedit').serialize(),
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '成功',
+						msg : "操作成功"
+					});
+					$('#editForm').window('close', true);
+					window.setTimeout("window.location.reload();", 1000);
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : response.msg
+					});
+				}
+			}
+		});
+	}
+
+	function selectProduct() {
+		var gid = ${gameId!'0'};
+		if(gid <= 0){
+			 $.messager.confirm('提示框','请先选择活动关联的游戏!');
+			 return false; 
+		}
+		window.open(
+						'../product/productListForSelect.do?gameId='+${gameId!'0'},
+						'',
+						'width=1100,height=700,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+	}
+
+	// 回调函数,添加商品
+	function selectActionCallBack(pids, names) {
+		var filterId = $("#filter_id_select").val();
+		var aid = $("#activitiesId_pass").val();
+		console.log('productActivitiesAddProduct?pids=' + pids + "&filterId=" + filterId + "&aid=" + aid);
+		$.ajax({
+			type : "POST",
+			url : 'productActivitiesAddProduct?pids=' + pids  + "&filterId=" + filterId + "&aid=" + aid,
+			//data :{pids:pids,names:names,aid:22},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '成功',
+						msg : "操作成功"
+					});
+					window.setTimeout("window.location.reload();", 1000);
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : response.msg
+					});
+				}
+			}
+		});
+	}
+	
+	//全选/全不选
+	function CheckAll(){
+		var checkb = $("#checkAll").prop("checked");
+		     var input = document.getElementsByTagName("input");
+		        for (var i = 0; i < input.length; i++)
+		        {
+		            if (input[i].type == "checkbox" && input[i].name =="itemOffset")
+		                if((checkb==true)){
+			            input[i].checked = true;
+		                }else{
+		                input[i].checked = false;
+		                }
+		        } 
+	}
+	
+	//单个删除
+	function singledel(id) {
+		$.messager.confirm('确认框', '您确认要删除该商品的规则?', function(r) {
+			if (r) {
+
+				$.ajax({
+					url : 'singleFilterDel',
+					data : {
+						id:id
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(response) {
+						if (response.success) {
+							$.messager.show({
+								title : '成功',
+								msg : response.msg
+							});
+							window.setTimeout("window.location.reload();", 1000);
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : response.msg
+							});
+						}
+					}
+				});
+
+			}
+		});
+
+	}
+	
+	//更新活动信息
+	function updateActivities() {
+		var f = $('#update_activities_form').form();
+		var  btime = f.find("input[name='btime']").val();//2014-06-19 09:53:27
+		var  etime = f.find("input[name='etime']").val();
+        var  r= btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})\s([0-1][0-9]|[2][0-3])(:)([0-5][0-9])(:)([0-5][0-9])?$/);
+		var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})\s([0-1][0-9]|[2][0-3])(:)([0-5][0-9])(:)([0-5][0-9])?$/);
+		if(r==null && btime !=""){
+			$.messager.alert('提示', '请填写正确的开始时间', 'error');
+			return false;
+		}
+		if(r2==null && etime !=""){
+			$.messager.alert('提示', '请填写正确的结束时间', 'error');
+			return false;
+		}
+		if(btime > etime && btime !="" && etime !=""){
+			$.messager.alert('提示', '请选择正确的时间段', 'error');
+			return false;
+		}
+		$.messager.confirm('确认框', '您确认要修改该活动信息?', function(r) {
+			if (r) {
+
+				$.ajax({
+					url : 'updateActivities',
+					data : $('#update_activities_form').serialize(),
+					dataType : 'json',
+					cache : false,
+					success : function(response) {
+						if (response.success) {
+							$.messager.show({
+								title : '成功',
+								msg : response.msg
+							});
+							window.setTimeout("window.location.reload();", 1000);
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : response.msg
+							});
+						}
+					}
+				});
+
+			}
+		});
+
+	}
+	
+	function clearsearch(){
+
+		$('#product_id_search').val("");
+		$('#pro_search').submit();
+		//window.location.reload();
+	}
+	//所有游戏
+	$(function() {
+		var url = "../product/allgameList_json";
+		var gid = ${gameId!'0'}
+		$.getJSON(url, function(result) {
+			var categoryCount = result.total;
+			$("select[name='gameId'] option").remove();
+			var def =  "<option value='0'>请选择</option>";
+			$("select[name='gameId']").append(def);
+			for ( var i = 0; i < categoryCount; i++) {
+				var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+				if(gid ==result.rows[i].id){
+					options = "<option selected=selected  value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+				}
+				$("select[name='gameId']").append(options);
+			}
+
+		});
+		
+		
+	});
+	
+	
+	//编辑配置
+	function setinpageshow() {
+		
+		var aid_add = $("#activitiesId_pass").val();
+			//判断是否选中
+			 var obj = document.getElementsByName("inpageShow");
+			 var objYN = false;
+			 for (var i = 0;i< obj.length;i++){
+			 if (obj[i].checked==true) {
+			 objYN= true;
+			 break;
+			 }}
+// 			 if (objYN==false) {
+// 				 $.messager.confirm('提示框','请至少选择一个商品?');
+// 				 return false; 
+// 			 }
+			var pids=[];
+		    $(":checkbox[name='inpageShow']:checked").each(function() {
+                   pids.push(this.value);
+                   //pids= $.trim(pids);
+            });
+		    
+           
+			$.ajax({
+				type : "POST",
+		        url : 'updateActInpageShow',
+		        data : {
+		        	aid : aid_add,
+		        	pids:""+pids+""
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(response) {
+					if (response.success) {
+						$.messager.show({
+							title : '成功',
+							msg : response.msg
+						});
+						window.setTimeout("window.location.reload();", 1000);
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : response.msg
+						});
+					}
+				}
+			});	
+			
+
+	}
+	
+	
+	
+	//批量删除0库存商品
+	function delStock() {
+		var aid = $("#activitiesId_pass").val();
+		$.messager.confirm('确认框', '您确认要批量删除本活动已下架和0库存(大于3件时)的所有商品?'+aid, function(r) {
+			if (r) {
+
+				$.ajax({
+					url : 'del0Stock',
+					data : {
+						aid:aid
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(data) {
+						if (data.success) {
+							$.messager.show({
+								title : '成功删除商品',
+								msg : data.msg
+							});
+							window.setTimeout("window.location.reload();", 1000);
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : data.msg
+							});
+						}
+					}
+				});
+
+			}
+		});
+
+	}
+	
+	//批量删除
+	function delSelect() {
+		var aid = $("#activitiesId_pass").val();
+		
+		//判断是否选中
+		 var obj = document.getElementsByName("itemOffset");
+		 var objYN = false;
+		 for (var i = 0;i< obj.length;i++){
+		 if (obj[i].checked==true) {
+		 objYN= true;
+		 break;
+		 }}
+		 if (objYN==false) {
+			 $.messager.confirm('提示框','第一列多选框请至少选择一个商品?');
+			 return false; 
+		 }
+		var pids=[];
+	    $(":checkbox[name='itemOffset']:checked").each(function() {
+              pids.push(this.value);
+              //pids= $.trim(pids);
+       });
+		$.messager.confirm('确认框', '您确认要批量删除所选商品?', function(r) {
+			if (r) {
+
+				$.ajax({
+					url : 'filterDel',
+					data : {
+						aid:aid,
+						pid:""+pids+""
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(data) {
+						if (data.success) {
+							$.messager.show({
+								title : '成功删除商品',
+								msg : data.msg
+							});
+							window.setTimeout("window.location.reload();", 1000);
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : data.msg
+							});
+						}
+					}
+				});
+
+			}
+		});
+
+	}
+	
+	function delAll() {
+		var aid = $("#activitiesId_pass").val();
+		$.messager.confirm('确认框', '您确认要删除所有商品?', function(r) {
+			if (r) {
+				$.ajax({
+					url : 'filterDel',
+					data : {
+						aid:aid,
+						type:"delall"
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(data) {
+						if (data.success) {
+							$.messager.show({
+								title : '成功删除商品',
+								msg : data.msg
+							});
+							window.setTimeout("window.location.reload();", 1000);
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : data.msg
+							});
+						}
+					}
+				});
+
+			}
+		});
+
+	}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="center" border="false" title="活动添加/编辑"
+		style="height: 65px; overflow: hidden;" align="left">
+
+
+		<div class="main1box"
+			style="height: 700px; width: 100%; padding-left: 5px; padding-bottom: 40px;">
+			<div id='main1' style="width: 100%">
+				<form action="" id="update_activities_form">
+					<div>
+						<p>
+							活动ID：&nbsp;&nbsp;<input type="text" name="aid"
+								value="${activitiesId!''}" readonly="readonly" />
+						<p>
+							活动名称：<input name="name" id="name_edit_hd" value="${name!''}"
+								maxlength="10" size="50" />(10个中文字限制)
+						<p>
+							副标题：&nbsp;&nbsp;<input name="subTitile" id="sub_title_edit_hd"
+								value="${subTitle!''}" maxlength="8" size="50" />(8个中文字限制)
+
+						</p>
+						<p>
+							标签：&nbsp;&nbsp;&nbsp;&nbsp;<input name="tag" id="tag" value="${tag!''}" size="50" />
+						</p>
+						<p>
+							活动时间：<input name="btime"
+								value="${beginTime?string('yyyy-MM-dd HH:mm:ss')!''}"
+								id="btime_edit_hd" type="text" class="easyui-datetimebox"
+								style="width: 157px;" /> - <input name="etime"
+								value="${endTime?string('yyyy-MM-dd HH:mm:ss')!''}"
+								id="etime_edit_hd" type="text" class="easyui-datetimebox"
+								style="width: 157px;" /> <input type="button" name="submit"
+								value="保存活动" onclick="updateActivities()">
+						</p>
+
+						<p>
+							是否显示售罄的商品:<select name="saleoutShowFlag"
+								id="saleoutShowFlag_edit_hd"> <#if saleoutFlag ==0>
+								<option value="0" selected="selected">否</option>
+								<option value="1">是</option> <#else>
+								<option value="0">否</option>
+								<option value="1" selected="selected">是</option> </#if>
+							</select>&nbsp;
+
+
+
+						</p>
+
+						<p>
+							关联游戏:<select id="g_id_receiver" name="gameId" style="width: 96px"></select>
+						</p>
+					</div>
+				</form>
+
+				<div>
+					<hr>
+					<form id="pro_search" action="">
+						商品ID：<input name="product_id_search" id="product_id_search"
+							value="${productid_search!''}" /> <input type="hidden"
+							name="activitiesId" value="${activitiesId!''}"
+							id="activitiesId_pass" /> <input type="submit" name="submit1"
+							value="查询"> <input type="button" onclick="clearsearch()"
+							value="清除"> 规则:<select name="filter_id"
+							id="filter_id_select"> <#if pbfList??> <#list pbfList as
+							p>
+							<option value="${p.id!''}">${p.name!''}</option> </#list> </#if>
+						</select> <input onclick="edit(0,0,0,0);" type=button value="配置规则" /> <input
+							onclick="selectProduct()" value="选择关联商品" type=button /> <input
+							onclick="setinpageshow()" value="设置内页展示" type=button /> <input
+							onclick="delStock()" value="删除已下架或0库存商品" type=button /> <input
+							onclick="delSelect()" value="批量删除" type=button /> <input
+							onclick="delAll()" value="全部删除" type=button /> &nbsp;<font
+							color="red">[ 共有商品: <#if proList??> ${proList?size}
+							<#else> 0 </#if> 件 ] </font>
+					</form>
+				</div>
+				<br />
+
+				<table class="Tab">
+					<tr style="font-weight: bold">
+						<th style="width: 12px;"><input type="checkbox"
+							name="checkAll" id="checkAll" onClick="javascript:CheckAll();" /></th>
+						<th>商品ID</th>
+						<th>内页展示</th>
+						<th>商品名称</th>
+						<th>商品库存</th>
+						<th>上架时间</th> <#if pbfList??> <#list pbfList as p>
+						<th>${p.name!''}</th> </#list> </#if>
+						<th>操作</th>
+					</tr>
+
+					<#if proList??> <#list proList as pk>
+					<tr style="text-align: left; COLOR: #0076C8;">
+						<td><input type="checkbox" name="itemOffset"
+							id="selectAllid" value="${pk.productId!''}" /></td>
+
+						<td>${pk.productId!''}</td>
+						<td><#if pk.inpageShow==1> <input type="checkbox"
+							name="inpageShow" id="selectAllid2" value="${pk.productId!'0'}"
+							checked="checked" /> <#else> <input type="checkbox"
+							name="inpageShow" id="selectAllid2" value="${pk.productId!'0'}" />
+							</#if>
+						</td>
+						<td>${pk.productName!''}</td>
+						<td>${pk.productCount!''}</td>
+						<td>${pk.onsaleTime!''}</td> <#if pbfList??> <#list pbfList as p>
+						<td>${pk['param${p.id}']!''} <#assign fid = p['id']!''/>
+							<#assign tempid = pk['param'+fid]!'0'/> <#if tempid=='0'> <a
+							href="javascript:void(0);"
+							onclick="edit(${pk['fiter${p.id}']!'0'},${p.id},'${pk.productId!''}','${pk.productName!''}')">添加</a>
+							<#else> <a href="javascript:void(0);"
+							onclick="edit(${pk['fiter${p.id}']!'0'},${p.id},'${pk.productId!''}','${pk.productName!''}')">编辑</a>
+							<a href="javascript:void(0);"
+							onclick="singledel(${pk['fiter${p.id}']!'0'})">删除</a> </#if>
+						</td> </#list></#if>
+
+						<td><a href="javascript:void(0);"
+							onclick="removetr('${pk.productId!''}')">删除商品</a></td>
+					</tr>
+					</#list> </#if>
+
+				</table>
+
+			</div>
+		</div>
+	</div>
+
+
+
+
+	<!-- 编辑 -->
+	<div id="editForm" style="display: none;">
+		<div class="menu1box">
+			<ul id="menu1">
+				<li class="hover"><font color="red" id="title_edit">编辑新规则</font></li>
+			</ul>
+		</div>
+
+		<div class="main1box">
+			<div class="main" id="main2">
+				<form action="" id="filter_doedit">
+					<table>
+
+						<!-- 							<tr> -->
+						<!-- 							<td>选择规则:</td> -->
+						<!-- 							<td><select name="weight"> -->
+						<!-- 									<option value="0">正常</option> -->
+						<!-- 									<option value="1">隐藏</option> -->
+						<!-- 							</select></td> -->
+						<!-- 						</tr> -->
+						<tr>
+							<td>运行参数:</td>
+							<td><input type="hidden" name="id" id="id_edit" /> <input
+								type="hidden" name="productId" id="productId_edit" /> <input
+								type="hidden" name="productName" id="productName_edit" /> <input
+								type="hidden" name="aid" id="aid_edit" value="1" /> <input
+								type="hidden" name="filterId" id="filterId_edit" /> <input
+								type="hidden" name="name" id="name_edit" /> <input name="param"
+								id="param_edit" /><font color="black" id="param_edit_info">参数填写说明
+									（）</font></td>
+						</tr>
+						<!-- 						<tr> -->
+						<!-- 							<td>生效时间:</td> -->
+						<!-- 							<td> -->
+						<!-- 							<input name="beginTime" id="beginTime" class="easyui-datetimebox" type="text"  style="width:150px;" /> -->
+						<!-- 							—<input name="endTime" id="endTime" style="width:150px;" class="easyui-datetimebox"   /> -->
+						<!-- 							</td> -->
+						<!-- 						</tr> -->
+						<tr>
+							<td>错误提示:</td>
+							<td><input name="errMessage" id="errMessage_edit" /></td>
+						</tr>
+						<tr>
+							<td>权重:</td>
+							<td><input name="weight" id="weight_edit" /></td>
+						</tr>
+						<tr>
+							<td>备注:</td>
+							<td><textarea name="remark" id="remark_edit"></textarea></td>
+						</tr>
+
+
+						<tr>
+							<td colspan="2" style="text-align: center;"><a
+								href="javascript:void(0);" class="easyui-linkbutton"
+								onclick="doedit();">保存规则</a></td>
+						</tr>
+
+					</table>
+				</form>
+			</div>
+		</div>
+
+	</div>
+	</div>
+</body>
+</html>

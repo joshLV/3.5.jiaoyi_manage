@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>商品活动添加</title> <#include "../common.html"/>
+<style>
+body,div,ul,li {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font: 12px "宋体";
+	text-align: left;
+}
+
+a:link {
+	color: #00F;
+	text-decoration: none;
+}
+
+a:visited {
+	color: #00F;
+	text-decoration: none;
+}
+
+a:hover {
+	color: #c00;
+	text-decoration: underline;
+}
+
+ul {
+	list-style: none;
+}
+
+.main {
+	clear: both;
+	padding: 8px;
+	text-align: left;
+}
+/*第二种形式*/
+#tabs1 {
+	text-align: left;
+	width: 680px;
+}
+
+.menu1box {
+	position: relative;
+	overflow: hidden;
+	height: 26px;
+	width: 680px;
+	text-align: left;
+	margin-top: 5px;
+	margin-left: 5px;
+}
+
+#menu1 {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1;
+}
+
+#menu1 li {
+	float: left;
+	display: block;
+	cursor: pointer;
+	width: 72px;
+	text-align: center;
+	line-height: 25px;
+	height: 25px;
+}
+
+#menu1 li.hover {
+	background: #fff;
+	border-left: 1px solid #999;
+	border-top: 1px solid #999;
+	border-right: 1px solid #999;
+}
+
+.main1box {
+	clear: both;
+	margin-top: -1px;
+	border: 1px solid #999;
+	width: 800px;
+	overflow: auto;
+}
+</style>
+<script type="text/javascript">
+
+
+	function add() {
+		var id = $('#id_input').val();
+		var name = $('#name_input').val();
+		var betime = $('#btime_input').val();
+		var etime = $('#etime_input').val();
+		
+		
+		var f = $('#activities_add').form();
+		var  btime = f.find("input[name='btime']").val();//2014-06-19 09:53:27
+		var  etime = f.find("input[name='etime']").val();
+	    
+        var  r= btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})\s([0-1][0-9]|[2][0-3])(:)([0-5][0-9])(:)([0-5][0-9])?$/);
+		var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})\s([0-1][0-9]|[2][0-3])(:)([0-5][0-9])(:)([0-5][0-9])?$/);
+		if(r==null && btime !=""){
+			$.messager.alert('提示', '请填写正确的开始时间', 'error');
+			return false;
+		}
+		if(r2==null && etime !=""){
+			$.messager.alert('提示', '请填写正确的结束时间', 'error');
+			return false;
+		}
+		if(btime > etime && btime !="" && etime !=""){
+			$.messager.alert('提示', '请选择正确的时间段', 'error');
+			return false;
+		}
+
+		$.ajax({
+			type : "POST",
+			url : 'activitiesAdd',
+			data : $('#activities_add').serialize(),
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '成功',
+						msg : "操作成功"
+					});
+					console.log(response.data.aid);
+					
+					
+					toaddfilter(response.data.aid);
+					parent.closeTab('添加活动');
+					//window.setTimeout("", 1000);
+					
+				
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : response.msg
+					});
+				}
+			}
+		});
+
+	}
+	
+	function toaddfilter(aid){
+		var link = "productbuyfilter/productActivities.do?activitiesId="+aid;
+		var node = {
+				"attributes":{ "url":link}, 
+				"checked":false,
+				"iconCls":"",
+				"state":"closed",
+				"text":"编辑活动"+aid 
+				};
+		parent.addTab(node);
+		
+	}
+	
+	//上传图片回调函数
+	function setImageurl(f,t,picshowurl){
+		//所在图片浏览id
+		var temstr="i"+t;
+		//图片名称
+		$('#'+t).val(picshowurl);
+		//设置图片路径
+		$('#'+temstr).attr('src',picshowurl);
+		}
+
+	//所有游戏
+	$(function() {
+		var url = "../product/allgameList_json";
+		$.getJSON(url, function(result) {
+			var categoryCount = result.total;
+			$("select[name='gameId'] option").remove();
+			var def =  "<option value='-1'>请选择</option>";
+			$("select[name='gameId']").append(def);
+			for ( var i = 0; i < categoryCount; i++) {
+				var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+				$("select[name='gameId']").append(options);
+			}
+
+		});
+		
+	});
+
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="center" border="false" title="添加活动"
+		style="height: 65px; overflow: hidden;" align="left">
+
+		<!-- 添加新规则 -->
+		<div>
+			<div class="menu1box">
+				<ul id="menu1">
+					<li class="hover" ><font color="red">添加新活动</font></li>
+				</ul>
+			</div>
+
+			<div class="main1box">
+				<div class="main" id="main1">
+					<form action="" id ="activities_add">
+					<table>
+						<tr>
+							<td>活动编号:</td>
+							<td><input name="id" id="id_input" value="${aid!''}"/></td>
+						</tr>
+						<tr>
+							<td>活动名称:</td>
+							<td><input name="name" id="name_input" maxlength="10" size="50"/>(10个中文字限制)</td>
+						</tr>
+						<tr>
+							<td>副标题:</td>
+							<td><input name="subTitile" id="subTitile_input" maxlength="8" size="50" />(8个中文字限制)</td>
+						</tr>
+						   <tr>
+		                   <td>活动简介:</td>
+							<td>
+							<textarea rows="" cols="50" name="info" id="info_input"></textarea>
+                            </td>
+		               </tr>
+		               
+		               <tr>
+		                   <td>权重:</td>
+							<td>
+							<input name="weight" maxlength="8" size="10" >
+                            </td>
+		               </tr>
+		               <tr>
+		               		<td>标签:</td>
+		               		<td>
+		               			<input type="text" name="tag" maxlength="8" size="10">
+		               		</td>
+		               </tr>
+						<tr>
+							<td>活动时间:</td>
+							<td>
+							<input name="btime" value="${btime!''}" id="btime_input" type="text"  class="easyui-datetimebox" style="width:157px;"/> -
+                                    <input name="etime"  value="${etime!''}"  id="etime_input" type="text" class="easyui-datetimebox" style="width:157px;"/>
+                            </td>
+                            
+                      
+						</tr>
+						<tr>
+						<td>
+						关联游戏:
+						</td>
+						<td>
+						<select id="g_id_receiver" name="gameId"  style="width: 96px"></select>
+						</td>
+						</tr>
+				
+                        <tr>
+                        <td colspan="2">
+                        </td>&nbsp;
+                        </tr>
+						<tr>
+							<td colspan="2" style="text-align: center;"><a href="javascript:void(0);" class="easyui-linkbutton" onclick="add();">添加活动</a></td>
+						</tr>
+
+
+					</table>
+                   </form>
+				</div>
+			</div>
+		</div>
+
+	</div>
+	
+	
+	
+
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>日未注册用户PV统计分时段页面</title>
+<#include "../../common.html"/>
+<script type="text/javascript" src="${request.contextPath}/js/Highcharts/highcharts.js"></script>
+<script type="text/javascript" src="${request.contextPath}/js/Highcharts/modules/exporting.js"></script>
+<script type="text/javascript" src="${request.contextPath}/js/Highcharts/themes/grid.js"></script>
+<script type="text/javascript">
+var chart;
+$(document).ready(function() {  
+    chart = new Highcharts.Chart({  
+        chart: {  
+            renderTo: 'container',  
+            defaultSeriesType: 'column', //图表类型 line, spline, area, areaspline, column, bar, pie , column，scatter  
+            zoomType: 'xy'   //X、Y轴均可放大 
+        },  
+        xAxis: {  
+           categories:${xAxisCategories!''}, //X轴的坐标值  
+           title: ${title!''},  //Y轴坐标标题  labels:纵柱标尺  
+        },  
+        yAxis: {  
+            title: {text: '人/次)'},  //Y轴坐标标题  labels:纵柱标尺  
+            min:0  
+        },  
+        tooltip: {  
+            formatter: function() {  
+                //当鼠标悬置数据点时的格式化提示  
+                return '人/次:' + Highcharts.numberFormat(this.y, 0)+'<br/>当前时间: '+ this.x ;  
+            }  
+        },  
+        credits: {  
+            enabled: false
+           
+        }, 
+        legend: { //设置图例             
+        	layout: 'vertical', //水平排列图例             
+        	shadow: true,  //设置阴影         
+        },
+        plotOptions: {  
+            column: {  
+                pointPadding: 0.2,  //图表柱形的  
+                borderWidth: 0      //图表柱形的粗细  
+            },bar: {  
+                dataLabels: {  
+                    enabled: false  
+                }  
+            },  series: {
+                cursor: 'pointer',
+                point: {
+                    events: {
+                        click: function() {
+                        	//alert(this.category);
+                            //view(this.category,this.id);
+                        }
+                    }
+                }
+            }
+        },
+        title: { text: '【日活统计】各时段未注册用户PV' }, //图表主标题  
+        subtitle: {text: '' }, //图表副标题  
+        series: ${data!''}
+    }); 
+});   
+
+
+//返回列表
+function changeView(){
+	window.location.href="../countDayActiveList";
+}
+//返回视图
+function changeView2(){
+	window.location.href="../chartCountDayActive";
+}
+
+function searchbytime() {
+	$("#searchForm").submit();
+}
+
+
+
+</script>
+</head>
+
+<body  >
+<div class="easyui-panel" border="false" title="搜索条件" >
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>日期<input name="time" value="${time!''}"  type="text"  class="easyui-datebox" data-options="required:true" missingMessage="请选择日期"/> 
+               
+			<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="searchbytime();">搜索</a> 
+			  
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="changeView()">切换到列表</a>
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="changeView2()">切换到视图</a>  
+			</td>
+			</tr>
+	
+			
+		
+		</table>
+	</form>
+</div> 
+
+   <div id="container" ></div>
+</body>
+</html>

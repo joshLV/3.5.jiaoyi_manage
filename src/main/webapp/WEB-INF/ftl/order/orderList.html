@@ -1,0 +1,608 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>订单列表</title>
+<#include "../common.html"/>
+<script type="text/javascript" src="../js/order_helper.js"></script>
+<script type="text/javascript">
+var datagrid;
+var searchForm;
+var viewDialog;
+var editForm;
+var refundDialog;
+var refundForm;
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url :'orderList_json',
+			title : '订单列表',
+			//iconCls : 'icon-save',
+			singleSelect:true,
+		    queryParams:{
+            	sellId:${sellId}, 
+            	buyId:${buyId},
+            	payId:'${payId!''}',
+            	orderId:'${orderId!''}',
+            	beginTime:'${beginTime!''}',
+            	endTime:'${endTime!''}',
+            	idStr:'${idStr!''}',
+            	orderModel:'${orderModel!''}'
+			},
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ ${pageList!'100'}, 150, 200],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : 'order_id',
+			sortName : '',
+			sortOrder : 'desc',
+			columns : [ [
+			   {field:'orderId',title:'订单号',align:'center',width:140,
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="showOrderPayInfo(\''+value+'\')">'+value+'</a>';
+				   } 
+			   },				
+			   {field:'goodsName',title:'订单商品',align:'center',width:100,
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="viewGoods(\''+row.goodsId+'\')">'+value+'</a>';
+				   }   
+			   },				
+			   {field:'orderBuyUid',title:'买家UID',align:'center',width:50,
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="viewUser('+value+')">'+value+'</a>';
+				   }
+			   },
+			   {field:'orderSellUid',title:'卖家UID',align:'center',width:50,
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="viewUser('+value+')">'+value+'</a>';
+				   }   
+			   },
+			   {field:'gameName',title:'游戏',align:'center',width:100},
+			   {field:'qufu',title:'区/服',align:'center',width:100,
+					formatter:function(value,row,index){
+// 						if(row.gameAreaName!=""&&row.gameServerName!=""){
+// 							return row.gameAreaName+"/"+row.gameServerName
+// 						}
+// 						if(row.gameServerName!=""){
+// 							return row.gameServerName;
+// 						}
+						if(row.gameAreaName!=""){
+							return row.gameAreaName;
+						}
+					}
+			   },
+			   {field:'orderModel',title:'交易模式',align:'center',width:80,
+				    formatter:function(value,row,index){
+				   		return row.orderModelName;
+				   }    
+			   },
+			   {field:'payWay',title:'支付方式',width:120,align:'center',
+				   formatter:function(value,row,index){
+					   var a="";
+					   var b="";
+					   var c="/";
+					   if(row.payPlatFormId==1){
+						   b="易宝";
+					   }else if(row.payPlatFormId==2){
+						   b="银联";
+					   }else if(row.payPlatFormId ==0){
+						   b="聚好玩";
+					   }else if(row.payPlatFormId ==3){
+						   b="易宝/信用卡"
+					   }else if(row.payPlatFormId ==4){
+						   b="支付宝"
+					   }
+					   if (value==1){
+						   return b+c+"账户余额";
+					   }else if(value==2){
+						   return b+c+"卡类支付";
+					   }else if(value==3){
+						   return b+c+"手机WAP支付";
+					   }else if(value==4){
+						   return b+c+"信用卡支付";
+					   }else if(value==5){
+						   return b+c+"PC网银支付";
+					   }else if(value==6){
+						   return b+c+"支付宝支付";
+					   }else if(value==7){
+						   return b+c+"银联支付";
+					   }
+				   }   
+			   },
+			   {field:'orderAmount',title:'金额',align:'center',width:60},				
+			   {field:'orderTime',title:'订单时间',align:'center',width:130},				
+			   {field:'getGoodsTime',title:'收货时间',align:'center',width:130},
+			   {field:'orderIsPay',title:'是否支付',align:'center',width:50,
+					formatter:function(value,row,index){
+						return value==0?"未支付":"<font color='red'>己支付</font>"
+					}   
+			   },
+			   {field:'orderStatus',title:'订单状态',align:'center',width:80,
+				   formatter:function(value,row,index){
+				   		return OrderHelper.getOrderStatusName(value);
+					}   
+			   },
+			   {field:'sonChannelId',title:'子渠道',align:'center',width:100},	
+			   {field:'operate',title:'操作',align:'center',width:120,sortable:true,
+				   formatter:function(value,row,index){
+					    if(row.operate==null || row.operate==''){
+					    	var a='<a href="javascript:void(0)" onclick="follow(\''+row.orderId+'\')" >跟踪</a>';
+					    	var f = "-";
+					    	var b = "";
+					    	if(row.orderIsPay==1){
+					    		if(row.orderStatus==8 || row.orderStatus == -1){
+					    			b='<a href="javascript:void(0)" onclick="refund(\''+row.orderId+'\')" >退款</a>';
+					    			return a+f+b;
+					    		}
+					    		if(row.orderModel ==2){
+						    		var c='<a href="javascript:void(0)" onclick="showSendGoods(\''+row.orderId+'\',\''+row.gameId+'\',\''+row.gameAreaId+'\',\''+row.gameServerId+'\')" >发货状态</a>';
+							    	if(row.orderStatus==2){
+							    		var b='<a href="javascript:void(0)" onclick="sendGoods(\''+row.orderId+'\')" >发货</a>';
+							    		return a+f+c+f+b;					    		
+							    	}
+							    	return a+f+c;
+					    		}
+					    	
+					    	}
+							return a;
+					    }
+					}
+			   	},
+			 ] ],
+				//右键菜单 
+				onRowContextMenu : function(e, rowIndex, rowData) {
+					e.preventDefault();
+					$(this).datagrid('unselectAll');
+					$(this).datagrid('selectRow', rowIndex);
+					$('#menu').menu('show', {
+						left : e.pageX,
+						top : e.pageY
+					});
+				},
+				 //双击事件
+				 onDblClickRow:function (rowIndex,rowData){
+						$(this).datagrid('unselectAll');
+						$(this).datagrid('selectRow', rowIndex);	
+						view();
+				 }
+			});
+
+			editForm = $('#editForm').form({
+				url : '',
+				success : function(data) {
+					var json = $.parseJSON(data);
+					if (json && json.success) {
+						$.messager.show({
+							title : '成功',
+							msg : json.msg
+						});
+						editDialog.dialog('close');
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : json.msg
+						});
+					}
+				}
+			});
+			refundForm = $('#refundForm').form({
+					url : 'refundOrder.do',
+					success : function(data) {
+						var json = $.parseJSON(data);
+						if (json && json.success) {
+							$.messager.show({
+								title : '成功',
+								msg : json.msg
+							});
+							datagrid.datagrid('reload');
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : json.msg
+							});
+						}
+						refundDialog.dialog('close');
+					}
+			});
+			viewDialog = $('#viewDialog').show().dialog({
+				title : '订单详情',
+				modal : true,
+				closed : true,
+				maximizable : true,
+			}); 
+			refundDialog=$('#refundDialog').show().dialog({
+				title : '退款',
+				modal : true,
+				closed : true,
+				maximizable : true,
+				buttons : [ {
+					text : '添加',
+					handler : function() {
+						refundForm.submit();
+					}
+				} ]
+			}); 
+});
+function _search() {
+	var  btime = searchForm.find("table >tbody> tr input[name='beginTime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='endTime']").val();
+	var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+
+
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function outXlsFile(){
+	//先判断是否能导数据
+	if(confirm("确定导出数据?")){
+		var param= $("#searchForm").serialize();
+		$.ajax({
+			type:'POST',
+			url:'validateDownXls.do',
+			data:param,//序列化表单里所有的内容
+			success: function(data){
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					window.open(
+							'${request.contextPath}/order/orderListXls.do?'+param,
+							'',
+							'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+	}
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+	searchForm.find('select').val('');
+	
+}
+
+function sendGoods(orderId){
+// 	if(confirm("确定要发货?")){
+		var link = "${request.contextPath}/order/redispatchEdit.do?o="+orderId;
+		var node = {
+				"attributes":{ "url":link}, 
+				"checked":false,
+				"iconCls":"",
+				"state":"closed",
+				"text":"订单"+orderId+"发货"
+				};
+		parent.addTab(node);		
+// 	}
+}
+
+function openTab(title,url){
+	try{
+		var node = {
+			"attributes":{ "url":url}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":title
+			};
+		parent.addTab(node);
+	}catch(e){
+		window.open(url);
+	}
+}
+function showSendGoods(orderId,gameId,areaId,serverId){
+	var link = "${request.contextPath}/product/orderDispatchShow.do?orderId="+orderId+"&gameId="+gameId+"&areaId="+areaId+"&serverId="+serverId;
+	openTab("订单发货详情",link);
+}
+function follow(orderId){
+	OrderHelper.showOrderOperatorLog(orderId);
+}
+
+function showOrderPayInfo(orderId){
+	var link = "${request.contextPath}/payInfo/ordersPayInfoList.do?orderId="+orderId;
+	openTab(orderId+"支付详情",link);
+}
+
+function viewUser(uid){
+	var link = "${request.contextPath}/member/memberList.do?uid="+uid;
+	openTab("用户信息",link);
+}
+function refund(orderId){
+	refundDialog.dialog('open');
+	refundForm.find("input[type='text']").val("");
+	$("#refundOrderId").attr("value",orderId);
+}
+function viewGoods(goodsId){
+	var link = "${request.contextPath}/product/productList.do?productno="+goodsId;
+	openTab("商品信息",link);
+}
+function view() {
+	var rows = datagrid.datagrid('getSelections');
+	if (rows.length == 1) {
+		var orderId = rows[0].orderId;
+		var link = "${request.contextPath}/order/orderDetail?orderId="+orderId;
+		var node = {
+				"attributes":{ "url":link}, 
+				"checked":false,
+				"iconCls":"",
+				"state":"closed",
+				"text":"订单"+orderId+"详情"
+				};
+		parent.addTab(node);
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+
+function areachange(){
+	var gameId = $("#g_id_receiver").val();
+	var checkValue=$("#g_id_area_receiver").val(); 
+	var server_select =  $("#g_id_serverid_receiver");
+
+	$.ajax({
+		url : '../game/selectGameAreaDetail',
+		data : {
+			gameId:gameId,partitionId:checkValue
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+			if(typeof data.total!="undefined"){
+			//先清理上次服务器残留选项
+			var maxindex2=$("select[name='serverId']").find("option:last").index();
+			if(maxindex2>=1){
+				for(var j =1;j<=maxindex2;j++){
+					 $("#g_id_serverid_receiver option:last").remove(); 
+				}
+			}
+			for(var i = 0 ;i<data.total;i++){
+			
+				$("#server_sel").show();
+				server_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+				}
+			}else{
+				
+				$("#server_sel").hide();
+			}
+		}
+	});
+}
+//选择游戏
+function game_select() { 
+	window.open(
+					'../game/gameList_select',
+					'',
+					'width=1200,height=500,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+}
+
+//游戏选择回调游戏id和名称
+function selectGameCallBack(gameId,gameName){
+	$("#g_id_receiver").attr("value",gameId);
+	$("#g_name_receiver").html(gameName);
+    selectsub(gameId);
+}
+
+function selectsub(gameId){
+	$("#server_sel").show();
+	$("#area_sel").show();
+	$.ajax({
+		url : '../game/selectGameAreaDetail',
+		data : {
+			gameId : gameId
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+		var area_select =  $("#g_id_area_receiver");
+		var server_select =  $("#g_id_serverid_receiver");
+		
+		var checkIndex=area_select.get(0).selectedIndex;
+		var checkIndex2=server_select.get(0).selectedIndex;
+		
+		//先清理上次分区残留选项
+		var maxindex=$("select[name='partitionId']").find("option:last").index();
+		if(maxindex>=1){
+			for(var j =1;j<=maxindex;j++){
+				 $("#g_id_area_receiver option:last").remove(); 
+			}
+		}
+		
+		//先清理上次服务器残留选项
+		var maxindex2=$("select[name='serverId']").find("option:last").index();
+		if(maxindex2>=1){
+			for(var j =1;j<=maxindex2;j++){
+				 $("#g_id_serverid_receiver option:last").remove(); 
+			}
+		}
+			//添加选项
+			if(typeof data.total!="undefined"){
+				
+				for(var i = 0 ;i<data.total;i++){
+				
+					var patition_id = data.rows[i].partitionId;
+					if((typeof patition_id=="undefined")){
+						//有分区 
+						$("#area_sel").show();
+						 area_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+					}else{
+						//没分区 隐藏分区
+						$("#area_sel").hide();
+						server_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+					}
+					
+					 
+				}
+				
+			}		
+		}
+	});
+}
+
+//所有游戏[查询条件]
+$(function() {
+	var url = "../product/allgameList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='gameId'] option").remove();
+		var def =  "<option value=''>请选择</option>";
+		$("select[name='gameId']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='gameId']").append(options);
+		}
+
+	});
+	
+	
+});
+
+function allgamesearch(){
+	var gameid = $("select[name='gameId']").val();
+	selectsub(gameid);
+}
+
+
+
+
+</script>
+</head>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 120px;overflow: hidden;" align="left">
+	<form id="searchForm" action="orderListXls.do">
+		<table>
+			<tr>
+				<td>订单号: <input name="orderId" style="width:150px;" /></td>
+				<td>订单状态:
+				<select id="orderStatus" class="easyui-combobox" name="orderStatus" style="width:100px;">
+					<option value="">所有状态</option>
+				    <option value="0">等待付款</option>  
+				    <option value="2">等待发货</option>  
+				    <option value="4">待确认收货</option>  
+				    <option value="6">交易成功</option>  
+				    <option value="5">仲裁</option>  
+				    <option value="7">待转账</option> 
+				    <option value="8">交易取消</option> 
+				    <option value="10">己退费</option>  
+				    <option value="-1">己删除</option> 
+				</select>
+				</td>
+				<td>订单时间:<input name="beginTime" id="beginTime" class="easyui-datebox" type="text" value="${beginTime}" style="width:100px;" />
+				—<input name="endTime" id="endTime" style="width:100px;" class="easyui-datebox" value="${endTime}"  />
+				买家UID:<input name="orderBuyUid" style="width:100px;" />
+				</td>
+				
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">复合查询</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="outXlsFile();">导出数据</a>
+			
+				</td>
+			</tr>
+			<tr>
+			<td>卖家UID:<input name="orderSellUid" style="width:100px;" /></td>
+			<td>商品编号:<input name="goodsId" style="width:100px;" /></td>
+		       <td colspan="3">
+			游戏:<select id="g_id_receiver" name="gameId" onchange="javascript:allgamesearch();" style="width: 96px">
+		        </select>&nbsp;&nbsp;
+		        <b id = "area_sel">游戏分区： 
+			    <select name="partitionId" id ="g_id_area_receiver"   onchange="areachange()">
+                <option value="">请选择</option>
+                </select>&nbsp;&nbsp;
+                <font id="server_sel">     
+                                游戏服务器： <select name="serverId" id ="g_id_serverid_receiver"  >
+                <option value="">请选择</option>
+				  
+                </select>&nbsp;
+                </font>  
+		         </b>
+		       </td>
+			</tr>
+			<tr>
+			<td>是否支付:
+				<select id="orderIspay" class="easyui-combobox" name="orderIspay" style="width:100px;">
+					<option value="" >所有状态</option>
+				    <option value="0">未支付</option>  
+				    <option value="1">己支付</option>   
+				</select>
+			</td>
+		
+			<td>
+				交易模式:
+				<select id="orderModel" class="easyui-combobox" name="orderModel" style="width:100px;">
+					<option value="">所有模式</option>
+				     <#if (modelList?? && modelList?size>0)>
+				   		<#list modelList as item>
+				   		<#if orderModel==item.modelId>
+				   			<option value="${item.modelId}" selected="selected">${item.modelName!''}</option>
+				   		<#else>
+				   			<option value="${item.modelId}">${item.modelName!''}</option>
+				   		</#if>
+				      
+				   		</#list>
+				   </#if>
+				</select>
+			</td>
+			<td>
+<!-- 				订单来源: -->
+<!-- 				<select id="orderFr" class="easyui-combobox" name="orderFr" style="width:100px;"> -->
+<!-- 					<option value="">所有</option> -->
+<!-- 				    <option value="qq">QQ</option>   -->
+<!-- 				    <option value="weixin">微信</option>    -->
+<!-- 				</select> -->
+				<span>&nbsp;&nbsp;购买渠道来源:<input type="text" name="orderFr" style="width:120px;"/></span>
+				<span>&nbsp;&nbsp;订单来源:<input type="text" name="orderComeFrom" style="width:120px;"/></span>
+				<span>&nbsp;&nbsp;子渠道ID:<input type="text" name="sonChannelId" style="width:120px;"/></span>
+			</td>
+			</tr>
+		</table>
+	</form>
+</div>
+ 
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+	<div onclick="view();" iconCls="icon-edit">查看详情</div>
+</div>
+
+<!--浏览页面-->
+<div id="refundDialog" style="display: none;width: 500px;height: 150px;" align="center">
+	<form id="refundForm" method="post" style="padding: 5px 10px">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">订单ID：</td>
+		      <td><input type="text" name="orderId" id="refundOrderId" size="20" maxlength="50" readonly/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">退款说明：</td>
+		      <td><input type="text" name="userRemark" size="50" maxlength="50"/></td>
+		    </tr>
+		  </table> 
+</form>
+</div>
+</body>
+</html>

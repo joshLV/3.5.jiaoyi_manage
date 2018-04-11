@@ -1,0 +1,260 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>虚拟游戏币充值记录</title>
+<#include "../common.html"/>
+</head>
+<script type="text/javascript">
+var tableDataGrid;
+var searchForm;
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	_initPageData();	
+	_initGameInfo();
+})
+
+function _initPageData(){
+	tableDataGrid = $("#gameCurrencyLogData").datagrid({
+		url : "queryVirtualCurrencyLog",
+		title : "虚拟游戏币充值记录",
+		pagination : true,
+		pagePosition : 'bottom',
+		rownumbers : true,
+		pageSize : 40,
+		pageList : [ 40, 100, 140, 160 ],
+		fit : true,
+		fitColumns : true,
+		nowrap : true,
+		border : false,
+		idField : 'id',
+		sortName : 'id',
+		columns : [[
+		           {field:'ORDER_ID',title:'订单号',align:'left'},      
+				   {field:'CHANNEL_NAME',title:'渠道名称',align:'left'},
+				   {field:'GAME_NAME',title:'游戏名称',align:'left'},
+				   {field:'AREA_NAME',title:'分区名称',align:'left'},
+				   {field:'NUMBER',title:'卡号',align:'left'},
+				   {field:'CARD_TYPE',title:'卡类型',align:'left'},
+				   {field:'BALANCE',title:'使用金额',align:'left'},
+				   {field:'GAME_ACCOUNT',title:'游戏账号',align:'left'},
+				   {field:'CREATE_TIME',title:'创建时间',align:'left'},
+				   {field:'VIRTUAL_CURRENCY',title:'发出虚拟币',align:'left'},
+				   {field:'REMARK',title:'备注',align:'left'}
+		]]
+	})
+	
+	
+}
+
+
+
+
+function _search() {
+	var  btime = searchForm.find("table >tbody> tr input[name='btime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='etime']").val();
+	var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+	
+	tableDataGrid.datagrid("unselectAll");
+	tableDataGrid.datagrid('load', sy.serializeObject(searchForm));
+	
+}
+
+
+function cleanSearch(){
+	tableDataGrid.datagrid('load', {});
+	searchForm.find('input').val('');
+	searchForm.find('select').val('-1');
+}
+
+
+function _initGameInfo() {
+	var url = "../product/allgameList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='game_id'] option").remove();
+		var def =  "<option value='-1'>请选择</option>";
+		$("select[name='game_id']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='game_id']").append(options);
+		}
+
+	});
+	
+	
+	var url = "../product/allChannelList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='channel_id'] option").remove();
+		var def =  "<option value='-1'>请选择</option>";
+		$("select[name='channel_id']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='channel_id']").append(options);
+		}
+
+	});
+}
+
+
+
+//选择游戏
+function gamechange(obj){
+	
+	var gameid = $(obj).val();
+	var id = $(obj).attr("id");
+	$.ajax({
+		url : '../game/selectVesion',
+		data : {
+			gameId : gameid
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+	    var version_select = id == "game" ? $("#game_version") : $("#g_id_version_receiver");
+		var area_select =  id == "game" ? $("#game_area") : $("#g_id_area_receiver");
+		
+        version_select.empty();
+        version_select.append("<option value=\'-1'>请选择</option>"); 
+        
+        area_select.empty();
+        area_select.append("<option value=\'-1'>请选择</option>"); 
+        
+
+		//添加选项
+		if(data.length > 0){
+			for(var i = 0 ;i<data.length;i++){
+				var ver_id = data[i].id;
+				console.log(ver_id);
+				//有版本
+				$("#version_sel").show();
+				version_select.append("<option value=\'"+data[i].id+"\'>"+data[i].name+"</option>"); 
+			}
+		}
+		}
+	});
+	
+}
+
+
+
+//选择版本
+function allgamesearch(obj){
+	var id = $(obj).attr("id");
+	var gameid = id == "game_version" ? $("#game").val() : $("#g_id_receiver").val();
+	var verid = id == "game_version" ? $("#game_version").val() : $("#g_id_version_receiver").val();
+	selectsub(gameid,verid,id);
+}
+
+function selectsub(gameId,verid,id){
+	$("#server_sel").show();
+	$("#area_sel").show();
+	$.ajax({
+		url : '../game/selectPatition',
+		data : {
+			gameId : gameId,
+			verId:verid
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+		var area_select =  id == "game_version" ? $("#game_area") : $("#g_id_area_receiver");
+		
+        area_select.empty();
+        area_select.append("<option value=\'-1'>请选择</option>"); 
+        
+        
+        console.log(" == " + data.length);
+			//添加选项
+				for(var i = 0 ;i<data.length;i++){
+					var p_id = data[i].id;
+					console.log("pid == " + p_id);
+					if(p_id > 0){
+						//有分区 
+						$("#area_sel").show();
+						 area_select.append("<option value=\'"+data[i].id+"\'>"+data[i].name+"</option>"); 
+					}
+				}
+		}
+	});
+}
+
+//导出Excel
+function exportExcel() {
+	var param= $("#searchForm").serialize();
+	if(confirm("确定导出数据?")){
+		window.open(
+				'${request.contextPath}/gameCurrency/exportExcelLog?'+param,
+				'',
+				'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+		window.close();
+	}
+}
+
+</script>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 153px;overflow: hidden;" align="left">
+<form id="searchForm">
+		<table>
+			<tr>
+				<td>订单:<input name="order_id" style="width:100px;" />&nbsp;</td>
+				<td>游戏账号:<input name="game_account" style="width:100px;" />&nbsp;</td>
+			    <td>创建日期:<input name="btime"  type="text"class="easyui-datebox" style="width: 90px;" /> - 
+			    	<input name="etime"  type="text" class="easyui-datebox" style="width: 90px;" /> 
+				</td>
+				<td>
+					类型:<select id="type" name="type">
+							<option value="-1">请选择</option>
+							<option value="0">备货</option>
+							<option value="1">使用</option>
+						</select>
+					渠道:<select id="channel" name="channel_id">
+							<option value="-1">请选择</option>
+
+						</select>
+				          游戏:<select id="g_id_receiver" name="game_id" onchange="gamechange(this);" style="width: 96px">
+				       		<option value="-1">请选择</option>
+						</select>&nbsp;&nbsp; 
+					<b id="version_sel">
+					游戏版本： <select name="game_version" id="g_id_version_receiver" onchange="allgamesearch(this)">
+								<option value="-1">请选择</option>
+						</select>&nbsp;&nbsp; 
+						<b id="area_sel">游戏分区： <select name="area_id" id="g_id_area_receiver" >
+									<option value="-1">请选择</option>
+							</select>&nbsp;&nbsp; 
+               	 </font>  
+		         </b>
+		       </td>
+				<td>
+					<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+					<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+			<tr>
+				<td> 
+					<a href="javascript:void(0);" class="easyui-linkbutton" onclick="exportExcel();">导出数据</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+<div region="center" border="false">
+	<table id="gameCurrencyLogData"></table>
+</div>
+</body>
+</html>

@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>提现申请列表</title>
+<#include "../common.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+var verifyDialog;
+var verifyForm;
+
+var refundDialog;
+var refundForm;
+
+var refundNoFeeDialog;
+var refundNoFeeForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'takemoneyList_json',
+			title : '提现申请列表',
+			//iconCls : 'icon-save',
+			queryParams:{
+			uid:${uuuuid}
+					},
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : 'uid',
+			sortName : '',
+			sortOrder : 'desc',
+			columns : [ [ 
+			           {field:'id',title:'编号',align:'center',sortable:true},	
+					   {field:'uid',title:'用户UID',align:'center',sortable:true},
+					   {field:'realName',title:'真实姓名',align:'center',sortable:true},
+					   {field:'transactionId',title:'提现单号',align:'center',width:100},
+					   {field:'amount',title:'提现金额',align:'center',width:100},	
+					   {field:'fee',title:'手续费',align:'center',width:100},
+					   {field:'remark',title:'备注',align:'left',width:350},
+					   {field:'createTime',title:'申请时间',align:'center',width:160},
+					   {field:'status',title:'状态',align:'left',width:100,
+						   formatter:function(value,row,index){
+							   if(row.status==1){
+								   return "审核通过";
+							   }else if(row.status==2){
+								   return "审核不过";
+							   }else if(row.status==3){
+								   return "申请成功";
+							   }else if(row.status==4){
+								   return "申请失败";
+							   }else if(row.status==5){
+								   return "转账成功";
+							   }else if(row.status==6){
+								   return "转账失败";
+							   }else if(row.status==7){
+								   return "退款成功";
+							   }
+							   else{
+								   return "<font color=red> 末审核 </font>";
+							   }
+							}  
+					   },
+					   {field:'oprate2',title:'账号操作',align:'center',width:100,
+							formatter : function(value, row, index) {
+							var a = "<a href='javascript:void(0)' onclick='transMoney("+ row.id+ ",2)' >转账</a>";
+							var b = '<a href="javascript:void(0)" onclick="refundNoFee(\''+row.id+'\')">直接退款</a>';
+							var c = '<a href="javascript:void(0)" onclick="refund(\''+row.id+'\')">退款</a>';
+							if(row.zhgFlag=="2"){ //账户通功能 关
+							    if(row.status==1){
+									//return "<a href='javascript:void(0)' onclick='transMoney("+ row.id+ ",2)' >转账</a>"
+									return a +"||"+ b;
+								    }else if(row.status==3){
+								    	return "申请成功" ;
+								    }else if(row.status==2){
+								    	//return '<a href="javascript:void(0)" onclick="refundNoFee(\''+row.id+'\')">直接退款</a>'
+								    	return b;
+								    }else if(row.status==4){
+								    	//return "<a href='javascript:void(0)' onclick='transMoney("+ row.id+ ",2)' >转账</a>"
+								    	return a + "||" + b;
+								    	
+								    }
+								    else if(row.status==5){
+								    	return "转账成功" ;
+								    }else if(row.status==6){
+								    	//return '<a href="javascript:void(0)" onclick="refund(\''+row.id+'\')">退款</a>'
+								    	return c;
+								    }else if(row.status==7){
+								    	return "退款成功" ;
+								    }else{
+								    	return "<font color=red>请先审核提现单</font>" ;
+								    }
+							}else{
+				
+							    if(row.status==1){
+									//return "<a href='javascript:void(0)' onclick='transMoney("+ row.id+ ",2)' >转账</a>"
+									return "审核通过";
+								    }else if(row.status==3){
+								    	return "申请成功" ;
+								    }else if(row.status==2){
+								    	//return '<a href="javascript:void(0)" onclick="refundNoFee(\''+row.id+'\')">直接退款</a>'
+								    	return "审核不过";
+								    }else if(row.status==4){
+								    	//return "<a href='javascript:void(0)' onclick='transMoney("+ row.id+ ",2)' >转账</a>"
+								    	return "申请失败";
+								    	
+								    }
+								    else if(row.status==5){
+								    	return "转账成功" ;
+								    }else if(row.status==6){
+								    	//return '<a href="javascript:void(0)" onclick="refund(\''+row.id+'\')">退款</a>'
+								    	return "转账失败";
+								    }else if(row.status==7){
+								    	return "退款成功" ;
+								    }else{
+								    	return "<font color=red>请先审核提现单</font>" ;
+								    }								}
+				
+							} 
+					  },
+					  {field:'operate',title:'操作',align:'center',width:120,sortable:true,
+						   formatter:function(value,row,index){
+							    if(row.id!=null || row.id!=''){
+							    	var a='<a href="javascript:void(0)" onclick="viewLog(\''+row.id+'\')">查看日志</a>';
+
+									return a;
+							    }
+							}
+					   	},
+					
+			
+			 ] ],
+		
+	
+			
+			  //双击事件
+			   onDblClickRow:function (rowIndex,rowData){
+				  
+				   edit(rowData.id);
+			   }
+	          });
+		//转账操作			
+		verifyForm = $('#verifyForm').form({
+			url : 'transMoney',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				
+				if (json && json.success) {
+				
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					verifyDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+					verifyDialog.dialog('close');
+				}
+			},
+			error:function(XMLHttpRequest, textStatus, errorThrown){
+				alert(textStatus);
+			}
+		
+			
+		});
+		
+		//用户转账
+	    verifyDialog = $('#verifyDialog').show().dialog({
+			title : '用户转账',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '提交',
+				handler : function() {
+					var uid = $("#transuid").val();
+					var uremark =$("#remark_for_trans").val();
+			
+	                if(uremark==""){
+						$.messager.alert("提示","请填写备注!");
+						return false;
+					}
+					$.messager.confirm('确认框','您确认要给该用户的银行卡转账?',function(r){  
+					    if (r){  
+					verifyForm.submit();
+					            }  
+					         });
+				}
+			} ]
+		});	
+		
+		
+		editForm = $('#editForm').form({
+			url : 'updatetakemoneyStatus.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		
+		
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '资金提现详情',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			//buttons : [ 
+			  //          {
+			  //	text : '未审核',
+			  //	handler : function() {
+			  //		updateStatus(0);
+			  //}
+			  //},
+			 //{
+			//	text : '审核通过',
+			//	handler : function() {
+					//$("#status_for_update").attr("value",1);
+					//editForm.submit();
+			//		updateStatus(1);
+			//	}
+			//}
+			// ,
+			// {
+			//	text : '审核不过',
+			//	handler : function() {
+				//$("#status_for_update").attr("value",2);
+				//editForm.submit();
+			//		updateStatus(2);
+			//	}
+			//}
+			// {
+			//	text : '已转账',
+			//	handler : function() {
+			//		//$("#status_for_update").attr("value",3);
+			//		//editForm.submit();
+			//		updateStatus(3);
+			//	}
+			//}
+			//]
+		}); 
+		//退款 扣手续费
+		refundForm = $('#refundForm').form({
+			url : 'refundTakeMoney.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+				
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					refundDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+	});
+
+	refundDialog=$('#refundDialog').show().dialog({
+		title : '退款',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '提交',
+			handler : function() {
+				refundForm.submit();
+			}
+		} ]
+	}); 
+    //直接退款 不扣手续费
+	refundNoFeeForm = $('#refundNoFeeForm').form({
+		url : 'refundTakeMoneyNoFee.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				datagrid.datagrid('reload');
+				refundNoFeeDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+});
+
+	refundNoFeeDialog=$('#refundNoFeeDialog').show().dialog({
+		title : '直接退款(不扣手续费)',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '提交',
+			handler : function() {
+				refundNoFeeForm.submit();
+			}
+		} ]
+	}); 
+
+
+});
+
+
+
+function _search() {
+	var  btime = searchForm.find("table >tbody> tr input[name='btime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='etime']").val();
+	var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+	$('#status_search').val("-1");
+}
+
+
+function edit(id) {
+
+		$.ajax({
+			url : 'takemoney_json.do',
+			data : {
+				id : id
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+			
+				var takeStatus = response.status;
+				var ShowBK = response.authorityShowBK;
+				var zhtflag =response.zhgFlag;
+				$("#verify_status").show();
+				$("#showbk").show();
+			    
+				if(takeStatus == 0 && zhtflag == 2){
+					$("#verify_status").show();
+				}else{
+					$("#verify_status").hide();
+				}
+				
+				if(ShowBK == false){
+					$("#showbk").hide();
+				}else{
+					$("#showbk").show();
+				}
+	
+				editForm.form('clear');
+				editForm.form('load', response);
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+	
+}
+
+function showRoleSelect(formName,value){
+	if (value == 0){
+		$("#"+formName+" .roleSelect").hide();
+	}else{
+		$("#"+formName+" .roleSelect").show();
+	}
+}
+
+function updateStatus(status){
+	var uid = $("#id_for_update").val();
+	var uremark =$("#remark_for_status").val();
+	if(uremark==""){
+		$.messager.alert("提示","请填写审核备注!");
+		return false;
+	}
+	if(uremark=="\\"){
+		$.messager.alert("提示","请不要输入非法字符!");
+		return false;
+	}
+	
+	$.messager.confirm("确认框","您确认要提交审核?", function(r) {
+		if (r) {
+	$.ajax({
+		url : 'updatetakemoneyStatus.do',
+		data : {
+			status2 :status,id:uid,remark:uremark
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+		
+			if (response.success) {
+				$.messager.show({
+					title : '成功',
+					msg : response.msg
+				});
+				datagrid.datagrid('reload');
+				editDialog.dialog('close');
+				editForm.form('load', response);
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : response.msg
+				});
+			}
+		}
+	});
+	
+		}
+	});
+}
+
+//转账操作
+function transMoney(id,status){
+	$('#verifyForm #transuid').val(id);
+	$('#verifyForm #status_for_trans').val(status);
+
+	$('#verifyForm textarea').val("");
+	$('#status_for_trans').val(status);
+	$('#transuid').val(id);
+	verifyDialog.dialog('open');
+}
+
+
+//跳转到提现日志
+function viewLog(id){
+	var link = "member/takeMoneyLogList.do?take_money_id="+id;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"提现编号为:"+id+"的日志" 
+			};
+	parent.addTab(node);	
+}
+
+//退款操作
+function refund(take_Id){
+	refundDialog.dialog('open');
+	refundForm.find("input[type='text']").val("");
+	$("#take_Id").attr("value",take_Id);
+}
+
+//退款操作
+function refundNoFee(take_Id){
+	refundNoFeeDialog.dialog('open');
+	refundNoFeeForm.find("input[type='text']").val("");
+	$("#take_Id1").attr("value",take_Id);
+}
+//查看用户完整银行卡号
+function showbankcardnum(){
+	var takeid = $('#id_for_update').val();
+	$.ajax({
+		url : 'showbankcardnum.do',
+		data : {
+			takeid :takeid
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+		    //alert("===" + response.showbanknum);
+		    $('#bankcardnumshow').val(response.showbanknum);
+		}
+	});
+}
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>用户UID:<input name="uid" value="${uuuuid}" style="width:100px;" />&nbsp;</td>
+				<td>申请时间:<input name="btime"   type="text"  class="easyui-datebox" style="width:90px"/> -</td>
+                <td><input name="etime"   type="text" class="easyui-datebox" style="width:90px"/></td>
+                <td>提现申请状态: 
+                <select name="t_status" id ="status_search">
+                <option value="-1">请选择</option>
+<!--                 <option value="0"> 末审核 </option> -->
+<!-- 				    <option value="1">审核通过</option> -->
+<!-- 				    <option value="2">审核不过</option> -->
+				    <option value="3">申请成功</option>
+				    <option value="4">申请失败</option>
+				    <option value="5">转账成功</option>
+		            <option value="6">转账失败</option>
+		            <option value="7">退款成功</option>
+                </select>
+                </td>
+                <td>提现单号:<input name="transactionId" value="" style="width:100px;" />&nbsp;</td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+
+	<div onclick="edit();" iconCls="icon-edit">查看详情</div>
+</div>
+
+
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 600px;height: 400px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="id" id ="id_for_update"/>
+		<input type="hidden" name="status2" id="status_for_update" />
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" class="table_line" >
+		    <tr>
+		      <td class="lable">用户UID：</td>
+		      <td><input type="text" name="uid" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		     </tr>
+		     <tr> 
+		      
+		      <td class="lable">登录ID：</td>
+		      <td><input type="text" name="takeLoginId" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		    </tr>
+		     <tr> 
+		      <td class="lable">真实姓名：</td>
+		      <td><input type="text" name="realName" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		    </tr>
+		      <tr>
+		      <td class="lable">交易单号：</td>
+		      <td><input type="text" name="transactionId" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		    
+		     </tr>
+		     
+		      <tr>
+		      <td class="lable">银行：</td>
+		      <td><input type="text" name="bankName" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		    
+		     </tr>
+		     
+		    <tr>
+		   <td class="lable"> 支行: </td>
+		   <td>
+		  <input type="text" name="branchinfo" size="40" maxlength="50" readonly="readonly" style="border:thin;" />
+		   </td>
+		   </tr>
+		     
+		      <tr>
+		      <td class="lable">银行地址：</td>
+		      <td><input type="text" name="bankAddr" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		    
+		     </tr>
+		     
+		     <tr>
+		      <td class="lable">银行卡号：</td>
+		      <td><input type="text" id="bankcardnumshow" name="bankCardNum" size="20" maxlength="50" readonly style="border:thin;"/>
+		     <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showbankcardnum();" id="showbk">查看银行卡号</a>
+		      </td>
+		    
+		     </tr>
+		     
+		     <tr> 
+		      <td class="lable">提现金额：</td>
+		      <td><input type="text" name="amount" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">手续费：</td>
+		      <td><input type="text" name="fee" size="20" maxlength="50"  readonly style="border:thin;"/></td>
+		    		     </tr>
+		    		
+		     <tr> 
+		      <td class="lable">提现单号：</td>
+		      <td><input type="text" name="transactionId" size="20" readonly style="border:thin;"/></td>
+		    </tr>
+		 <!-- 
+		   <tr>
+		 
+		      <td class="lable">审核人：</td>
+		      <td><input type="text" name="adminid" size="20"  readonly style="border:thin;"/></td>
+		     </tr>
+	  --> 
+		    <tr>
+		      <td class="lable">申请时间：</td>
+		      <td><input type="text" name="takeCreatetime" size="20" readonly style="border:thin;"/></td>
+		    		     </tr>
+		     <tr> 
+		      <td class="lable">最后审核时间：</td>
+		      <td><input type="text" name="takeVerifytime" size="20" readonly style="border:thin;"/></td>
+		    </tr>
+		    	     <tr> 
+		       <td class="lable">转账时间：</td>
+		      <td><input type="text" name="takeTransfertime" size="20" readonly style="border:thin;"/></td>
+		    </tr>
+		      <tr>
+		     
+		      <td>申请状态</td>
+		      <td>
+		       <select name="status"  style="color: red;border: thin;" disabled="disabled">
+                <option value="-1">请选择</option>
+                <option value="0">末审核 </option>
+				    <option value="1">审核通过</option>
+				    <option value="2">审核不过</option>
+				    <option value="3">申请成功</option>
+				    <option value="4">申请失败</option>
+				    <option value="5">转账成功</option>
+		            <option value="6">转账失败</option>
+		            <option value="7">退款成功</option>
+                </select>
+                </td>
+		    </tr>
+		      <tr>
+		      <td class="lable">审核备注：</td>
+		      <td>
+		      <textarea name ="remark" rows="5" cols="40" id="remark_for_status"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写审核备注">
+		      
+		      </textarea>
+		      </td>
+		     
+		    </tr>
+		  <tr id="verify_status">
+		  <td colspan="2" style="text-align: right;">
+		 <a href="javascript:void(0);" class="easyui-linkbutton" onclick="updateStatus(1);">审核通过</a>
+		 <a href="javascript:void(0);" class="easyui-linkbutton" onclick="updateStatus(2);">审核不过</a>
+		  </td>
+		  </tr>
+		 
+		  </table> 
+	</form>
+</div>
+
+
+	<!--临时锁定账号备注-->
+	<div id="verifyDialog"
+		style="display: none; width: 500px; height: 205px;" align="center">
+		<form id="verifyForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<input type="hidden" name="id" id="transuid" />
+		
+				<tr>
+					<td class="lable">操作备注：</td>
+					<td>
+					<textarea rows="3" cols="30" class="easyui-validatebox" name="remark"   id="remark_for_trans" data-options="required:true" missingMessage="请填写转账备注" ></textarea>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	
+	<!--退款-->
+<div id="refundDialog" style="display: none;width: 550px;height: 180px;" align="center">
+	<form id="refundForm" method="post" style="padding: 5px 10px">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">提现单ID：</td>
+		      <td><input type="text" name="tid" id="take_Id" size="20" maxlength="50" readonly/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">退款说明：</td>
+		      <td><input type="text" name="userRemark" size="50" maxlength="50"/><font color="red">退款扣手续费</font></td>
+		    </tr>
+		  </table> 
+</form>
+</div>
+
+	<!--直接退款-->
+<div id="refundNoFeeDialog" style="display: none;width: 550px;height: 180px;" align="center">
+	<form id="refundNoFeeForm" method="post" style="padding: 5px 10px">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">提现单ID：</td>
+		      <td><input type="text" name="tid" id="take_Id1" size="20" maxlength="50" readonly/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">退款说明：</td>
+		      <td><input type="text" name="userRemark" size="50" maxlength="50"/><font color="red">直接退款不扣手续费</font></td>
+		    </tr>
+		  </table> 
+</form>
+</div>
+
+</body>
+</html>

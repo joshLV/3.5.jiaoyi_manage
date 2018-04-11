@@ -1,0 +1,15 @@
+{
+"roleId":${role.roleId},
+"roleName":"${role.roleName}",
+"roleDesc":"${role.roleDesc!''}",
+"roleCode":"${role.roleCode}",
+"status":"${role.status}",
+"allowUpdate":"${role.allowUpdate}",
+"perList":[
+	<#list rolePerList as per>
+	{"pid":${per.pid}}
+	<#if per_has_next>,</#if>
+	</#list>
+	],
+"isCustomerR":${role.isCustomerR}
+}

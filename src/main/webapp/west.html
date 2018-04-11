@@ -1,0 +1,37 @@
+<script type="text/javascript" charset="utf-8">
+var tree;
+$(function() {
+	var r = Math.random();
+	tree = $('#menu').tree({
+			url : 'menu_json.jsp?_r='+r,
+			lines : true,
+			onClick : function(node) {
+				var nodeurl = node.attributes["url"].replace(' ','');
+				if (nodeurl != '' && nodeurl !='#' && nodeurl !='javascript:'){
+					addAccessMenuData_sys_function(node.id,node.text);
+					addTab(node);
+				}
+			},
+			onDblClick : function(node) {
+				if (node.state == 'closed') {
+					$(this).tree('expand', node.target);
+				} else {
+					$(this).tree('collapse', node.target);
+				}
+			}
+		});
+});
+function addAccessMenuData_sys_function(menuId,menuName){
+	$.ajax({
+		url : 'system/menuAccess_add',
+		data : {menuId:menuId,menuName:menuName},
+		success : function(response) {
+			
+		}
+	});
+}
+</script>
+
+<div id="menuPanel" fit="true" border="false" title="鍔熻兘鑿滃崟" style="padding: 5px;">
+	<ul id="menu"></ul>
+</div>

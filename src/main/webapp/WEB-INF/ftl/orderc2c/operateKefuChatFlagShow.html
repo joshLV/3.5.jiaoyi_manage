@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>控制游戏是否聊天</title>
+<#include "../common.html"/>
+<style type="text/css">
+body{padding:10px; margin:10px; font-size:13px; line-height:24px;}
+</style>
+<script type="text/javascript">
+	function update(){
+		if(confirm("是否确定更新?")){
+			//先判断是否能导数据
+			var param= $("#updateForm").serialize();
+			$.ajax({
+				type:'POST',
+				url:'changeGameChatFlag.do',
+				data:param,//序列化表单里所有的内容
+				success: function(data){
+					var json = $.parseJSON(data);
+					if (json && json.success) {
+						$.messager.show({
+							title : '成功',
+							msg : json.msg
+						});				
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : json.msg
+						});
+					}
+				}
+			});
+		}
+	}
+</script>
+</head>
+<body class="easyui-layout">
+<div region="center" border="false" style="padding:10px;">
+	<form id="updateForm">
+		<#if gameList??>
+		<#assign count=1>
+		<table border="0" cellpadding="0" cellspacing="0" width="300px">
+		<tr>
+			<td style="text-align:center;font-weight:bold">序号</td>
+			<td style="text-align:center;font-weight:bold">游戏</td>
+			<td style="text-align:center;font-weight:bold"><span style="color:red">*</span>是否支持聊天</td>
+		</tr>
+		<#list gameList as typeList>
+			<#if typeList.status==1 || typeList.status==3>
+			<tr>
+			<td style="text-align:center">${count}<input type="hidden" id="gameId" name="gameId" value="${typeList.gameId}" /></td>
+			<td style="text-align:center;font-weight:bold">${typeList.gameName}</td>
+			<td style="text-align:center"><select id="isShow" name="isShow">
+			<#if typeList.isForChat==1>
+			<option value="1" selected>是</option>
+			<option value="0">否</option>
+			<#else>
+			<option value="1">是</option>
+			<option value="0" selected>否</option>
+			</#if></select>
+			</td></tr>
+			<#assign count=count+1>
+			</#if>
+		</#list>
+		<tr><td colspan="3" style="text-align:center" height="60px"><input type="button" value="更新" onClick="update()"/><input type="reset" value="重置"/></td></tr>
+		</table>
+		</#if>
+	</form>
+</div>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>重置用户手机号码</title>
+<#include "../common.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+
+var verifyDialog;
+
+var resetForm;
+var resetDialog;
+$(function() {	
+	//修改用户手机
+    resetDialog = $('#resetDialog').show().dialog({
+		title : '换绑用户手机号码',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '提交',
+			handler : function() {
+				var phonenum = $("#user_newphone").val();
+			
+				//var partten = /^((\(\d{3}\))|(\d{3}\-))?13[0-9]\d{8}|15[0-9]\d{8}|189\d{8}$/;
+				var partten1 = /^\d{11}$/;
+				if(!partten1.test(phonenum) || phonenum.length>11){
+					//$.messager.alert("错误提示","请输入正确的用户手机号码!");
+					$.messager.show({
+						title : '错误提示',
+						msg : '请输入正确的用户手机号码!'
+					});
+					return false ;
+				}
+
+               resetForm.submit();
+			}
+		} ]
+	});	
+	
+	//修改用户手机
+	resetForm = $('#resetForm').form({
+		url : 'resetPhone.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+			$.messager.show({
+					title : '修改成功',
+					msg : json.msg
+				});
+			   
+				resetDialog.dialog('close');
+				setTimeout("resetphoneshow()",2000);
+				
+			} else {
+				$.messager.show({
+					title : '修改失败',
+					msg : json.msg
+				});
+				//resetDialog.dialog('close');
+			}
+		},
+		error:function(XMLHttpRequest, textStatus, errorThrown){
+			alert(textStatus);
+		}
+	});
+
+
+});
+function resetphoneshow() {
+	var phonenum = $("#phone_num").val();
+	
+	if(phonenum==""){
+		$.messager.alert("错误提示","请填写用户手机号码!");
+		return false;
+	}
+	
+	searchForm.submit();
+     
+}
+
+//修改用户手机号码
+function resetmemberphone(){
+  var old = $('#old_telephone').html();
+  var uid = $('#member_uid').html();
+  $('#user_oldphone').val(old);
+  $('#oldphone_for_userphone').val(old);
+  $('#uid_for_userphone').val(uid);
+  resetDialog.dialog('open');
+	
+}
+
+
+
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="center" border="false" title="请输入用户手机号码" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm" action="phoneModifyShow">
+		<table >
+			<tr>
+				<td >用户手机号码:<input name="phonenum" value="${phonenum!''}" style="width:200px;" id="phone_num"/>&nbsp;</td>
+	
+				
+				<td style="border-bottom:#999 1px dashed;">
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="resetphoneshow();">查询</a>
+				</td>
+		
+			</tr>
+		</table>
+	</form>
+	
+	<#if platname??>
+			<table  class="table_line">
+			<tr>
+			<td colspan="2" ><b>用户信息</b></td>
+			</tr>
+			<tr>
+				<td>&nbsp;用户UID:</td>
+				<td>
+				<p id="member_uid">${uId!''}</p>
+				</td>
+			</tr>
+				<tr>
+				<td>平台账号:</td>
+				<td>
+				<p>${platname!''}</p>
+				</td>
+			</tr>
+						<tr>
+				<td>手机号码:</td>
+				<td>
+				<b id="old_telephone">${telphone!''}</b> &nbsp;		
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="resetmemberphone();">重置用户手机号码</a>
+				
+				</td>
+			</tr>
+						<tr>
+				<td>真实姓名:</td>
+				<td>
+				<p>${realname!'暂无'}</p>
+				</td>
+			</tr>
+			
+									<tr>
+				<td>登录密码情况:</td>
+				<td>
+				<p>${loginStatus!''}</p>
+				</td>
+			</tr>
+									<tr>
+				<td>支付密码情况:</td>
+				<td>
+				<p>${payStatus!''}</p>
+				</td>
+			</tr>
+
+		</table>
+		<#else>
+		<table  class="table_line">
+		<tr>
+		<td>
+		<font color="red">暂无用户信息,请输入正确的查询条件</font>
+		</td>
+		</tr>
+		</table>
+		</#if>
+</div> 
+
+
+
+	<!--修改用户手机号码-->
+	<div id="resetDialog" style="display: none; width: 500px; height: 205px;" align="center">
+		<form id="resetForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+			
+	          <tr> 
+		      <td class="lable">原手机号码：</td>
+		      <td>
+		       <input type="hidden" name="uid" id="uid_for_userphone" />
+		       <input type="hidden" name="oldphone" id="oldphone_for_userphone" />
+			   <input type="text" id="user_oldphone" name="oldphone1" style="border: thin;" disabled="disabled"/>
+		      </td>
+		     </tr>
+		       <tr> 
+		      <td class="lable">新手机号码：</td>
+		      <td>
+			   <input type="text" id="user_newphone" name="newphone" />
+		      </td>
+		     </tr>
+				<tr>
+					<td class="lable">操作备注：</td>
+					<td>
+					<textarea rows="3" cols="30" class="easyui-validatebox" name="usertyperemark"   id="userphone_remark" data-options="required:true" missingMessage="请填写操作备注" ></textarea>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	
+</body>
+</html>

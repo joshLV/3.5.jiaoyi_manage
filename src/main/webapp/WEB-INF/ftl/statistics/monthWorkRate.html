@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<title>月工时率统计</title> <#include "../common.html"/>
+<style>
+.table_line tr td {
+	border-bottom: #999 1px dashed;
+}
+</style>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	$("#selectYear option").remove();
+	var monthReport ='<option value="'+new Date().getFullYear()+'" selected="selected">'+new Date().getFullYear()+'</option>';
+	for(var i=1;i<12;i++){
+		var curr_year = new Date().getFullYear()-i;
+		monthReport+='<option value="'+curr_year+'">'+curr_year+'</option>';
+	}
+	$("#selectYear").append(monthReport);
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'monthWorkRate_json.do',
+			title : '月工时率统计',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 200,
+			pageList : [ 100, 120, 140, 160,200 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'csId',
+			sortName : 'csId',
+			sortOrder : 'desc',
+			columns : [ [ 
+			          
+			   {field:'csId',title:'序号',align:'center'},				
+			   {field:'postNo',title:'客服岗位号',align:'center'},				
+			   {field:'fullname',title:'姓名',align:'center'},				
+			   {field:'monthWorkRate',title:'月工时率',align:'center'},
+// 			   {field:'csType',title:'客服类型',align:'center'},
+			   {field:'wr1', title:'1号',align:'center'},
+			   {field:'wr2', title:'2号',align:'center'},
+			   {field:'wr3', title:'3号',align:'center'},
+			   {field:'wr4', title:'4号',align:'center'},
+			   {field:'wr5', title:'5号',align:'center'},
+			   {field:'wr6', title:'6号',align:'center'},
+			   {field:'wr7', title:'7号',align:'center'},
+			   {field:'wr8', title:'8号',align:'center'},
+			   {field:'wr9', title:'9号',align:'center'},
+			   {field:'wr10',title:'10号',align:'center'},
+			   {field:'wr11',title:'11号',align:'center'},
+			   {field:'wr12',title:'12号',align:'center'},
+			   {field:'wr13',title:'13号',align:'center'},
+			   {field:'wr14',title:'14号',align:'center'},
+			   {field:'wr15',title:'15号',align:'center'},
+			   {field:'wr16',title:'16号',align:'center'},
+			   {field:'wr17',title:'17号',align:'center'},
+			   {field:'wr18',title:'18号',align:'center'},
+			   {field:'wr19',title:'19号',align:'center'},
+			   {field:'wr20',title:'20号',align:'center'},
+			   {field:'wr21',title:'21号',align:'center'},
+			   {field:'wr22',title:'22号',align:'center'},
+			   {field:'wr23',title:'23号',align:'center'},
+			   {field:'wr24',title:'24号',align:'center'},
+			   {field:'wr25',title:'25号',align:'center'},
+			   {field:'wr26',title:'26号',align:'center'},
+			   {field:'wr27',title:'27号',align:'center'},
+			   {field:'wr28',title:'28号',align:'center'},
+			   {field:'wr29',title:'29号',align:'center'},
+			   {field:'wr30',title:'30号',align:'center'},
+			   {field:'wr31',title:'31号',align:'center'}
+			 ] ]
+		});
+	$('#fromDays').datebox({
+		validType : 'date[\'\']'
+	});
+	$('#toDays').datebox({
+		validType : 'date[\'\']'
+	});
+});
+function _search() {
+	var year = $('#selectYear :selected').val();
+	var month = $('#selectMonth :selected').val();
+	var postNoP = $('#postion').val();
+	var fullnameP = $('#fullname_v').val();
+	var customerType = $('#searchForm select option:selected').val();
+	datagrid.datagrid({
+		queryParams : {
+			postNo : postNoP,
+			fullname : fullnameP,
+			customerType : customerType,
+			year : year,
+			month: month
+		}
+	});
+	datagrid.datagrid('reload');
+}
+
+function cleanSearch() {
+	$('#searchForm').form('reset');
+	datagrid.datagrid({
+		queryParams : {}
+	});
+	datagrid.datagrid('reload');
+}
+//导出数据
+function _exportStatisticsData() {
+	var year = $('#selectYear :selected').val();
+	var month = $('#selectMonth :selected').val();
+	var postNoP = $('#postion').val();
+	var fullnameP = $('#fullname_v').val();
+	var customerType = $('#searchForm select option:selected').val();
+	
+	var dataP = "year="+year+"&month="+month+"&postNo="+postNoP+"&fullname="+fullnameP+"&customerType="+customerType+"&t="+new Date().getTime();
+	console.log(dataP);
+	if(confirm("确定导出数据?")){
+			$.ajax({
+				type:'POST',
+				url : 'exportMonthWorkRateStatisticsExcel.do',
+				data : {outputData:0},
+				success: function(data){
+						window.open(
+								'${request.contextPath}/statistics/exportMonthWorkRateStatisticsExcel.do?'+dataP,
+								'',
+								'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+						window.close();
+				}
+			});
+	}
+} 
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div
+		region="north"
+		border="false"
+		title="搜索条件"
+		style="padding: 5px; height: 95px; overflow: hidden;"
+		align="left">
+		<form id="searchForm">
+			客服类型: <select name="customerType">
+				<option
+					value="-1"
+					selected="selected">请选择</option>
+				<option value="1">寄售客服</option>
+				<option value="2">寄售物服</option>
+				<option value="3">审核员</option>
+				<option value="4">投资客服</option>
+			</select> 岗位号: <input
+				id="postion"
+				name="postNo"
+				style="width: 100px;" />&nbsp; 姓名: <input
+				id="fullname_v"
+				name="fullname"
+				style="width: 100px;" />&nbsp;
+				年: <select name="year" id="selectYear">
+			</select>
+				月: <select name="month" id="selectMonth">
+				<option value="01">1月</option>
+				<option value="02">2月</option>
+				<option value="03">3月</option>
+				<option value="04">4月</option>
+				<option value="05">5月</option>
+				<option value="06">6月</option>
+				<option value="07">7月</option>
+				<option value="08">8月</option>
+				<option value="09">9月</option>
+				<option value="10">10月</option>
+				<option value="11">11月</option>
+				<option value="12" selected="selected" >12月</option>
+			</select>
+				<a
+				href="javascript:void(0);"
+				class="easyui-linkbutton"
+				onclick="_search();">搜索</a> <a
+				href="javascript:void(0);"
+				class="easyui-linkbutton"
+				onclick="cleanSearch();">取消</a>
+				<a href="javascript:void(0);"
+				class="easyui-linkbutton"
+				onclick="_exportStatisticsData();">导出统计数据</a>
+		</form>
+	</div>
+
+	<div
+		region="center"
+		border="false">
+		<table id="datagrid"></table>
+	</div>
+</body>
+</html>

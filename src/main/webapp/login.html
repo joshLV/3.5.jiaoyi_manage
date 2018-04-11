@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>用户登录</title>
+<link rel="stylesheet" type="text/css" href="jquery-easyui-1.4/themes/default/easyui.css" id="easyuiTheme">
+<link rel="stylesheet" type="text/css" href="jquery-easyui-1.4/themes/icon.css">
+<link rel="stylesheet" type="text/css" href="jquery-easyui-1.4/themes/color.css">
+<script type="text/javascript" src="jquery-easyui-1.4/jquery.min.js"></script>
+<script type="text/javascript" src="jquery-easyui-1.4/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="jquery-easyui-1.4/locale/easyui-lang-zh_CN.js"></script>
+<script>
+var loginForm;
+$(function() {
+	
+	loginForm = $('#loginForm').form({
+		url : 'login_submit',
+		success : function(data) {
+			//console.log(data);
+			var d = $.parseJSON(data); 
+			if (d.success) {
+				document.location.href="main.jsp";
+			} else{
+				$.messager.show({
+					msg : d.msg,
+					title : '提示'
+				});
+				loadImgVcode();
+			}
+		},
+		error : function(data){
+			//console.log(data);
+		}
+	});
+	setTimeout(function() { 
+		isSMS()
+	},500) 
+});
+
+function loadImgVcode() {
+	$('#img_Vcode').attr('src','captcha.svl?r='+Math.random());
+} 
+
+function keySubmit(event){
+	var keyCode = event.keyCode?event.keyCode:event.which?event.which:event.charCode;
+	if(keyCode == 13){
+		loginForm.submit();
+	}
+}
+// 是否需要短信验证
+function isSMS() {
+	var loginid = $("#loginid").val();
+	$.ajax({
+		type: "GET",
+		url : 'isSMS',
+		data : {loginid : loginid},
+		cache : false,
+		dataType : 'json',
+		success : function(response) {
+			if (response == 1) {
+				$("#SMSVcode").show();
+			} else {
+				$("#SMSVcode").hide();
+			}
+		}
+	});
+}
+// 发送短信
+function sendVerifyCode() {
+
+	$("#sendSMS").attr("disabled", true); 
+	var loginid = $("#loginid").val();
+	$.ajax({
+		type: "POST",
+		url : 'sendVerifyCode',
+		data : {loginid : loginid},
+		cache : false,
+		dataType : 'json',
+		success : function(response) {
+			$.messager.show({
+				msg : response.msg,
+				title : '提示'
+			});
+			if (response.success) {
+				settime();
+			} else {
+				$("#sendSMS").removeAttr("disabled")
+			}
+		}
+	});
+}
+
+</script>
+</head>
+<body style="background-image: url('images/bg.jpg');">
+	<div class="easyui-window" title="用户登录" data-options="iconCls:'icon-save',minimizable:false,maximizable:false,shadow:false" style="width:500px;margin: 0 auto;">
+		<div style="padding:10px 0 10px 60px">
+	    <form id="loginForm" method="post">
+	    	<table>
+	    		<tr>
+	    			<td>用户名:</td>
+	    			<td><input class="easyui-validatebox" type="text" id="loginid" name="loginid" data-options="required:true" onblur="isSMS();"></input></td>
+	    		</tr>
+	    		<tr>
+	    			<td>密码:</td>
+	    			<td><input  autocomplete="new-password" class="easyui-validatebox" type="password" name="password" id="password" data-options="required:true" onblur="isSMS();"></input></td>
+	    		</tr>
+	    		<tr>
+	    			<td>验证码:</td>
+	    			<td><input  type="text" id="vcode" name="vcode" onkeydown="keySubmit(event)" onblur="isSMS();"></input>
+	    				<a href="javascript:" onclick="loadImgVcode()"><img src="captcha.svl" name="img_Vcode" border="0" align="absmiddle" id="img_Vcode"/></a>
+	    			</td>
+	    		</tr> 
+	    		<tr id="SMSVcode" style="display:none">
+	    			<td>短信验证:</td>
+	    			<td>
+	    				<input type="text" id="SMSVcode" name="msgcode" onkeydown="keySubmit(event)">
+	    				<input type="button" id="sendSMS" value="免费获取验证码" onclick="sendVerifyCode();">
+	    			</td>
+	    		</tr>
+	    	</table>
+	    </form>
+	    </div>
+	    <div style="text-align:center;padding:5px">
+	    	<a href="javascript:void(0)" class="easyui-linkbutton" onclick="submitForm()" >登录</a>
+	    	<a href="javascript:void(0)" class="easyui-linkbutton" onclick="clearForm()">清除</a>
+	    </div>
+	</div>
+	<script>
+		function submitForm(){
+			loginForm.submit();
+		}
+		function clearForm(){
+			$('#loginForm').form('clear');
+		}
+		//发送短信后60秒内不能从新发送
+		var countdown = 60; 
+		function settime() { 
+			if (countdown == 0) { 
+				$("#sendSMS").removeAttr("disabled");    
+				$("#sendSMS").val("免费获取验证码"); 
+				countdown = 60;
+			} else { 
+				$("#sendSMS").val("重新发送(" + countdown + ")"); 
+				countdown--;  
+				setTimeout(function() { 
+					settime() 
+				},1000) 
+			}
+		} 
+	</script>
+</body>
+</html>

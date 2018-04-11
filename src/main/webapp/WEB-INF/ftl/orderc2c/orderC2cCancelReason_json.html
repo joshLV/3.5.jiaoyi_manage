@@ -1,0 +1,19 @@
+<#if orderCancelReasonList??>
+{"total":${total},"rows":[
+<#list orderCancelReasonList as item>
+{
+"id":${item.id},
+"cancel_reason":"${item.cancelReason!''}",
+"status":${item.status},
+"contactFlag":${item.contactFlag},
+"reasonType":${item.reasonType},
+"operateType":${item.operateType},
+"orderBelonging":${item.orderBelonging}
+}
+<#if item_has_next>,</#if>
+</#list>
+]}
+ 
+<#else>
+  {"total":0,"rows":[]}
+</#if>

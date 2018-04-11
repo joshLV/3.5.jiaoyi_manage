@@ -1,0 +1,390 @@
+
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>聚好玩游戏管理平台</title>
+
+<#include "../common.html"/>
+<script type="text/javascript">
+	//编辑器
+
+	var datagrid;
+	var addDialog;
+	var addForm;
+	var searchForm;
+    var viewDialog;
+	var editForm;
+
+	var editor;
+	var editor1;
+	
+	$(function() {
+		
+		viewDialog=$('#viewDialog');
+		editor1 = KindEditor.create('#message_Content_show', editOptions);
+		viewDialog = $('#viewDialog').show().dialog({
+			title : '站内信详情',
+			modal : true,
+			closed : true,
+			maximizable : true,
+		}); 
+		viewDialog.dialog('close');
+		
+		
+		addDialog = $('#addDialog');
+		editor = KindEditor.create('#message_Content1', editOptions);
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加站内信',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					//closeDialog('您确定要添加该站内信吗?', 'addForm', 'addDailog');
+					//alert(editor.html());
+					$("#message_Content").val(editor.html());
+					//alert($("#message_Content").val());
+					addForm.submit();
+				}
+			} ]
+		});
+		addDialog.dialog('close');
+		
+
+		
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid').datagrid({
+			url : 'messageMissionList_json',
+			title : '定时任务',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'messageMissionId',
+			sortName : '',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.messageMissionId;
+						}
+					},
+			   {field:'messageMissionId',title:'ID',align:'center',width:120,sortable:true},
+			   {field:'receiver',title:'接收人',align:'left',sortable:true,width:100,
+						formatter:function(value,row,index){
+							if(value==0){
+								return "所有人";
+							}else{
+								return value;
+							}
+						} 	
+			   },			
+			   {field:'messageTitle',title:'标题',align:'center',width:120,sortable:true},
+			   {field:'createTime',title:'创建时间',align:'center',width:100	},				
+			   {field:'sendTime',title:'开始发送时间',align:'center',width:160,sortable:true},
+			   {field:'sendedTime',title:'成功发送时间',align:'center',width:160,sortable:true},
+			   {field:'mmcName',title:'站内信类型',align:'center',width:160},
+			   {field:'status',title:'状态',align:'center',width:180,sortable:true,
+					formatter:function(value,row,index){
+						if(value==0){
+							return "未发送";
+						}else if(value==1){
+							return "发送成功";
+						}
+					}   
+			   	},
+			 ] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					showdd();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			},'-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			},
+			  //双击事件
+			   onDblClickRow:function (rowIndex,rowData){
+				   $(this).datagrid('unselectAll');
+				   $(this).datagrid('selectRow', rowIndex);
+				   view();
+			   }
+		});
+		
+		//添加
+		addForm = $('#addForm').form({
+			url : 'messageMissionListAdd.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		
+		
+		editForm = $('#editForm').form({
+			url : '',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+
+		
+		
+	});//function  end
+	
+	
+	
+
+	
+	function _search() {
+		datagrid.datagrid("unselectAll");
+		datagrid.datagrid('load', sy.serializeObject(searchForm));
+	}
+
+	function cleanSearch() {
+		datagrid.datagrid('load', {});
+		searchForm.find('input').val('');
+	}
+	
+	//删除
+	function del() {
+		var rows = datagrid.datagrid('getSelections');
+		var ids = [];
+		if (rows.length > 0) {
+			$.messager.confirm('请确认', '您要删除当前所选项目?注意:己发送成功的不能被删除!', function(r) {
+				if (r) {
+					for ( var i = 0; i < rows.length; i++) {
+						if(rows[i].status==0){
+							ids.push(rows[i].messageMissionId);
+						}
+					}
+					console.log(ids.join(','));
+					$.ajax({
+						url : 'messageMissionDelete.do',
+						data : {
+							ids : ids.join(',')
+						},
+						dataType : 'json',
+						success : function(response) {
+							datagrid.datagrid('load');
+							datagrid.datagrid('unselectAll');
+							//var d = JSON.parse(response);
+							
+							$.messager.show({
+								title : '提示',
+								msg : response.msg
+							});
+							
+						}
+					});
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		} 
+	}
+	
+	//选择发送人
+	function selectUid() { 
+		window.open('../member/memberList_select',
+						'',
+						'width=1200,height=500,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+	}
+	
+	function selectUidCallBack(uids){
+		$("#receiver").attr("value",uids);
+	}
+
+	function selectAll(){
+		$("#receiver").attr("value","0");
+	}
+
+	function view() {
+		var rows = datagrid.datagrid('getSelections');
+		if (rows.length == 1) {
+			viewDialog.dialog('open');
+			//editForm.form('clear');
+			$("#receiverAll").attr("value",rows[0].receiverAll);
+			$("#message_Content_show").attr("value",rows[0].messageContent);
+			editor1.html(rows[0].messageContent);
+		} else {
+			$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+		}
+	}
+	
+	//弹出新增框
+	function showdd() {
+		addDialog.dialog('open');
+		$("#addForm").find("input[type='text']").val("");
+		var url = "allCategoryList_json";
+		$.getJSON(url,function(result){
+			var categoryCount = result.total;
+			addForm.find("select[name='categoryId'] option").remove();
+			for ( var i = 0; i < categoryCount; i++) {
+				var options = "<option value='"+result.rows[i].mmcId+"'>"+ result.rows[i].categoryName+ "</option>";
+				addForm.find("select[name='categoryId']").append(options);
+			}
+		});
+		editor.html("");
+	}
+</script>
+
+</head>
+
+<body class="easyui-layout">
+
+<div region="north" border="false" title="搜索条件" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>发送状态:
+				<select id="status" class="easyui-combobox" name="status" style="width:100px;">
+					<option value="-1">所有状态</option>
+				    <option value="1">发送成功</option>  
+				    <option value="0">未发送</option>   
+				</select>
+				</td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+	<div onclick="showdd();" iconCls="icon-add">增加</div>
+	<div onclick="del();" iconCls="icon-remove">删除</div>
+	<div onclick="view();" iconCls="icon-edit">查看内容</div>
+</div>
+
+<div>
+
+
+</div>
+<!--添加表单-->
+<div id="addDialog"  class="easyui-dialog" style="width: '860px'; height: '455px';"
+	align="center">
+	<form id="addForm" method="post" >
+		<table border="0" cellspacing="1" cellpadding="1">
+			<tr>
+				<td class="lable">标题：</td>
+				<td><input type="text" name="messageTitle" size="20"
+					maxlength="50" class="easyui-validatebox"
+					data-options="required:true" missingMessage="请填写标题" /></td>
+			</tr>
+			<tr>
+				<td class="lable">接收人：</td>
+				<td><input type="text" name="receiver" id="receiver" size="100"
+					maxlength="5000" class="easyui-validatebox"
+					data-options="required:true" missingMessage="请选择接收人" /> <input
+					type="button" value="选择" onclick="selectUid()" /><input
+					type="button" value="群发" onclick="selectAll()" /></td>
+			</tr>
+			<tr class="lable">
+					<td class="lable">站内信类型：</td>
+					<td><select style="width: 155px" name="categoryId"
+						id="categoryId"></select></td>
+			</tr>
+			<tr>
+				<td class="lable" valign="top">站内信内容：</td>
+				<td><textarea rows="15" cols="120" maxlength="1000" name="messageContent1" id="message_Content1"></textarea>
+				<input type="hidden" name="messageContent" id="message_Content" >
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td class="lable">预期发送时间：</td>
+				<td><input name="sendtime" class="easyui-datetimebox"
+					data-options="required:true,showSeconds:false" style="width: 300px" /></td>
+			</tr>
+		</table>
+	</form>
+</div>
+
+<!--浏览页面-->
+<div id="viewDialog"  class="easyui-dialog" style="width:700px;height: 355px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		  <tr>
+		  <td class="lable" valign="top">接收人：</td>
+		  </tr>
+		    <tr>
+		    
+		      <td>
+		      	<textarea rows="5" cols="75" id="receiverAll" readonly="readonly" name="receiverAll"  style="width: 632px; height: 120px;"></textarea>
+		    </tr>
+		  <tr>
+		    <td class="lable" valign="top">站内信内容：</td>
+		  </tr>
+		    <tr>
+		    
+		      <td>
+		      	<textarea rows="10" cols="50" id="message_Content_show" readonly="readonly" name="messageContent"></textarea>
+		    </tr>
+		  </table>  
+</form>
+
+</body>

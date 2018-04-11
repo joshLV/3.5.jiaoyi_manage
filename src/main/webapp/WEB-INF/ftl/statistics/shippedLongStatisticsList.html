@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<title>发货时长统计</title> <#include "../common.html"/>
+<style>
+.table_line tr td {
+	border-bottom: #999 1px dashed;
+}
+</style>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+var showDetailDailog;
+$(function() {
+	showDetailDailog = $('#showDetail');
+	showDetailDailog.dialog('close');
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'shippedLongStatisticsList_json',
+			title : '平均发货时长',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'on_duty',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'tradingPattern',title:'交易模式',align:'center'},				
+			   {field:'gameName',title:'游戏',align:'center', width:20},				
+			   {field:'productType',title:'商品类型',align:'center'},				
+			   {field:'avg',title:'平均发货时长',align:'center', formatter:function(value,row,index){
+					return (value/60).toFixed(2)+"分钟";
+				}}
+			 ] ],
+			 onDblClickRow:function (rowIndex,rowData){
+				 gameOrderDetailList(rowData.gameName);
+			 }
+	});
+	$('#fromDays').datebox({
+		validType : 'md[\'\']'
+	});
+	$('#toDays').datebox({
+		validType : 'md[\'\']'
+	});
+});
+
+function gameOrderDetailList(gameName) { 
+	var fromDaysP = $('#fromDays').datebox('getValue');
+	var toDaysP = $('#toDays').datebox('getValue');
+	var gameNameP = $('#searchForm select[name="gameName"] option:selected').val();
+	var tradingPatternP = $('#searchForm select[name="tradingPattern"] option:selected').val();
+	var productTypeP = $('#searchForm select[name="productType"] option:selected').val();
+	window.open('gameOrderDetailList.do?gameId='+encodeURI(encodeURI(gameName))+'&gameName='+gameNameP+'&tradingPattern='+tradingPatternP+"&productType="+productTypeP+"&fromDays="+fromDaysP+"&toDays="+toDaysP,
+					'订单发货时长(<font color=red>'+gameName+'</font>)',
+					'width=1200,height=auto,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes,location=no, scrollbars=yes');
+}
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+	
+	var fromDays = $('#fromDays').datebox('getValue');
+	var toDays = $('#toDays').datebox('getValue');
+	var gameNameP = $('#searchForm select[name="gameName"] option:selected').val();
+	var tradingPatternP = $('#searchForm select[name="tradingPattern"] option:selected').val();
+	var productTypeP = $('#searchForm select[name="productType"] option:selected').val();
+	
+	if(fromDays==""){
+		datagrid.datagrid({
+			queryParams : {
+				gameName:gameNameP,
+				tradingPattern : tradingPatternP,
+				productType : productTypeP,
+			}
+		});
+		datagrid.datagrid('reload');
+	}else{
+		if (fromDays > toDays && fromDays != "" && toDays != "") {
+			$.messager.show({title:'提示', msg:'请选择正确的时间段'});
+			return false;
+		} else {
+			datagrid.datagrid({
+				queryParams : {
+					gameName:gameNameP,
+					tradingPattern : tradingPatternP,
+					productType : productTypeP,
+					fromDays : fromDays + "",
+					toDays : toDays + ""
+				}
+			});
+			datagrid.datagrid('reload');
+		}
+	}
+}
+function cleanSearch() {
+	$('#searchForm').form('reset');
+	searchForm.find('input').val('');
+	datagrid.datagrid({
+		queryParams : {}
+	});
+	datagrid.datagrid('reload');
+}
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div
+		region="north"
+		border="false"
+		title="搜索条件"
+		style="padding: 5px; height: 95px; overflow: hidden;"
+		align="left">
+		<form id="searchForm">
+			交易类型: <select name="tradingPattern">
+				<option value="1">寄售</option>
+				<option value="2" selected="selected">API</option>
+				<option value="3">担保</option>
+			</select> 
+			游戏: <select id="gameNameId" name="gameName" >
+	  				 <#list gameList as list>
+					    <option value="${list.gameId}">${list.gameName}</option>
+		       		</#list> 
+			</select>&nbsp;
+			商品类型: <select name="productType" >
+	  				 <#list productTypeList as list>
+					    <option value="${list.id}">${list.name}</option>
+		       		</#list> 
+			</select>	
+				 <br> 统计时间: 从 <input
+				id="fromDays"
+				type="text"
+				name="fromDays"
+				class="easyui-datetimebox"
+				style="width: 150px"> 到 <input
+				id="toDays"
+				type="text"
+				name="toDays"
+				class="easyui-datetimebox"
+				style="width: 150px"> <a
+				href="javascript:void(0);"
+				class="easyui-linkbutton"
+				onclick="_search();">搜索</a> <a
+				href="javascript:void(0);"
+				class="easyui-linkbutton"
+				onclick="cleanSearch();">取消</a>
+		</form>
+	</div>
+
+	<div
+		region="center"
+		border="false">
+		<table id="datagrid"></table>
+	</div>
+			<!-- 详细信息窗口 -->
+	<div id="showDetail" class="easyui-window" title="详细信息"
+		data-options="modal:true"
+		style="width: 800px; height: auto; padding: 10px">详细信息内容</div>
+</body>
+</html>

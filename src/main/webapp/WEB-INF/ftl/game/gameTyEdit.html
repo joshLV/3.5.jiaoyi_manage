@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>修改估值参数</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var showWindow;
+$(function() {
+	showWindow = $('#showWindow');
+	showWindow.dialog('close');
+});
+
+//提交表单
+function addFormSubmit(){
+	var paramName = $("#paramName").val();
+	if(paramName == ""){
+		alert("请输入估值参数名称");
+		$("#paramName").focus();
+		return false;
+	}
+
+	var paramType=$("input[name='paramType']:checked").val();
+	if(paramType==1){
+		var paramOption=$("#paramOption").val();
+		if(paramOption == ""){
+			alert("请输入下拉框候选值");
+			$("#paramOption").focus();
+			return false;
+		}
+	}
+	
+	var paramScript = $("#paramScript").val();
+	if(paramScript == ""){
+		alert("请输入估值参数脚本");
+		$("#paramScript").focus();
+		return false;
+	}
+
+	//异步提交表单
+    $('#addForm').form({
+		url : 'gameTySave',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			$.messager.show({
+				title : '操作提示',
+				msg : json.msg
+			});
+
+			if(json.code==1){
+				//刷新父窗口
+				window.opener._search();
+			}
+		}
+	});
+	
+	return true;
+}
+
+//打开运行脚本窗口
+function run(){
+	var paramScript = $("#paramScript").val();
+	if(paramScript == ""){
+		alert("请输入估值参数脚本");
+		$("#paramScript").focus();
+		return;
+	}
+	
+	var content="<form id='mform'>";
+	content=content+"请输入x值：<input type='text' id='valueX' name='valueX' size='20' class='easyui-validatebox' data-options='required:true' missingMessage='请填写x值' />";
+	content=content+"<br><span style='padding-left:65px'><input type='button' value='确定' onclick='javascript:runScript();' /><input type='reset' value='重置' /></span>";
+	content=content+"</form>";
+	$('#showWindow').window({
+		title : "运行代码(x值必须为正整数或0)",
+		collapsible:false,
+		minimizable:false,
+		maximizable:false,
+		content : content
+	});
+	
+	$('#showWindow').css("display","");
+	$('#showWindow').window('open');
+}
+
+//运行脚本
+function runScript(){
+	var paramScript = $("#paramScript").val();
+	if(paramScript == ""){
+		alert("请输入估值参数脚本");
+		$("#paramScript").focus();
+		return;
+	}
+	
+	var valueX = $("#valueX").val();
+
+	if(valueX == null || valueX == ""){
+		alert("请输入x值");
+		$("#valueX").focus();
+		return;
+	}
+	
+	if(!checkInteger(valueX)){
+		alert("x值必须为正整数或0");
+		return;
+	}
+	
+	$('#showWindow').css("display","none");
+	$('#showWindow').window('close');
+	
+    $.ajax({
+        type: "POST",
+        url: "gameTyRunScript",
+        data: {
+        	valueX:valueX,
+        	paramScript:paramScript
+        },
+        dataType: "json",
+        success: function (data) {
+        	if(data.code==1){
+    			$.messager.show({
+    				title : '操作提示',
+    				msg : '结果为：'+data.msg
+    			});
+        	}else{
+    			$.messager.show({
+    				title : '操作提示',
+    				msg : '运行失败'
+    			});
+        	}
+        }
+    });
+}
+
+//查看代码示例
+function viewDemo(){
+	var content="function sum(x){ <br>&nbsp; if(x>=1 && x<=10){ <br>&nbsp;&nbsp; return y=x+10; <br>&nbsp; }else if(x>=11 && x<=20){ <br>&nbsp;&nbsp; return y=x+20; <br>&nbsp; }else{ <br>&nbsp;&nbsp; return y=x; <br>&nbsp; } <br> } <br><br>/*说明：function sum(x){}是固定模板，代码中须有且不可更改。*/";
+	$('#showWindow').window({
+		title : "JS代码示例",
+		collapsible:false,
+		minimizable:false,
+		maximizable:false,
+		content : content
+	});
+	$('#showWindow').css("display","");
+	$('#showWindow').window('open');
+}
+
+//检查估值类型
+function checkAddType(type){
+	if(type==1){
+		$("#optionId").css("display","block");
+	}else{
+		$("#optionId").css("display","none");
+		var paramType=$("input[name='paramType']:checked").val();
+		if(paramType==0){
+			$("#paramOption").val("");
+		}
+	}
+}
+
+//判断是否正整数或0
+function checkInteger(str){
+	try{
+		if(str==0){
+			return true;
+		}
+	}catch(err){
+		return false;
+	}
+	var re=/^[1-9]+[0-9]*]*$/;
+	return re.test(str);
+}
+</script>
+<body class="easyui-layout">
+<div region="center" border="false">
+	<form id="addForm" method="post" style="padding:10px">
+	<input type="hidden" name="paramId" id="paramId" value="${paramId!'0'}">
+	<table border="0" cellpadding="0" cellspacing="1" style="width: 100%; background-color: #95b8e7;">
+		<tr>
+			<td bgcolor="#e3edff" style="padding:5px;height:20px;font-weight:bold;">游戏名称：${gameName!''}<input type="hidden" name="gameId" id="gameId" value="${gameId!'0'}"></td>
+		</tr>
+		<tr>
+			<td bgcolor="#FFFFFF" style="padding:5px;height:20px;">
+			<div>估值参数名称：<input type="text" id="paramName" name="paramName" size="20" value="${paramMap.name!''}" class="easyui-validatebox" data-options="required:true" missingMessage="请填写参数名称" />
+			<span style="padding-left:10px;">
+			<#if typeName!=''>
+				<#if paramMap.valua_type!=0>
+					<input type="radio" name="valuaType" value="${typeId!0}" checked />以${typeName!''}计算
+					<input type="radio" name="valuaType" value="0" />以人民币计算(单位：分)
+				<#else>
+					<input type="radio" name="valuaType" value="${typeId!0}" />以${typeName!''}计算
+					<input type="radio" name="valuaType" value="0" checked />以人民币计算(单位：分)
+				</#if>
+			<#else>
+				<input type="radio" name="valuaType" value="0" checked />以人民币计算(单位：分)
+			</#if>
+			</span>
+			<div>估值参数说明：<input type="text" id="paramDesc" name="paramDesc" size="50" value="${paramMap.param_desc!''}" class="easyui-validatebox" /></div>
+			<div>估值参数备注：<input type="text" id="remark" name="remark" size="50" value="${paramMap.remark!''}" class="easyui-validatebox" /></div>
+			<#if paramMap.param_type==0>
+			<div>估值数据设定：<input type="radio" name="paramType" value="0" onclick="javascript:checkAddType(0);" checked />文本框<input type="radio" name="paramType" value="1" onclick="javascript:checkAddType(1);" /><span style="padding-right:10px;">下拉框</span><div id="optionId" style="padding-right:10px;display:none">下拉框候选值：<input type="text" id="paramOption" name="paramOption" size="50" value="${paramMap.param_option!''}" class="easyui-validatebox" /><span style="padding-left:10px;">多个选项以逗号分隔，值及选项以冒号分隔，如：0:否,1:是</span></div></div>
+			<#else>
+			<div>估值数据设定：<input type="radio" name="paramType" value="0" onclick="javascript:checkAddType(0);" />文本框<input type="radio" name="paramType" value="1" onclick="javascript:checkAddType(1);" checked /><span style="padding-right:10px;">下拉框</span><div id="optionId" style="padding-right:10px;">下拉框候选值：<input type="text" id="paramOption" name="paramOption" size="50" value="${paramMap.param_option!''}" class="easyui-validatebox" /><span style="padding-left:10px;">多个选项以逗号分隔，值及选项以冒号分隔，如：0:否,1:是</span></div></div>
+			</#if>
+			<div>估值参数脚本：<textarea cols="80" rows="10" id="paramScript" name="paramScript">${paramMap.param_script!''}</textarea><br><span style="padding-left:90px">请输入JS语法的代码，输入为x，计算结果输出为y。<input type="button" value="运行代码" onclick="javascript:run();" /><input type="button" value="查看代码示例" onclick="javascript:viewDemo();" /></span></div>
+			</td>
+		</tr>
+	</table>
+	<table border="0" cellpadding="0" cellspacing="1" style="width: 100%;">
+		<tr>
+			<td align="right"><span style="padding-right:10px;"><input type="submit" id="saveBtn" name="saveBtn" onclick="return addFormSubmit();" value="保存" /></span><span style="padding-right:10px;"><input type="reset" id="resetBtn" name="resetBtn" value="取消" /></span></td>
+		</tr>
+	</table>
+	</form>
+</div>
+<!-- 自定义属性详细窗口 -->
+<div id="showWindow" class="easyui-window" title="弹出窗口" data-options="modal:true" style="top: 100px; left: 100px; width: 400px; height: '300px'; padding: 10px; line-height: 15px; display: none"></div>
+</body>
+</html>

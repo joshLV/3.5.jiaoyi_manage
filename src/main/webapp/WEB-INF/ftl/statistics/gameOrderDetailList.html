@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<#include "../common.html"/>
+<style>
+.table_line tr td {
+	border-bottom: #999 1px dashed;
+}
+</style>
+</head>
+<body class="easyui-layout">
+	<div
+		region="center"
+		border="false">
+		<table id="datagrid"></table>
+	</div>
+	
+	<!--浏览页面-->
+	<div id="viewDialog" style="display: none;width: 800px;height: 'auto';" align="center">
+		<form id="editForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+			    <tr>
+			      <td class="lable">订单ID：</td>
+			      <td><input type="text" name="orderId" size="30" maxlength="50" readonly/></td>
+			      <td class="lable">商品名称：</td>
+			      <td><input type="text" name="goodsName" size="30" maxlength="50"  readonly/></td>
+			    </tr>
+			    <tr>
+			      <td class="lable">商品数量：</td>
+			      <td><input type="text" name="goodsCount" size="30" maxlength="50" readonly/></td>
+			      <td class="lable">商品单价：</td>
+			      <td><input type="text" name="goodsPrice" size="30" maxlength="50"  readonly/></td>
+			    </tr>
+			    <tr>
+			      <td class="lable">商品类型：</td>
+			      <td><input type="text" name="productName" size="30" maxlength="50" readonly/></td>
+				  <td class="lable">是否支付：</td>
+			      <td>
+			      	 <select name="orderIspay" style="border: thin;size: 20px;" disabled="disabled">
+			      		<option value="0">未付款</option>	 
+			      		<option value="1">己付款</option>	 
+			      	 </select>
+			      </td>
+			    </tr>
+			    <tr>
+			      <td class="lable">所在游戏：</td>
+			      <td><input type="text" name="gameName" size="30" maxlength="50" readonly/></td>
+			      <td class="lable">所在区服：</td>
+			      <td><input type="text" name="gameAreaName" size="9" maxlength="50" readonly/><input type="text" name="gameServerName" size="9" maxlength="50"  readonly/></td>
+			    </tr>
+			    <tr>
+			      <td class="lable">买家UID：</td>
+			      <td><input type="text" name="orderBuyUid" size="30" maxlength="50" readonly/></td>
+			      <td class="lable">卖家UID：</td>
+			      <td><input type="text" name="orderSellUid" size="30" maxlength="50"  readonly/></td>
+			    </tr>
+			    <tr>
+			      <td class="lable">买家游戏角色名：</td>
+			      <td><input type="text" name="orderBuyGameRoleName" size="30" maxlength="50" readonly/></td>
+			      <td class="lable">卖家游戏角色名：</td>
+			      <td><input type="text" name="orderSellGameRoleName" size="30" maxlength="50"  readonly/></td>
+			    </tr>
+			    <tr>
+			      <td class="lable">买家手机号：</td>
+			      <td><input type="text" name="orderBuyPhonenum" size="30" maxlength="50" readonly/></td>
+			      <td class="lable">订单手续费：</td>
+			      <td><input type="text" name="orderFree" size="30" maxlength="50"  readonly/></td>		    
+			    </tr>
+			    <tr>
+			      <td class="lable">订单总额：</td>
+			      <td><input type="text" name="orderAmount" size="30" maxlength="50" readonly/></td>
+			      <td class="lable">订单状态：</td>
+			      <td>
+			      	 <select name="orderStatus" style="border: thin;size: 20px;" disabled="disabled">
+			      	 	<option value="0">等待付款</option>
+			      	 	<option value="2">等待发货</option>
+			      	 	<option value="4">待确认收货</option>
+			      	 	<option value="6">订单成功</option>
+			      	 	<option value="8">交易取消</option>
+			      	 	<option value="10">己退款</option>
+			      	 </select>	      
+			      </td>
+			    </tr>
+			    <tr>
+			      <td class="lable">支付渠道：</td>
+			      <td><input type="text" name="payPlatform" size="30" maxlength="50" readonly/></td>
+			      <td class="lable">支付方式：</td>
+			      <td><input type="text" name="payWay" size="30" maxlength="50"  readonly/></td>
+			    </tr>
+			    <tr>
+			      <td class="lable">下单时间：</td>
+			      <td><input type="text" name="orderTimeFrom" size="30" maxlength="50" readonly/></td>
+			      <td class="lable">支付时间：</td>
+			      <td><input type="text" name="orderPayTimeForm" size="30" maxlength="50"  readonly/></td>
+			    </tr>
+			    <tr>
+			      <td class="lable">发货时间：</td>
+			      <td><input type="text" name="sendGoodsTimeForm" size="30" maxlength="50" readonly/></td>
+			      <td class="lable">收货时间：</td>
+			      <td><input type="text" name="getGoodsTimeForm" size="30" maxlength="50"  readonly/></td>
+			    </tr>
+			   <tr>
+			      <td class="lable">商品ID：</td>
+			      <td><input type="text" name="goodsId" size="30" maxlength="50" readonly/></td>
+			      <td class="lable">sellID：</td>
+			      <td><input type="text" name="goodsSellPid" size="30" maxlength="50"  readonly/></td>
+			    </tr>
+			    <tr>
+			    	<td class="lable">备注:</td>
+			    	<td colspan="3">
+			    		<textarea rows="" cols="45" name="remark"></textarea>
+			    	</td>
+			    </tr>
+			  </table> 
+	</form>
+	</div>
+	<!--浏览页面-->
+</body>
+<script type="text/javascript">
+var datagrid;
+var viewDialog;
+var editForm;
+function getQueryString(name) {
+var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+var r = window.location.search.substr(1).match(reg);
+if (r != null) return unescape(r[2]); return null;
+}
+$(function() {
+	datagrid = $('#datagrid').datagrid({
+			url : 'gameOrderDetailList_json?gameName='+getQueryString('gameName')+'&tradingPattern='+getQueryString('tradingPattern')+"&productType="+getQueryString('productType')+"&fromDays="+getQueryString('fromDays')+"&toDays="+getQueryString('toDays'),
+			title : '订单发货时长（<font color=red>'+decodeURI(decodeURI(getQueryString('gameId')))+'</font>）',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'order_time',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'orderId',title:'订单号',align:'center',width:20, 
+				   formatter:function(value,row,index){
+				   return '<a href="javascript:void(0)" onclick="view(\''+value+'\');">'+value+'</a>';
+			   }},				
+			   {field:'tradingPattern',title:'交易模式',align:'center'},				
+			   {field:'gameName',title:'游戏',align:'center',width:20},				
+			   {field:'productType',title:'商品类型',align:'center'},				
+			   {field:'shippedLong',title:'发货时长',align:'center', formatter:function(value,row,index){
+					return (value/60).toFixed(2)+"分钟";
+				}},
+			   {field:'orderPayTime',title:'订单支付时间',align:'center',width:20,sortable:true},			
+			   {field:'getGoodsTime',title:'订单发货时间',align:'center',width:20,sortable:true},		
+			   {field:'order_time',title:'创建时间',align:'center',width:20,sortable:true}			
+			 ] ]
+	});
+
+	viewDialog = $('#viewDialog').show().dialog({
+		title : '订单详情',
+		modal : true,
+		closed : true,
+		maximizable : true
+	}); 
+	editForm = $('#editForm').form({
+		url : '',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				editDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+	});
+});
+function view(orderId) {
+	if (orderId.length >0) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : '${request.contextPath}/order/orderDetail_json.do',
+			data : {
+				orderId : orderId,
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				viewDialog.dialog('open');
+				editForm.form('clear');
+				console.log(response);
+				editForm.form('load', response);
+				$.messager.progress('close');
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+</script>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>追踪订单</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+	function query(){
+		var orderId = $("#orderId").val();
+		if(orderId == null || orderId == ''){
+			alert("请输入要查询的订单号");
+		}else{
+			var param= $("#searchForm").serialize();
+			$.ajax({
+				type:'POST',
+				url:'orderC2cAccountInfoJson.do',
+				data:param,//序列化表单里所有的内容
+				success: function(data){
+					var json = $.parseJSON(data);
+					$("#userAccountInfo").html();
+					var html="<b>";
+					if(json.code == 1){
+						html+=json.msg;
+					}else{
+						html+="游戏账号："+json.sellUserGameAccount+";<br/>";
+						html+= "游戏密码："+json.sellUserGameAccountPwd+";<br/>";
+						html+= "角色名称："+json.orderSellGameRoleName+";<br/>";
+						html+= "角色ID："+json.sellUserGameRoleId+";<br/>";
+						html+= "角色等级："+json.orderSellGameRoleLevel+"级;<br/>";
+						if(json.sellUserGameSafekey != null){
+							html+= "安全锁："+json.sellUserGameSafekey+";<br/>";
+						}else{
+							html+= "安全锁：无<br/>";
+						}
+						html+="<b>"
+					}
+					$("#userAccountInfo").html(html);
+				}
+			});
+		}
+	}
+</script>
+</head>
+<body class="easyui-layout">
+<div region="center" border="false" style="padding-top: 10px;">
+	<form id="searchForm">
+	订单号：<input type="text" name="orderId" id="orderId" size="40px"/>
+	 	<input type="button" value="查询" onclick="query();">
+	</form>
+	<div id="userAccountInfo" style="font-size: 14px;"></div>
+</div>
+</body>
+</html>

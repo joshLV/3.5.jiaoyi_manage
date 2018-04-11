@@ -1,0 +1,98 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>追踪订单</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var searchForm;
+
+$(function() {
+	datagrid = $('#datagrid').datagrid({
+			data :${showDate},
+			title : '订单处理列表',
+			//iconCls : 'icon-save',
+			rownumbers : true,
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			columns : [ [
+				{field:'orderType',title:'订单类型',align:'center',width:50,sortable:true,
+					formatter:function(value,row,index){
+						if (row.orderType==1){
+							return "普通订单";
+						}else{
+							return "支付单";
+						}
+					}  			   			
+				},
+				{field:'person',title:'操作人',align:'center',width:50,sortable:false,
+					   formatter:function(value,row,index){
+						   if (row.person==0){
+							   return "系统";
+						   }else{
+							   return row.person;
+						   }
+						}     
+				},
+				 {field:'operateType',title:'操作类型',align:'center',sortable:true,
+				  	 formatter:function(value,row,index){
+				  	 	var operateType = [];
+				  	 	operateType["1"] = "生成订单";
+				  	 	operateType["2"] = "订单支付";
+				  	 	operateType["3"] = "生成支付单";
+				  	 	operateType["4"] = "订单取消";
+				  	 	operateType["5"] = "订单退款";
+				  	 	operateType["6"] = "API自动发货";
+				  	 	operateType["7"] = "确认收货";
+				  	 	operateType["10"] = "订单完成";
+				  	 	operateType["1001"] = "派单给客服";
+				  	 	operateType["1002"] = "派单给物服";
+				  	 	operateType["1003"] = "物服审请撤单";
+				  	 	operateType["1004"] = "客服审核";
+				  	 	operateType["1005"] = "物服发货";
+				  	 	operateType["1006"] = "客服受理";
+				  	 	operateType["1007"] = "物服受理";
+				  	 	operateType["1008"] = "管理员转单";
+				  	 	operateType["1009"] = "转账给卖家";
+				  	 	operateType["1010"] = "超时赔付";
+				  	 	operateType["1011"] = "转单卖家";
+				  	 	operateType["1012"] = "人工撤单";
+				  	 	operateType["2001"] = "物服查验";
+				  	 	operateType["2002"] = "客服处理";
+				  	 	operateType["2003"] = "客服发货";
+				  	 	operateType["3001"] = "关闭仲裁";
+				  	 	operateType["3002"] = "仲裁部分退款";
+				  	 	operateType["3003"] = "仲裁全额退款";
+				  	 	operateType["5000"] = "退游值抵扣";
+				  	 	operateType["5010"] = "生成差价订单";
+				  	 	operateType["5110"] = "更新退游账号信息";
+				  	 	operateType["5120"] = "取消退游账号";
+				  	 	operateType["5130"] = "退游账号回收完成";
+				  	 	operateType["8000"] = "更新信息";
+				  	 	operateType["8001"] = "c2c账号信息更新";
+				  	 	operateType["-1"] = "逻辑删除订单";
+
+				  	 	var str = operateType[value];
+				  	 	if (!str){
+				  	 		str = "--";
+				  	 	}
+				  	 	return str;
+				  	 }
+			   },
+			   {field:'reason',title:'处理信息',align:'left',width:200,sortable:false},				
+			   {field:'remark',title:'备注',align:'left',width:200,sortable:true},	
+			   {field:'operateTime',title:'处理时间',align:'center',width:80,sortable:true},
+			 ] ],
+		});
+
+});
+</script>
+</head>
+<body class="easyui-layout">
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>日交易统计列表</title>
+<#include "../common.html"/>
+
+<style type="text/css">
+.under_line_input{
+border:0;
+border-bottom:1 solid black;
+}
+</style>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'countDayOrderList_json.do',
+			title : '日交易统计列表',
+			//iconCls : 'icon-save',
+			//	queryParams:{
+			//	productno:"${productno!''}"
+			//},
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'count_day',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'id',title:'编号',align:'center'},				
+			   {field:'orderSucNum',title:'交易成功量',align:'center'},				
+			   {field:'orderFaileNum',title:'交易失败量',align:'center',width:120},
+			   {field:'orderDayMoneyNum',title:'交易金额',align:'center',width:50},				
+			   {field:'orderSucApiNum',title:'API成功数',align:'center',width:50},
+			   {field:'orderSucApiMoney',title:'API交易金额',align:'center',width:50},
+			   {field:'orderSucC2cNum',title:'C2C成功数',align:'center',width:50},
+			   {field:'orderSucC2cMoney',title:'C2C成功金额',align:'center',width:50},
+			   {field:'countDay',title:'日期',align:'center',width:60},
+			 ] ]
+
+	
+			
+			
+		});
+		
+
+
+
+});
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+function changeView(){
+
+	var btime = $("input[name='btime']").val();
+	var etime = $("input[name='etime']").val();
+	window.location.href="chartCountDayOrder?btime="+btime+"&etime="+etime;
+}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+
+				
+				
+				<td>日期: <input name="btime"   type="text"  class="easyui-datebox" /> -
+                <input name="etime"   type="text" class="easyui-datebox" /></td>
+                
+           
+			
+			<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a> 
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a> 
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="changeView()">切换到视图</a> 
+			</td>
+			</tr>
+	
+			
+		
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+
+
+</body>
+</html>

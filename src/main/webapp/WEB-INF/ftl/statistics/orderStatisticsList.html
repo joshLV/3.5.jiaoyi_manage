@@ -1,0 +1,805 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>订单统计</title> <#include "../common.html"/>
+<style type="text/css">
+#game {height: 560px;overflow: auto;}
+#game table {border-collapse: collapse;border-color: #95B8E7;}
+#game table thead {background-color: #FFFFFF;}
+#game th, #game td {border: 1px solid #CCC;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;box-sizing: border-box;padding: 3px;}
+#game #thead {position: fixed;z-index: 100;background-color: #FFF}
+#game .w_70 {width: 70px;}
+#game .w_100 {width: 100px;}
+#game .w_60 {width: 60px;}
+#game .w_40 {width: 40px;}
+</style>
+<script type="text/javascript">
+function formatGame(row){
+	var s = '<span style="display:inline-block;width:175px"><img id="gameIds'+row.gameId+'" alt="不选中" src="../images/nochecked.png" class="gameIds" style="padding-right: 5px;padding-bottom:2px;vertical-align:middle"><lable  class="gameIds" for="gpIds'+row.gameId+'">'+row.gameName+"</lable></span>";
+	return s;
+}
+function formatGamePartition(row){
+	var s = '<span style="display:inline-block;width:175px"><lable for="gpIds'+row.gamePartitionId+'">'+row.partitionName+"</lable></span>";
+	return s;
+}
+function formatGamePartitionMultiple(row){
+	var s = '<span style="display:inline-block;width:175px"><img id="gpIds'+row.gamePartitionId+'" alt="不选中" src="../images/nochecked.png" class="gpIds" style="padding-right: 5px;padding-bottom:2px;vertical-align:middle"><lable  class="gpIds" for="gpIds'+row.gamePartitionId+'">'+row.partitionName+"</lable></span>";
+	return s;
+}
+function formatProductType(row){
+	var s = '<span style="display:inline-block;width:175px"><lable for="ptIds'+row.productId+'">'+row.productName+"</lable></span>";
+	return s;
+}
+function formatProductTypeMultiple(row){
+	var s = '<span style="display:inline-block;width:175px"><img id="ptIds'+row.productId+'" alt="不选中" src="../images/nochecked.png" class="ptIds" style="padding-right: 5px;padding-bottom:2px;vertical-align:middle"><lable for="ptIds'+row.productId+'">'+row.productName+"</lable></span>";
+	return s;
+}
+function formatProductCategory(row){
+	var s = '<span style="display:inline-block;width:210px"><lable for="pcIds'+row.id+'">'+row.name+'</lable></span>';
+	return s;
+}
+function formatProductCategoryMultiple(row){
+	var s = '<span style="display:inline-block;width:210px"><img id="pcIds'+row.id+'" alt="不选中" src="../images/nochecked.png" class="pcIds" style="padding-right: 5px;padding-bottom:2px;vertical-align:middle"><lable for="pcIds'+row.id+'">'+row.name+"</lable></span>";
+	return s;
+}
+//初始化游戏区-多选
+function initGamePartitionMultiple(){
+	$('#gamePartitionClass1').html("&nbsp;");
+	$('#gamePartitionClass2').html("&nbsp;");
+	$('.gpIds').parent().remove();
+	$('#gamePartitionClass1').html("游戏区：");
+	$('#gamePartitionClass2').html('<a href="javascript:void(0);" class="easyui-linkbutton l-btn" onclick="selectedGPDialog($(\'#selectGame\').combobox(\'getValues\')[0]);" id>选择游戏区</a><input type="hidden" id="selectedGPIdsId" name="gameArea">');
+	$('#gamePartitionClass2 a').wrapInner('<span class="l-btn-text"></span>');
+	$('#gamePartitionClass2 a').wrapInner('<span class="l-btn-left"></span>');
+	$('#gamePartitionClass2 a').addClass('easyui-linkbutton 1-btn');
+	$('#selectGamePartition').combobox({
+		valueField: 'gamePartitionId',
+		textField: 'partitionName',
+		panelWidth: 180,
+		panelHeight: 520,
+		multiple:true,
+		formatter: formatGamePartitionMultiple,		
+		onSelect: function(param){
+			selectedGPIds();
+			$("#gpIds"+param.gamePartitionId).attr('src','../images/checked.png');
+		},
+		onUnselect: function(param){
+			selectedGPIds();
+			$("#gpIds"+param.gamePartitionId).attr('src','../images/nochecked.png');
+		}
+	});
+}
+//初始化游戏区-单选
+function initGamePartition(){
+	$('#gamePartitionClass1').html("&nbsp;");
+	$('#gamePartitionClass2').html("&nbsp;");
+	$('div > span > lable[for^="gpIds"]').parent().parent().parent().parent().remove();
+	$('#gamePartitionClass1').html("游戏区：");
+	$('#gamePartitionClass2').html('<input id="selectGamePartition" name="gameArea"  style="width:230px">');
+	$('#selectGamePartition').combobox({
+		valueField: 'gamePartitionId',
+		textField: 'partitionName',
+		panelWidth: 180,
+		panelHeight: 520,
+		formatter: formatGamePartition,		
+		onSelect: function(param){
+			selectedGPIds();
+		},
+		onUnselect: function(param){
+			selectedGPIds();
+		}
+	});
+}
+//类型-单选
+function initProductType(){
+	$('#productTypeClass1').html("&nbsp;");
+	$('#productTypeClass2').html("&nbsp;");
+	$('div > span > lable[for^="ptIds"]').parent().parent().parent().parent().remove();
+	$('#productTypeClass1').html("商品类型：");
+	$('#productTypeClass2').html('<input id="selectProductType" name="productType"  style="width:460px">');
+	$('#selectProductType').combobox({
+		url: 'queryAllProductType_json.do',
+		valueField: 'productId',
+		textField: 'productName',
+		panelWidth: 230,
+		panelHeight: 'auto',
+		formatter: formatProductType,
+		onSelect: function(param){
+			selectedPTIds();
+		},
+		onUnselect: function(param){
+			selectedPTIds();
+		}
+	});
+}
+//类型-多选
+function initProductTypeMultiple(){
+	$('#productTypeClass1').html("&nbsp;");
+	$('#productTypeClass2').html("&nbsp;");
+	$('.ptIds').parent().remove();
+	$('#productTypeClass1').html("商品类型：");
+	$('#productTypeClass2').html('<input id="selectProductType" name="productType"  style="width:460px">');
+	$('#selectProductType').combobox({
+		url: 'queryAllProductType_json.do',
+		valueField: 'productId',
+		textField: 'productName',
+		panelWidth: 230,
+		panelHeight: 'auto',
+		multiple:true,
+		formatter: formatProductTypeMultiple,
+		onSelect: function(param){
+			selectedPTIds();
+			$("#ptIds"+param.productId).attr('src','../images/checked.png');
+		},
+		onUnselect: function(param){
+			selectedPTIds();
+			$("#ptIds"+param.productId).attr('src','../images/nochecked.png');
+		}
+	});
+}
+//种类-单选
+function initProductCategory(){
+	$('#productCategoryClass1').html("&nbsp;");
+	$('#productCategoryClass2').html("&nbsp;");
+	$('div > span > lable[for^="pcIds"]').parent().parent().parent().parent().remove();
+	$('#productCategoryClass1').html("商品种类");
+	$('#productCategoryClass2').html('<input id="selectProductCategory" name="productCategory  width="230px">');
+	$('#selectProductCategory').combobox({
+		url: 'queryAllProductCategory_json.do',
+		valueField: 'id',
+		textField: 'name',
+		panelWidth: 230,
+		panelHeight: 'auto',
+		formatter: formatProductCategory,
+		onSelect: function(param){
+			selectedPCIds();
+		},
+		onUnselect: function(param){
+			selectedPCIds();
+		}
+	});
+}
+//种类-多选
+function initProductCategoryMultiple(){
+	$('#productCategoryClass1').html("&nbsp;");
+	$('#productCategoryClass2').html("&nbsp;");
+	$('.pcIds').parent().remove();
+	$('#productCategoryClass1').html("商品种类");
+	$('#productCategoryClass2').html('<input id="selectProductCategory" name="productCategory  width="230px">');
+	$('#selectProductCategory').combobox({
+		url: 'queryAllProductCategory_json.do',
+		valueField: 'id',
+		textField: 'name',
+		panelWidth: 230,
+		panelHeight: 'auto',
+		multiple:true,
+		formatter: formatProductCategoryMultiple,
+		onSelect: function(param){
+			selectedPCIds();
+			$("#pcIds"+param.id).attr('src','../images/checked.png');
+		},
+		onUnselect: function(param){
+			selectedPCIds();
+			$("#pcIds"+param.id).attr('src','../images/nochecked.png');
+		}
+	});
+}
+function selectedGameIds(){
+	$('.gpIds').parent().remove();
+	$('.ptIds').parent().remove();
+	var selectedGame = $('#selectGame').combobox('getValues');
+	if(selectedGame.length > 1){
+		$('#gamePartitionClass1').html("&nbsp;");
+		$('#gamePartitionClass2').html("&nbsp;");
+		$('#productTypeClass1').html("&nbsp;");
+		$('#productTypeClass2').html("&nbsp;");
+		$('#productCategoryClass1').html("&nbsp;");
+		$('#productCategoryClass2').html("&nbsp;");
+	}else{
+		initGamePartitionMultiple();
+		initProductTypeMultiple();
+	}
+}
+function selectedGPIds(){
+	var selectedGPIdV = $('#selectGamePartition').combobox('getValues');
+	if(selectedGPIdV.length > 1){//如果多选删除商品类型和商品种类
+		$('#productCategoryClass1').html("&nbsp;");
+		$('#productCategoryClass2').html("&nbsp;");
+	}else{
+		if(selectedGPIdV.length==1){//单选
+			$('#productCategoryClass1').html("&nbsp;");
+			$('#productCategoryClass2').html("&nbsp;");
+			if($('#selectProductType')[0]){
+				var selectProductTypeId  = $('#selectProductType').combobox("getValues");
+				initProductType();
+				$('#selectProductType').combobox("select",selectProductTypeId);
+			}else{
+				initProductType();
+			}
+		}
+		if(selectedGPIdV.length ==0){//不选
+			initProductTypeMultiple();
+			initProductCategoryMultiple();
+		}
+	}
+}
+function selectedPTIds(){
+	var selectedPTIdV = $('#selectProductType').combobox('getValues');
+	if(selectedPTIdV.length > 1){
+		$('#gamePartitionClass1').html("&nbsp;");
+		$('#gamePartitionClass2').html("&nbsp;");
+		$('#productCategoryClass1').html("&nbsp;");
+		$('#productCategoryClass2').html("&nbsp;");
+		$('.gpIds').parent().remove();
+	}else{
+		if(selectedPTIdV.length==1){
+			$('#productCategoryClass1').html("&nbsp;");
+			$('#productCategoryClass2').html("&nbsp;");
+			if(!$('#selectGamePartition')[0]){
+				initGamePartition();
+				$('#selectGamePartition').combobox('reload','queryAllPartition_json?gameId='+$('#selectGame').combobox('getValues')[0]+"&t="+new Date().getTime());
+				$('#selectGamePartition').combobox('clear');
+			}
+			
+		}
+		if(selectedPTIdV.length==0){
+			if(!$('#selectGamePartition')[0]){
+				initGamePartitionMultiple();
+				$('#selectGamePartition').combobox('reload','queryAllPartition_json?gameId='+$('#selectGame').combobox('getValues')[0]+"&t="+new Date().getTime());
+			}else{
+				//切换区单选到多选
+				var selectedPartitionId = $('#selectGamePartition').combobox('getValues')[0];
+				initGamePartitionMultiple();
+				$('#selectGamePartition').combobox('reload','queryAllPartition_json?gameId='+$('#selectGame').combobox('getValues')[0]+"&t="+new Date().getTime());
+				$('#selectGamePartition').combobox('select',selectedPartitionId);
+				selectedGPIds();
+				$('div > span > img[id="gpIds'+selectedPartitionId+'"]').attr('src','../images/checked.png');
+			}
+	 		initProductCategoryMultiple();
+		}
+	}
+}
+function selectedPCIds(){
+	var selectedPCIdV = $('#selectProductCategory').combobox('getValues');
+	if(selectedPCIdV.length > 0){
+		$('#gamePartitionClass1').html("&nbsp;");
+		$('#gamePartitionClass2').html("&nbsp;");
+		$('#productTypeClass1').html("&nbsp;");
+		$('#productTypeClass2').html("&nbsp;");
+	}else{
+		initGamePartitionMultiple();
+		initProductTypeMultiple();
+	}
+}
+$(function() {
+	//日期校验
+	$('#fromDays').datebox({
+		validType : 'date[\'\']'
+	});
+	$('#toDays').datebox({
+		validType : 'date[\'\']'
+	});
+	//选择判断
+	$('#selectGame').combobox({
+// 		url: 'queryAllGame_json.do',
+// 		valueField: 'gameId',
+// 		textField: 'gameName',
+// 		panelWidth: 430,
+// 		panelHeight: 'auto',
+// 		multiple:true,
+// 		formatter: formatGame,
+		onSelect: function(param){
+			selectedGameIds();
+			$('#gameIds'+param.gameId).attr('src','../images/checked.png');
+			var selectedGame = $('#selectGame').combobox('getValues');
+			if(selectedGame.length <2){
+				$('#selectGamePartition').combobox('reload','queryAllPartition_json?gameId='+param.gameId+"&t="+new Date().getTime());
+			}			
+		},
+		onUnselect: function(param){
+			selectedGameIds();
+			$('#gameIds'+param.gameId).attr('src','../images/nochecked.png');
+			var selectedGame = $('#selectGame').combobox('getValues');
+			if(selectedGame.length <2){
+				if(selectedGame.length == 0 ){
+					$('#gamePartitionClass1').html("&nbsp;");
+					$('#gamePartitionClass2').html("&nbsp;");
+					$('#selectGamePartition').combobox('clear');
+				}else{
+					$('#selectGamePartition').combobox('reload','queryAllPartition_json?gameId='+param.gameId+"&t="+new Date().getTime());
+				}
+			}
+		}
+	});
+	$('#selectProductType').combobox({
+		url: 'queryAllProductType_json.do',
+		valueField: 'productId',
+		textField: 'productName',
+		panelWidth: 230,
+		panelHeight: 'auto',
+		multiple:true,
+		formatter: formatProductTypeMultiple,
+		onSelect: function(param){
+			selectedPTIds();
+			$("#ptIds"+param.productId).attr('src','../images/checked.png');
+		},
+		onUnselect: function(param){
+			selectedPTIds();
+			$("#ptIds"+param.productId).attr('src','../images/nochecked.png');
+		}
+	});
+	$('#selectProductCategory').combobox({
+		url: 'queryAllProductCategory_json.do',
+		valueField: 'id',
+		textField: 'name',
+		panelWidth: 230,
+		panelHeight: 'auto',
+		multiple:true,
+		formatter: formatProductCategoryMultiple,
+		onSelect: function(param){
+			selectedPCIds();
+			$("#pcIds"+param.id).attr('src','../images/checked.png');
+		},
+		onUnselect: function(param){
+			selectedPCIds();
+			$("#pcIds"+param.id).attr('src','../images/nochecked.png');
+		}
+	});
+});
+function _search() {
+	var fromDays = $('#fromDays').datebox('getValue');
+	var toDays = $('#toDays').datebox('getValue');
+	var showDetailP = !!$("#showDetailId").attr("checked")?1:0;
+	var dataP = 't='+new Date().getTime()+"&showDetail="+showDetailP;
+	if($('#selectGame')[0]){
+		if($('#selectGame').combobox('getValues').length>0){
+			dataP +='&gameName='+$('#selectGame').combobox('getValues');
+		}
+	}
+	if($('#selectGamePartition')[0]){
+		if($('#selectGamePartition').combobox('getValues').length>0&&$('#selectGamePartition').combobox('getValues')[0]!=''){
+			dataP +='&gameArea='+$('#selectGamePartition').combobox('getValues');
+		}
+	
+	}
+	if($('#selectedGPIdsId')[0]){
+		dataP +='&gameArea='+$('#selectedGPIdsId').val();
+	}
+	if($('#selectProductType')[0]){
+		if($('#selectProductType').combobox('getValues').length>0){
+			dataP +='&productType='+$('#selectProductType').combobox('getValues');
+		}
+	}
+	if($('#selectProductCategory')[0]){
+		if($('#selectProductCategory').combobox('getValues').length>0){
+			dataP +='&productCategory='+$('#selectProductCategory').combobox('getValues');
+		}
+	}
+	if(fromDays==""){
+		$.ajax({
+			url : 'orderStatisticsList_json.do',
+			data : dataP,
+			dataType : 'json',
+			cache : false,
+			success : function(result) {
+				showResult(result);
+			}
+		});
+	}else{
+		if (fromDays > toDays && fromDays != "" && toDays != "") {
+			$.messager.show({title:'提示', msg:'请选择正确的时间段'});
+			return false;
+		} else {
+			$.ajax({
+				url : 'orderStatisticsList_json.do',
+				data : dataP+"&fromDays="+fromDays+"&toDays="+toDays,
+				dataType : 'json',
+				cache : false,
+				success : function(result) {
+					showResult(result);
+				}
+			});
+		}
+	}
+}
+function showResult(result){
+	var content='<table  id="main-order-table" width="1000px" bgcolor="#95B8E7" align="center"><thead>'+
+	'<tr align="center" bgcolor="white">'+
+	'<td  class="w_70">日期</td>';
+	if($('#selectGame')[0]){
+		if($('#selectGame').combobox('getValues').length>0){
+			content+='<td class="w_100">游戏名称</td>';
+		}
+	}
+	if($('#selectGamePartition')[0]){
+		if($('#selectGamePartition').combobox('getValues').length>0){
+			content+='<td class="w_100">游戏区</td>';
+		}
+	}
+	if($('#selectedGPIdsId')[0]){
+		if($('#selectedGPIdsId').val().length>0){
+			content+='<td class="w_100">游戏区</td>';
+		}
+	}
+	if($('#selectProductType')[0]){
+		if($('#selectProductType').combobox('getValues').length>0){
+			content+='<td class="w_100">商品类型</td>';
+		}
+	}
+	if($('#selectProductCategory')[0]){
+		if($('#selectProductCategory').combobox('getValues').length>0){
+			content+='<td class="w_100">商品种类</td>';
+		}
+	}
+	content+='<td class="w_70">订单总数</td>'+
+	'<td class="w_100">订单总金额</td>'+
+	'<td class="w_70">支付成功订单数</td>'+
+	'<td class="w_100">支付成功订单总金额</td>'+
+	'<td class="w_60">订单支付成功率</td>'+
+	'<td class="w_60">退费订单数</td>'+
+	'<td class="w_60">交易成功订单数</td>'+
+	'<td class="w_100">交易成功总金额</td>'+
+	'<td class="w_60">交易成功率</td>'+
+	'<td class="w_60">订单转化率</td>'+
+	'</tr></thead>';
+	var total = result.total;
+	if(total>0){
+		for(var i=0;i<total;i++){
+			content+='<tbody><tr align="center" bgcolor="';
+			if(i%2==0){
+				content+='white';
+			}else{
+				content+='#E8F2FE';
+			}
+			content+='"><td  class="w_70">';
+			if(i==total-1){
+				content+='合计';
+			}else if(result.rows[i].orderDate!=''){
+				content+=result.rows[i].orderDate;
+			}else{
+				content+='小计';
+			}
+			content+='</td>';
+			
+	
+			if($('#selectGame')[0]){
+				if($('#selectGame').combobox('getValues').length>0){
+					if(i==total-1){
+						content+='<td  class="w_100">&nbsp;</td>';
+					}else{
+						content+='<td  class="w_100">';
+						if(result.rows[i].gameName){
+							content+=result.rows[i].gameName;
+						}
+						content+='</td>';
+					}					
+				}
+			}
+			if($('#selectGamePartition')[0]){
+
+					if($('#selectGamePartition').combobox('getValues').length>0){
+						if(i==total-1){
+							content+='<td  class="w_100">&nbsp;</td>';
+						}else{
+							content+='<td  class="w_100">';
+							if(result.rows[i].gameAreaName){
+								content+=result.rows[i].gameAreaName;
+							}
+							content+='</td>';
+						}
+					}
+			}
+			if($('#selectedGPIdsId')[0]){
+				if($('#selectedGPIdsId').val().length>0){
+					if(i==total-1){
+						content+='<td  class="w_100">&nbsp;</td>';
+					}else{
+						content+='<td  class="w_100">';
+						if(result.rows[i].gameAreaName){
+							content+=result.rows[i].gameAreaName;
+						}
+						content+='</td>';
+					}
+				}
+			}
+			if($('#selectProductType')[0]){
+					if($('#selectProductType').combobox('getValues').length>0){
+						if(i==total-1){
+							content+='<td  class="w_100">&nbsp;</td>';
+						}else{
+						content+='<td  class="w_100">';
+						if(result.rows[i].productTypeName){
+							content+=result.rows[i].productTypeName;
+						}
+						content+='</td>';
+					}
+				}
+			}
+			if($('#selectProductCategory')[0]){
+
+					if($('#selectProductCategory').combobox('getValues').length>0){
+						if(i==total-1){
+							content+='<td  class="w_100">&nbsp;</td>';
+						}else{
+						content+='<td  class="w_100">';
+						if(result.rows[i].productCategory){
+							content+=result.rows[i].productCategory;
+						}
+						content+='</td>';
+					}
+				}
+			}
+			content+='<td class="w_70">'+result.rows[i].orderTotal+'</td>'+
+			'<td class="w_100">'+result.rows[i].orderAmount+'</td>'+
+			'<td class="w_70">'+result.rows[i].payOrderCount+'</td>'+
+			'<td class="w_100">'+result.rows[i].payOrderAmount+'</td>'+
+			'<td class="w_60">'+result.rows[i].orderPaymentRate+'</td>'+
+			'<td class="w_60">'+result.rows[i].failOrderCount+'</td>'+
+			'<td class="w_60">'+result.rows[i].successfulTransactionOrders+'</td>'+
+			'<td class="w_100">'+result.rows[i].successfulTranscationAmount+'</td>'+
+			'<td class="w_60">'+result.rows[i].successfulTranscationRate+'</td>'+
+			'<td class="w_60">'+result.rows[i].orderConversionRate+'</td>'+
+			'</tr></tbody>';
+		}
+	}else{
+	content+='<tr align="center" bgcolor="white">'+
+				'<td colspan="11">没有相关数据</td>'+
+			 '</tr>';
+	}
+	content+='</table>';
+	$("#game").html(content);
+}
+function cleanSearch() {
+	$('#searchForm').form('reset');
+	$('#searchForm input').val('');
+	self.location='orderStatisticsList.do';
+}
+//TODO 选择游戏区
+function selectedGPDialog(gameId){
+	window.open('gamePartitionList_select?gameId='+gameId,
+			'',
+			'width=1200,height=500,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+s}
+
+function selectedGPIdsCallBack(gpIds){
+	$('#selectedGPIdsId').val(gpIds);
+}
+//导出数据
+function _exportStatisticsData() {
+	var fromDays = $('#fromDays').datebox('getValue');
+	var toDays = $('#toDays').datebox('getValue');
+	var showDetailP = !!$("#showDetailId").attr("checked")?1:0;
+	var dataP = 't='+new Date().getTime()+"&showDetail="+showDetailP;
+	if($('#selectGame')[0]){
+		if($('#selectGame').combobox('getValues').length>0){
+			dataP +='&gameName='+$('#selectGame').combobox('getValues');
+		}
+	}
+	if($('#selectGamePartition')[0]){
+		if($('#selectGamePartition').combobox('getValues').length>0&&$('#selectGamePartition').combobox('getValues')[0]!=''){
+			dataP +='&gameArea='+$('#selectGamePartition').combobox('getValues');
+		}
+	
+	}
+	if($('#selectedGPIdsId')[0]){
+		dataP +='&gameArea='+$('#selectedGPIdsId').val();
+	}
+	if($('#selectProductType')[0]){
+		if($('#selectProductType').combobox('getValues').length>0){
+			dataP +='&productType='+$('#selectProductType').combobox('getValues');
+		}
+	}
+	if($('#selectProductCategory')[0]){
+		if($('#selectProductCategory').combobox('getValues').length>0){
+			dataP +='&productCategory='+$('#selectProductCategory').combobox('getValues');
+		}
+	}
+	if(fromDays==""){
+		if(confirm("确定导出数据?")){
+			$.ajax({
+				type:'POST',
+				url : 'exportOrderStatisticsExcel.do',
+				data : {outputData:0},
+				success: function(data){
+						window.open(
+								'${request.contextPath}/statistics/exportOrderStatisticsExcel.do?'+dataP,
+								'',
+								'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+						window.close();
+				}
+			});
+		}
+	}else{
+		if (fromDays > toDays && fromDays != "" && toDays != "") {
+			$.messager.show({title:'提示', msg:'请选择正确的时间段'});
+			return false;
+		} else {
+			if(confirm("确定导出数据?")){
+				$.ajax({
+					type:'POST',
+					url : 'exportOrderStatisticsExcel.do',
+					data : {outputData:0},
+					success: function(data){
+						window.open(
+								'${request.contextPath}/statistics/exportOrderStatisticsExcel.do?'+dataP,
+								'',
+								'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+						window.close();
+					}
+				});
+			}
+		}
+	}
+} 
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div
+		region="north"
+		border="false"
+		title="搜索条件"
+		style="padding: 5px; height: 115px; overflow: hidden; float: left;"
+		align="left">
+		<form id="searchForm">
+			<table
+				width="100%"
+				border="0"
+				cellspacing="1"
+				cellpadding="1">
+				<tr>
+					<td class="lable">游戏:</td>
+					<td<#if gameAreaList??>colspan="4"</#if>> 
+					<input
+						id="selectGame"
+						class="easyui-combobox"
+						name="gameName"
+						data-options="
+							url: 'queryAllGame_json.do',
+							valueField: 'gameId',
+							textField: 'gameName',
+							panelWidth: 450,
+							multiple:true,
+							formatter: formatGame" style="width:460px"/>
+					</td> <#if gamePartitionList??>
+					<td class="lable" id="gamePartitionClass1"></td>
+					<td id="gamePartitionClass2"></td></#if>
+					<td rowspan="2"><input
+						id="showDetailId"
+						type="checkbox"
+						name="showDetail"><label for="showDetail">显示明细</label></td>
+				</tr>
+				<tr>
+					<td class="lable" id="productTypeClass1">商品类型:</td>
+					<td id="productTypeClass2">
+						<input id="selectProductType" name="productType"  style="width:460px">
+					</td>
+					<td class="lable" id="productCategoryClass1">商品种类:</td>
+					<td id="productCategoryClass2">
+						<input id="selectProductCategory" name="productCategory"  style="width:230px">
+					</td>
+				</tr>
+				<tr>
+					<td class="lable">统计时间:</td>
+					<td colspan="3">从 <input
+						id="fromDays"
+						type="text"
+						name="fromDays"
+						class="easyui-datebox"
+						style="width: 130px"> 到 <input
+						id="toDays"
+						type="text"
+						name="toDays"
+						class="easyui-datebox"
+						style="width: 130px">
+					</td>
+					<td><a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="_search();">搜索</a> <a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="cleanSearch();">取消</a>
+						<a href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="_exportStatisticsData();">导出统计数据</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<div
+		region="center"
+		id="orderStatisticsContent">
+		<div id="game">
+			<table
+				id="main-order-table"
+				width="1000px"
+				bgcolor="#95B8E7"
+				align="center">
+				<thead>
+					<tr
+						align="center"
+						bgcolor="white">
+						<th class="w_40">编号</th>
+						<th class="w_70">日期</th>
+						<th class="w_70">订单总数</th>
+						<th class="w_100">订单总金额</th>
+						<th class="w_70">支付成功订单数</th>
+						<th class="w_100">支付成功订单总金额</th>
+						<th class="w_60">订单支付成功率</th>
+						<th class="w_60">退费订单数</th>
+						<th class="w_60">交易成功订单数</th>
+						<th class="w_100">交易成功总金额</th>
+						<th class="w_60">交易成功率</th>
+						<th class="w_60">订单转化率</th>
+					</tr>
+				</thead>
+				<tbody>
+					<#if totalListDOS??> <#list totalListDOS as totalDOS> <#if totalDOS.gameId??>
+					<tr
+						align="center"
+						bgcolor="<#if totalDOS_index%2==0>white<#else>#E8F2FE</#if>">
+						<td class="w_40">${totalDOS_index}</td>
+						<td class="w_70"><#if totalDOS.orderDate??>${totalDOS.orderDate?string('yyyy-MM-dd')!""}<#else>合计</#if></td>
+						<td class="w_70">${totalDOS.orderTotal!""}</td>
+						<td class="w_100">${totalDOS.orderAmount?string.currency}</td>
+						<td class="w_70">${totalDOS.payOrderCount!""}</td>
+						<td class="w_100">${totalDOS.payOrderAmount?string.currency}</td>
+						<td class="w_60">${(totalDOS.orderPaymentRate*100)?string('0.#')}%</td>
+						<td class="w_60">${totalDOS.failOrderCount!""}</td>
+						<td class="w_60">${totalDOS.successfulTransactionOrders!""}</td>
+						<td class="w_100">${totalDOS.successfulTranscationAmount?string.currency}</td>
+						<td class="w_60">${(totalDOS.successfulTranscationRate*100)?string('0.#')}%</td>
+						<td class="w_60">${(totalDOS.orderConversionRate*100)?string('0.#')}%</td>
+					</tr>
+					<#else>
+					<tr
+						align="center"
+						bgcolor="#E8F2FE">
+						<td class="w_40">${totalDOS_index}</td>
+						<td class="w_70"><#if !totalDOS.orderDate??>小计<#else>合计</#if></td>
+						<td class="w_70">${totalDOS.orderTotal!""}</td>
+						<td class="w_100">${totalDOS.orderAmount?string.currency}</td>
+						<td class="w_70">${totalDOS.payOrderCount!""}</td>
+						<td class="w_100">${totalDOS.payOrderAmount?string.currency}</td>
+						<td class="w_60">${(totalDOS.orderPaymentRate*100)?string('0.#')}%</td>
+						<td class="w_60">${totalDOS.failOrderCount!""}</td>
+						<td class="w_60">${totalDOS.successfulTransactionOrders!""}</td>
+						<td class="w_100">${totalDOS.successfulTranscationAmount?string.currency}</td>
+						<td class="w_60">${(totalDOS.successfulTranscationRate*100)?string('0.#')}%</td>
+						<td class="w_60">${(totalDOS.orderConversionRate*100)?string('0.#')}%</td>
+					</tr>
+					</#if> </#list> <#else>
+					<tr
+						align="center"
+						bgcolor="white">
+						<td colspan="11">没有相关数据</td>
+					</tr>
+					</#if>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</body>
+<script>
+$(function () {
+    var browser_version = $.browser.version;
+    $("#game").scroll(function (e) {
+        if ($(this).scrollTop() > 0) {
+            if ($("#thead").length == 0) {
+                var thead = $('<table id="thead" width="1000px"><thead>' + $("table thead").html() + '</thead></table>');
+                $("#game").prepend(thead);
+            } else if ('6.0' == browser_version || '7.0' == browser_version) {
+ 
+                $("#thead").css("position", "relative");
+                $("#thead").css("top", $(this).scrollTop());
+            }
+            $("#thead").css("left", $("#main-order-table").offset().left + "px");
+        } else {
+            $("#thead").remove();
+        }
+    });
+});
+</script>
+</html>

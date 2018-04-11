@@ -1,0 +1,44 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>人工发货</title> <#include "../common.html"/>
+<script type="text/javascript">
+	var checkSubmitFlag = true;
+	function checkSubmit(value) {
+		if (true == checkSubmitFlag) {
+			$.ajax({
+				type : "POST",
+				url : "redispatchAddNew",
+				data : "o=" + value,
+				success : function(msg) {
+					var json = $.parseJSON(msg);
+					if (json && json.success) {
+						$.messager.show({
+							title : '成功',
+							msg : json.msg
+						});
+						$("#addForm input[name='o']").val('');
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : json.msg
+						});
+						$("#addForm input[name='o']").val('');
+					}
+					checkSubmitFlag = true;
+				}
+			});
+			checkSubmitFlag = false;
+		}
+	}
+</script>
+</head>
+<body>
+	<form id="addForm">
+		订单号:<input type="text" name="o" value="${orderId}" size="60"> <input
+			type="button" value="发货确认"
+			onclick="checkSubmit($('#addForm input[name=\'o\']').val());">
+	</form>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>更改游戏区/服</title>
+<#include "../common.html"/>
+
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+
+var gameId;
+var gameName;
+$(function() {
+	
+	gameId=$(".g_id").html();
+	gameName=$(".g_name").html();
+	
+	 $("#server_sel").show();
+		$("#area_sel").show(); 
+		$.ajax({
+			url : '../game/selectGameAreaDetail',
+			data : {
+				gameId : gameId
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+			var area_select =  $("#g_id_area_receiver");
+			var server_select =  $("#g_id_serverid_receiver");
+			
+			var checkIndex=area_select.get(0).selectedIndex;
+			var checkIndex2=server_select.get(0).selectedIndex;
+			
+			//先清理上次分区残留选项
+			var maxindex=$("select[name='partitionId']").find("option:last").index();
+			if(maxindex>=1){
+				for(var j =1;j<=maxindex;j++){
+					 $("#g_id_area_receiver option:last").remove(); 
+				}
+			}
+			
+			//先清理上次服务器残留选项
+			var maxindex2=$("select[name='serverId']").find("option:last").index();
+			if(maxindex2>=1){
+				for(var j =1;j<=maxindex2;j++){
+					 $("#g_id_serverid_receiver option:last").remove(); 
+				}
+			}
+				//添加选项
+				if(typeof data.total!="undefined"){
+					
+					for(var i = 0 ;i<data.total;i++){
+					
+						var patition_id = data.rows[i].partitionId;
+						if((typeof patition_id=="undefined")){
+							//有分区 
+							$("#area_sel").show();
+							 area_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+						}else{
+							//没分区 隐藏分区
+							$("#area_sel").hide();
+							server_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+						}
+						
+						 
+					}
+					
+				}
+			}
+		});
+
+});
+
+function areachange(){
+		var gameId = $(".g_id").val();
+		var checkValue=$("#g_id_area_receiver").val(); 
+		var server_select =  $("#g_id_serverid_receiver");
+	
+    
+		$.ajax({
+			url : '../game/selectGameAreaDetail',
+			data : {
+				gameId:gameId,partitionId:checkValue
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+				if(typeof data.total!="undefined"){
+				 //先清理上次服务器残留选项
+				var maxindex2=$("select[name='serverId']").find("option:last").index();
+				if(maxindex2>=1){
+					for(var j =1;j<=maxindex2;j++){
+						 $("#g_id_serverid_receiver option:last").remove(); 
+					}
+				} 
+				for(var i = 0 ;i<data.total;i++){
+				
+					$("#server_sel").show();
+					server_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+					}
+				}else{
+					
+					$("#server_sel").hide();
+				}
+			}
+		});
+}
+
+function doUpdate(){
+  var oldAreaId=$(".preal_id").html();
+  var newAreaId=$("#g_id_area_receiver option:selected").val();
+  var newAreaValue=$("#g_id_area_receiver option:selected").text();
+	  $.ajax({
+		  url:'../product/updateAreaServer',
+		  data:{
+			  gameId:gameId,
+			  oldAreaId:oldAreaId,
+			  newAreaId:newAreaId
+		  },
+	      success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					console.log("newAreaId:newAreaId-console:"+newAreaId);
+					$(".preal_id").html(newAreaId);
+					$("#arrow").show();
+					var serverid_after=$("#g_id_serverid_after").html();
+					if(serverid_after!=""){
+					$(".partition_id").html(serverid_after);
+					}
+					$("#g_id_serverid_after").show();
+					$("#g_id_serverid_after").html(newAreaValue);
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+	      
+	  });
+  
+
+ 
+}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+
+<div region="center" border="false" title="游戏信息"  align="left">
+	<table  class="table_line"  style="height:150px;overflow: hidden;">
+         <tr>
+         <td>游戏编号</td> <td><span class="g_id">${gameId!''}</span></td>
+         </tr>
+        
+         <tr>
+         <td>游戏名字</td> <td><span class="g_name">${gameName!''}</span></td>
+         </tr>
+         
+         <tr>
+         <td>游戏分区</td> 
+         <td><span class="partition_id">${partitionId!''}</span>&nbsp;&nbsp;
+             <span>  
+             <select name="partitionId" id ="g_id_area_receiver" onchange="areachange()">
+             <option value="-1">请选择</option>
+             </select>
+             <font id="server_sel">     
+                                     游戏服务器：<select name="serverId" id ="g_id_serverid_receiver">
+                     <option value="-1">请选择</option>
+ 
+                     </select>&nbsp;</font>
+                    
+             </span>
+             <span>
+             <a href="javascript:void(0);" class="easyui-linkbutton" onclick="doUpdate();">更改</a> 
+		     </span>
+		     <span id="arrow" style="display:none">-----></span>
+		     <span id="g_id_serverid_after" style="display:none"></span></td>
+         </tr>
+        
+          <tr>
+          <td>游戏服务器</td> <td ><span class="server_id">${serverId!''}</span></td> 
+         </tr>
+          <tr style="display:none">
+          <td>区ID</td> <td ><span class="preal_id">${partitionRealId!''}</span></td> 
+         </tr>
+         
+	</table>
+</div>
+
+</body>
+</html>

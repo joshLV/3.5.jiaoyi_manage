@@ -1,0 +1,14 @@
+{
+	"total":${moduleList?size},
+	"rows":[<#list moduleList as item> 
+         { "modId":"${item.modId}",
+           "moduleName":"${item.moduleName}",
+           "moduleCode":"${item.moduleCode}",
+           "_parentId":${item.parentId},
+           "firstPage":"${item.firstPage}",
+           "isMenu":"${item.isMenu}",
+           "status":"${item.status}",
+           "orderNo":"${item.orderNo}"
+          }<#if item_has_next>,</#if><#rt>
+       </#list>] 
+ }

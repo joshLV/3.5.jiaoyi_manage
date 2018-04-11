@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>最新信息管理</title><#include "../common.html"/>
+<style type="text/css">
+	/* 校正jeasyui:dialog的按钮(buttons)在firefox下只显示一半的错位  */
+	.dialog-button {
+		padding:5px;
+		height:26px;
+	}
+</style>
+<script type="text/javascript">
+	var datagrid;
+	var addDialog;
+	var addForm;
+	var editDialog;
+	var editForm;
+	$(function() {
+		datagrid = $('#datagrid').datagrid({
+			url : 'newsalesList_json',
+			title : '最新信息列表',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'weight',
+			sortOrder : 'desc',
+			columns : [ [ {
+				field : 'ck',
+				checkbox : true,
+				formatter : function(value, row, index) {
+					return row.obid;
+				}
+			}, {
+				field : 'id',
+				title : 'ID',
+				align : 'center',
+				width : 5,
+			}, {
+				field : 'title',
+				title : '标题',
+				align : 'center',
+				width : 55,
+			}, {
+				field : 'category',
+				title : '信息类型',
+				align : 'center',
+				width : 55,
+			}, {
+				field : 'weight',
+				title : '权重',
+				align : 'center',
+				width : 10,
+				sortable: true
+			}, {
+				field : 'createTime',
+				title : '创建时间',
+				align : 'center',
+				width : 15,
+			}, {
+				field : 'opreation',
+				title : '操作',
+				align : 'center',
+				width : 20,
+			} ] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '修改',
+				iconCls : 'icon-edit',
+				handler : function() {
+					edit();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			}
+		});
+		addForm = $('#addForm').form({
+			url : 'newsales_add',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					datagrid.datagrid('unselectAll');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加最新出售商品',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					closeDialog("您确定要添加该最新出售商品吗?",'addForm','addDialog');
+				}
+			} ]
+		});
+		editDialog = $('#editDialog').show().dialog({
+			title : '编辑最新出售',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					closeDialog("您确定要修改该最新出售商品吗?",'editForm','editDialog');
+				}
+			} ]
+		});
+		editForm = $('#editForm').form({
+			url : 'newsales_edit',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+	});
+	function add() {
+		addDialog.dialog('open');
+		addForm.form("reset");
+	}
+
+	function del() {
+		var rows = datagrid.datagrid('getSelections');
+		var ids = [];
+		if (rows.length > 0) {
+			$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+				if (r) {
+					for ( var i = 0; i < rows.length; i++) {
+						ids.push(rows[i].id);
+					}
+					console.log(ids.join(','));
+					$.ajax({
+						url : 'newsales_delete',
+						data : {
+							ids : ids.join(',')
+						},
+						dataType : 'json',
+						success : function(response) {
+							datagrid.datagrid('load');
+							datagrid.datagrid('unselectAll');
+							$.messager.show({
+								title : '提示',
+								msg : response.msg
+							});
+						}
+					});
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		}
+	}
+
+	function edit() {
+		var rows = datagrid.datagrid('getSelections');
+		if (rows.length == 1) {
+			/* editForm.find("input[type='hidden']").val(rows[0].id);
+			editForm.find("input[name='title']").val(rows[0].title);
+			editForm.find("input[numberboxname='weight']").val(rows[0].weight);
+			editForm.find("input[type='hidden'][name='weight']").val(rows[0].weight); */
+			$.messager.progress({
+				text : '数据加载中....',
+				interval : 100
+			});
+			$.ajax({
+				url : 'getNewsSale',
+				data : {
+					id : rows[0].id
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(response) {
+					editForm.form('clear');
+					editForm.form('load', response);
+					$('div.validatebox-tip').remove();
+					editDialog.dialog('open');
+					$.messager.progress('close');
+				}
+			});
+			$('div.validatebox-tip').remove();
+			editDialog.dialog('open');
+		} else {
+			$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+		}
+	}
+	
+	function moveUp(id){
+		$.ajax({
+			url : 'newsales_up',
+			data : {
+				id:id
+			},
+			dataType : 'json',
+			success : function(response) {
+				datagrid.datagrid('reload');
+				datagrid.datagrid('unselectAll');
+				$.messager.show({
+					title : '提示',
+					msg : response.msg
+				});
+			}
+		});
+	}
+	function moveDown(id){
+		$.ajax({
+			url : 'newsales_down',
+			data : {
+				id:id
+			},
+			dataType : 'json',
+			success : function(response) {
+				datagrid.datagrid('load');
+				datagrid.datagrid('unselectAll');
+				$.messager.show({
+					title : '提示',
+					msg : response.msg
+				});
+			}
+		});
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+
+	<div region="center" border="false">
+		<table id="datagrid"></table>
+	</div>
+
+	<div id="menu" class="easyui-menu" style="width: 137px; display: none;">
+		<div onclick="add();" iconCls="icon-add">增加</div>
+		<div onclick="del();" iconCls="icon-remove">删除</div>
+		<div onclick="edit();" iconCls="icon-remove">编辑</div>
+	</div>
+	<!--添加表单-->
+	<div id="addDialog" style="display: none; width: 550px; height:  'auto';padding:10px"
+		align="center">
+		<form id="addForm" method="post">
+			<input type="hidden" name="id" value="1" />
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<tr>
+					<td class="lable">信息标题：</td>
+					<td><input type="text" name="title" size="50"
+						class="easyui-validatebox" data-options="required:true"
+						missingMessage="请填写最新出售商品标题" /></td>
+				</tr>
+				<tr>
+					<td class="lable">信息类型：</td>
+					<td><select style="width: 155px" name="category"
+						id="categoryID">
+							<option value="0" selected="selected">最新出售</option>
+							<option value="1" >最新商品</option>
+							<option value="2" >最新退游</option>
+						</select>
+						</td>
+				</tr>
+				<tr>
+					<td class="lable">权重：</td>
+					<td><input
+						type="text"
+						name="weight"
+						class="easyui-numberbox"
+						size="20"
+						maxlength="5"
+						data-options="min:0,max:100,required:true" /></td>
+				</tr>
+
+			</table>
+		</form>
+	</div>
+
+	<!--编辑表单-->
+	<div id="editDialog"
+		style="display: none; width: 550px; height: 'auto';" align="center">
+		<form id="editForm" method="post" style="padding: 25px 20px 10px 20px">
+			<input type="hidden" name="id" />
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<tr>
+					<td class="lable">最新出售商品标题：</td>
+					<td><input type="text" name="title" size="50"
+						class="easyui-validatebox" data-options="required:true"
+						missingMessage="请填写最新出售商品标题" /></td>
+				</tr>
+				<tr>
+					<td class="lable">信息类型：</td>
+					<td><select style="width: 155px" name="category"
+						id="categoryID">
+							<option value="0" >最新出售</option>
+							<option value="1" >最新商品</option>
+							<option value="2" >最新退游</option>
+						</select>
+						</td>
+				</tr>
+				<tr>
+					<td class="lable">权重：</td>
+					<td><input
+						type="text"
+						name="weight"
+						class="easyui-numberbox"
+						size="20"
+						maxlength="5"
+						data-options="min:0,max:100,required:true" /></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+</body>
+</html>

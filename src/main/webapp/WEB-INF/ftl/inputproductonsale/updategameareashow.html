@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>批量更新商品游戏分区</title>
+<#include "../common.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+
+
+
+//批量更新商品
+function updateProduct(){
+  var file_url = $('#file_url').html();
+	$.messager.confirm('确认框','您确认要更新商品数据',function(r){  
+	    if (r){  
+	       
+  $.ajax({
+		url : 'updategameareasql.do',
+		data : {
+			fileUrl : file_url
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			if (response.success) {
+				$.messager.show({
+					title : '成功',
+					msg : response.msg
+				});
+				datagrid.datagrid('reload');
+				editDialog.dialog('close');
+				editForm.form('load', response);
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : response.msg
+				});
+			}
+		}
+	});	
+  
+	     }  
+    });
+}
+
+
+
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="center" border="false" title="请上传需要更新的xls格式的商品文件<font color='red'>(一次最多更新8000条数据)</font>" style="height: 65px;overflow: hidden;" align="left">
+
+  <div style="padding: 10px 3px;">
+  <form method="post" action="updategamearea" enctype="multipart/form-data">
+   <input type="file" name="file"/>
+   <input type="submit" value="上传xls文件" />
+   <a href="${basePath}data/product_update_demo.xls"  class="easyui-linkbutton">下载模板文件</a>
+   </form>
+   </div>
+   
+<div>
+	<#if msg??>
+			<table  class="table_line">
+			<tr>
+			<td colspan="2" ><b>文件信息</b></td>
+			</tr>
+			<tr>
+				<td>&nbsp;结果:</td>
+				<td>
+				<p style="color: red">${msg!''}</p>
+				</td>
+			</tr>
+			<#if fileName??>
+				<tr>
+				<td>文件名:</td>
+				<td>
+				<b>${fileName!''}</b>&nbsp;		
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="updateProduct();">开始更新商品数据</a>
+				</td>
+			</tr>
+			
+				<tr style="display: none;">
+				<td>文件名:</td>
+				<td>
+				<p id="file_url">${fileUrl!''}</p>	
+				</td>
+			</tr>
+			<#else>
+			
+			</#if>		
+		</table>
+		<#else>
+		<table  class="table_line">
+		<tr>
+		<td>
+		<font color="red">请先上传正确的xls文件</font>
+		</td>
+		</tr>
+		</table>
+		</#if>
+		</div>
+		
+		
+	
+		
+		
+    <#if listProductId??>
+		<div style="padding: 10px;">
+		<b style="color: red">更新的商品ID 共 ${rowsnum!'0'}条</b>
+	  
+	  
+	   <div style="width:600; height:450px; overflow:auto;padding: 10px;">
+	   <#list listProductId as item>
+	
+	   <p><b style="width:10px;">${item_index+1}:</b>${item}</p>
+	  
+	   </#list>
+	  </div>
+</div> 
+	<#else>
+	</#if>
+
+
+	
+	
+</body>
+</html>

@@ -1,0 +1,28 @@
+ <#if pageInfo.items??>
+{"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+
+{
+"id":${item.id},
+"takeMoneyId":${item.takeMoneyId},
+"operatorUid":"${item.operatorUid!''}",
+"orderId":"${item.orderId!''}",
+"bankStatus":"${item.bankStatus!'0'}",
+"errorMsg":"${item.errorMsg!''}",
+"remark":"${item.remark!''}",
+<#if item.createTime??>
+"createTime":"${item.createTime?string('yyyy-MM-dd HH:mm:ss')}",
+<#else>
+"createTime":"",
+</#if>
+
+"retCode":"${item.retCode!''}",
+"r1Code":"${item.r1Code!''}"
+}
+<#t>
+<#if item_has_next>,</#if>
+</#list>
+]}
+  <#else>
+  {"total":0,"rows":[]}
+</#if>

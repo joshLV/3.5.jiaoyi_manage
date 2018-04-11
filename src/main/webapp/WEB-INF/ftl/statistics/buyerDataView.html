@@ -1,0 +1,286 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>买家购买数据</title>
+<#include "../common.html"/>
+<style>
+.reg {
+	background-color: #FFC0CB;
+	border: 1px solid #EEE9E9;
+}
+.newsty {
+	background-color: #C6E2FF;
+	border: 1px solid #EEE9E9;
+}
+.sevensty {
+	background-color: #FFFACD;
+	border: 1px solid #EEE9E9;
+}
+.fifsty {
+	background-color: #F0FFF0;
+	border: 1px solid #EEE9E9;
+}
+.thirtysty {
+	background-color: #FFE4E1;
+	border: 1px solid #EEE9E9;
+}
+</style>
+<script type="text/javascript">
+$(function() {
+	//日期校验
+	$('#fromDays').datebox({
+		validType : 'date[\'\']'   
+	});
+	$('#toDays').datebox({
+		validType : 'date[\'\']'
+	});
+});
+function _search() {
+	var fromDays = $('#fromDays').datebox('getValue');
+
+	var toDays = $('#toDays').datebox('getValue');
+	var type=new Array();
+	$('input[name="queryType"]:checked').each(function(){
+		type.push($(this).val());//向数组中添加元素
+	});
+	var type=type.join(',');//将数组元素连接起来以构建一个字符串
+	
+	if (fromDays > toDays && fromDays != "" && toDays != "") {
+		$.messager.show({title:'提示', msg:'请选择正确的时间段'});
+		return false;
+	}  else {
+		 $.ajax({
+			url : 'buyDataList.do',
+			data : "type="+type+"&fromDays="+fromDays+"&toDays="+toDays,
+			dataType : 'json',
+			cache : false,
+			success : function(result) {
+				showResult(result);
+			}
+		}); 
+	}
+}
+
+
+function showResult(result){
+	var content='';
+	var total=result.rows.length;
+	if(total <= 0) {
+		content+='<p align="center">您的查询没有对应的数据</p>';
+		$('#userdata').html(content); 
+		return ;
+	}
+	
+	var type=new Array();
+	$('input[name="queryType"]:checked').each(function(){
+		type.push($(this).val());//向数组中添加元素
+	});
+	
+	var content ='<table  id="main-order-table" bgcolor="#EEEEEE" cellspacing="1"  cellpadding="5" align="center" style="border-collapse:collapse" ><thead>'+
+	'<tr align="center" ><td class="reg">日期</td>';
+	if (type.indexOf("countUser") != -1){
+		content+=    '<td class="reg">新增注册用户数</td>' +
+					 '<td class="reg">实名认证用户数</td>' +
+					 '<td class="reg">累计注册用户数</td>' +
+					 '<td class="reg">累计实名认证总数</td>' ;
+	}
+	
+	if (type.indexOf("newBuyer") != -1){
+		content+=    '<td class="newsty">当日新增买家数</td>' +
+					 '<td class="newsty">当日买家总数</td>' +
+					 '<td class="newsty">当日有下单人数</td>' +
+					 '<td class="newsty">新增买家占比</td>' +
+					 '<td class="newsty">当日新增买家人均购买笔数</td>' +
+					 '<td class="newsty">当日人均购买笔数</td>' +
+					 '<td class="newsty">当日新增买家人均消费额</td>' +
+					 '<td class="newsty">当日人均消费额</td>' ;
+					 }
+	if (type.indexOf("7buyData") != -1){
+		content+=    '<td class="sevensty">7日内无购买人数</td>' +
+					 '<td class="sevensty">7日内购买人数（1单）</td>' +
+					 '<td class="sevensty">7日内购买人数（2单）</td>' +
+					 '<td class="sevensty">7日内购买人数（3~5单）</td>' +
+					 '<td class="sevensty">7日内购买人数（>5单）</td>' +
+					 '<td class="sevensty">7日内有下单人数</td>' +
+					 '<td class="sevensty">7日内购买率</td>' +
+					 '<td class="sevensty">7日内重复购买率</td>' +
+					 '<td class="sevensty">7日内重复购买人均购买笔数</td>' +
+					 '<td class="sevensty">7日内重复购买人均消费额</td>' ;
+					 }
+	if (type.indexOf("15buyData") != -1){
+		content+=    '<td class="fifsty">15日内无购买人数</td>' +
+					 '<td class="fifsty">15日内购买人数（1单）</td>' +
+					 '<td class="fifsty">15日内购买人数（2~5单）</td>' +
+					 '<td class="fifsty">15日内购买人数（6~10单）</td>' +
+					 '<td class="fifsty">15日内购买人数（>10单）</td>' +
+					 '<td class="fifsty">15日内有下单人数</td>' +
+					 '<td class="fifsty">15日内购买率</td>' +
+					 '<td class="fifsty">15日内重复购买率</td>' +
+					 '<td class="fifsty">15日内重复购买人均购买笔数</td>' +
+					 '<td class="fifsty">15日内重复购买人均消费额</td>' ;
+					 }
+	if (type.indexOf("30BuyData") != -1){
+		content+=    '<td class="thirtysty">30日内无购买人数</td>' +
+					 '<td class="thirtysty">30日内购买人数（1单）</td>' +
+					 '<td class="thirtysty">30日内购买人数（2~8单）</td>' +
+					 '<td class="thirtysty">30日内购买人数（8~15单）</td>' +
+					 '<td class="thirtysty">30日内购买人数（>15单）</td>' +
+					 '<td class="thirtysty">30日内有下单人数</td>' +
+					 '<td class="thirtysty">30日内购买率</td>' +
+					 '<td class="thirtysty">30日内重复购买率</td>' +
+					 '<td class="thirtysty">30日内重复购买人均购买笔数</td>' +
+					 '<td class="thirtysty">30日内重复购买人均消费额</td>' ;
+					 }
+	
+	content += "</tr></thead>";
+	content += "<tbody>";
+	
+	for(var i=0;i<total;i++){
+		content+='<tr align="center" ';
+		content+='>';
+		content+= '<td class="reg">'+(result.rows[i].dayUser.countDay?result.rows[i].dayUser.countDay.substring(0,10):"--")+'</td>';
+		if (type.indexOf("countUser") != -1){
+			content+='<td class="reg">'+(result.rows[i].dayUser.regNum?result.rows[i].dayUser.regNum:"0")+'</td>'+
+					 '<td class="reg">'+(result.rows[i].dayUser.realNum?+result.rows[i].dayUser.realNum:"0")+'</td>'+
+					 '<td class="reg">'+(result.rows[i].dayUser.totalNum?result.rows[i].dayUser.totalNum:"0")+'</td>'+
+					 '<td class="reg">'+(result.rows[i].dayUser.realTotal?result.rows[i].dayUser.realTotal:"0")+'</td>';
+		}
+		if (type.indexOf("newBuyer") != -1){
+			if (result.rows[i].buyData){
+				content+=
+				 '<td class="newsty">'+(result.rows[i].buyData.newsBuyerDay?result.rows[i].buyData.newsBuyerDay:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].buyData.buyerTotal?result.rows[i].buyData.buyerTotal:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].buyData.isOrderTotal?result.rows[i].buyData.isOrderTotal:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].buyData.buyerAccounting?(((result.rows[i].buyData.buyerAccounting)*100).toFixed(2)+"%"):0)+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].buyData.newsbuyerAvgItems?result.rows[i].buyData.newsbuyerAvgItems:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].buyData.buyerAvgItems?result.rows[i].buyData.buyerAvgItems:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].buyData.newsBuyerAvgConsumption?result.rows[i].buyData.newsBuyerAvgConsumption:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].buyData.buyerAvgConsumption?result.rows[i].buyData.buyerAvgConsumption:"0")+'</td>';
+			}else{
+				content += '<td class="newsty">0</td><td class="newsty">0</td><td class="newsty">0</td><td class="newsty">0</td><td class="newsty">0</td><td class="newsty">0</td><td class="newsty">0</td><td class="newsty">0</td>';
+			}
+		}
+		if (type.indexOf("7buyData") != -1){
+			if (result.rows[i].buyData){
+				content+=
+				 '<td class="sevensty">'+(result.rows[i].buyData.days7ZeroItems?result.rows[i].buyData.days7ZeroItems:"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].buyData.days7Aitems?result.rows[i].buyData.days7Aitems:0)+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].buyData.days7TwoItems?result.rows[i].buyData.days7TwoItems:"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].buyData.days7ThreeToFiveItems?+result.rows[i].buyData.days7ThreeToFiveItems:"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].buyData.days7LargeFiveItems?result.rows[i].buyData.days7LargeFiveItems:"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].buyData.days7IsOrderTotal?result.rows[i].buyData.days7IsOrderTotal:"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].buyData.days7BuyRate?(((result.rows[i].buyData.days7BuyRate)*100).toFixed(2)+"%"):"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].buyData.days7RepeatBuyRate?(((result.rows[i].buyData.days7RepeatBuyRate)*100).toFixed(2)+"%"):"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].buyData.days7RepeatBuyAvgItems?result.rows[i].buyData.days7RepeatBuyAvgItems:"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].buyData.days7RepeatBuyAvgConsumption?result.rows[i].buyData.days7RepeatBuyAvgConsumption:"0")+'</td>';
+			}else{
+				content += '<td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td>';
+			}
+		}
+		if (type.indexOf("15buyData") != -1){
+			if (result.rows[i].buyData){
+				content+=
+				 '<td class="fifsty">'+(result.rows[i].buyData.days15ZeroItems?result.rows[i].buyData.days15ZeroItems:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].buyData.days15Aitems?result.rows[i].buyData.days15Aitems:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].buyData.days15TwoToFiveItems?result.rows[i].buyData.days15TwoToFiveItems:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].buyData.days15SixToTenItems?result.rows[i].buyData.days15SixToTenItems:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].buyData.days15LargeTenItems?result.rows[i].buyData.days15LargeTenItems:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].buyData.days15isOrderTotal?result.rows[i].buyData.days15isOrderTotal:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].buyData.days15BuyRate?(((result.rows[i].buyData.days15BuyRate)*100).toFixed(2)+"%"):"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].buyData.days15RepeatBuyRate?(((result.rows[i].buyData.days15RepeatBuyRate)*100).toFixed(2)+"%"):"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].buyData.days15RepeatBuyAvgItems?+result.rows[i].buyData.days15RepeatBuyAvgItems:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].buyData.days15RepeatBuyAvgConsumption?result.rows[i].buyData.days15RepeatBuyAvgConsumption:"0")+'</td>';
+			}else{
+				content += '<td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td>';
+			}
+		}
+		if (type.indexOf("30BuyData") != -1){
+			if (result.rows[i].buyData){
+				content+=
+				 '<td class="thirtysty">'+(result.rows[i].buyData.days30ZeroItems?result.rows[i].buyData.days30ZeroItems:"0")+'</td>'+
+				 '<td class="thirtysty">'+(result.rows[i].buyData.days30Aitems?result.rows[i].buyData.days30Aitems:"0")+'</td>'+
+				 '<td class="thirtysty">'+(result.rows[i].buyData.days30TwoToEightItems?result.rows[i].buyData.days30TwoToEightItems:"0")+'</td>'+
+				 '<td class="thirtysty">'+(result.rows[i].buyData.days30EightToFifteenItems?result.rows[i].buyData.days30EightToFifteenItems:"0")+'</td>'+
+				 '<td class="thirtysty">'+(result.rows[i].buyData.days30LargeFifteenItems?result.rows[i].buyData.days30LargeFifteenItems:"0")+'</td>'+
+				 '<td class="thirtysty">'+(result.rows[i].buyData.days30isOrderTotal?result.rows[i].buyData.days30isOrderTotal:"0")+'</td>'+
+				 '<td class="thirtysty">'+(result.rows[i].buyData.days30BuyRate?(((result.rows[i].buyData.days30BuyRate)*100).toFixed(2)+"%"):"0")+'</td>'+
+				 '<td class="thirtysty">'+(result.rows[i].buyData.days30RepeatBuyRate?(((result.rows[i].buyData.days30RepeatBuyRate)*100).toFixed(2)+"%"):"0")+'</td>'+
+				 '<td class="thirtysty">'+(result.rows[i].buyData.days30RepeatBuyAvgItems?result.rows[i].buyData.days30RepeatBuyAvgItems:"0")+'</td>'+
+				 '<td class="thirtysty">'+(result.rows[i].buyData.days30RepeatBuyAvgConsumption?result.rows[i].buyData.days30RepeatBuyAvgConsumption:"0")+'</td>';
+			}else{
+				content += '<td class="thirtysty">0</td><td class="thirtysty">0</td><td class="thirtysty">0</td><td class="thirtysty">0</td><td class="thirtysty">0</td><td class="thirtysty">0</td><td class="thirtysty">0</td><td class="thirtysty">0</td><td class="thirtysty"> 0</td><td class="thirtysty">0</td>';
+			}
+		}
+		content+='</tr>';
+	}
+	content+='</tbody></table>';
+	$('#userdata').html(content); 
+}
+
+function cleanSearch() {
+	$('#searchForm').form('reset');
+	$('#searchForm input').val('');
+	
+}
+
+function _exportStatisticsBuyData(){
+	var fromDays = $('#fromDays').datebox('getValue');
+
+	var toDays = $('#toDays').datebox('getValue');
+	var type=new Array();
+	$('input[name="queryType"]:checked').each(function(){
+		type.push($(this).val());//向数组中添加元素
+	});
+	var type=type.join(',');//将数组元素连接起来以构建一个字符串
+	var qdata="fromDays="+fromDays+"&toDays="+toDays+"&type="+type;
+	
+	if(fromDays != "" && toDays != "" ){
+		$.messager.confirm('', '确定要导出数据吗？', function(r){
+			if (r){
+				$.ajax({
+					type:'POST',
+					url : 'exportBuyDataStatisticsExcel.do',
+					success: function(data){
+							window.open(
+									'${request.contextPath}/statistics/exportBuyDataStatisticsExcel.do?'+qdata,
+									'',
+									'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+							window.close();
+					}
+				});
+			}
+		});
+	}else {
+		$.messager.alert("提示","日期不能为空！");
+	}
+}
+
+</script>
+</head>
+<body class="easyui-layout">
+	<div region="north" border="false" title="搜索条件" style="padding: 5px; height: 115px; overflow: hidden; "align="left">
+		<form id="searchForm">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<tr>
+					<td class="lable">统计时间:</td>
+					<td colspan="3">从 <input id="fromDays" type="text" name="fromDays" class="easyui-datebox" style="width: 130px" />
+									到 <input id="toDays" type="text" name="toDays" class="easyui-datebox" style="width: 130px" />
+					</td>
+					<td><input type="checkBox" name="queryType" value="countUser" checked="checked">注册认证数据</input></td>
+					<td><input type="checkBox" name="queryType" value="newBuyer" checked="checked">当日买家购买数据</input></td>
+					<td><input type="checkBox" name="queryType" value="7buyData" checked="checked">7日内购买数据</input></td>
+					<td><input type="checkBox" name="queryType" value="15buyData" checked="checked">15日内购买数据</input></td>
+					<td><input type="checkBox" name="queryType" value="30BuyData" checked="checked">30日内购买数据</input></td> 
+					<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a> 
+						<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a></td>
+						<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_exportStatisticsBuyData();">导出统计数据</a></td></tr>
+			</table>
+		</form>
+	</div>
+	<div region="center">
+		<div id="userdata">
+		</div> 
+	</div>
+</body>
+</html>

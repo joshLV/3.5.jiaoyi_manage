@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>销售TOP100统计</title> <#include "../common.html"/>
+<script type="text/javascript">
+$(function() {
+	//日期校验
+	$('#fromDays').datebox({
+		validType : 'date[\'\']'
+	});
+	$('#toDays').datebox({
+		validType : 'date[\'\']'
+	});
+});
+function _search() {
+	var fromDays = $('#fromDays').datebox('getValue');
+	var toDays = $('#toDays').datebox('getValue');
+	var excludeUsers = $("#excludeUsers").val();
+	var dataP = 't='+new Date().getTime()+"&showType=0";
+	if(excludeUsers.length>0){
+		dataP +='&excludeUsers='+excludeUsers;
+	}
+	if (fromDays > toDays && fromDays != "" && toDays != "") {
+		$.messager.show({title:'提示', msg:'请选择正确的时间段'});
+		return false;
+	} else {
+		$.ajax({
+			url : 'salesTOP100List.do',
+			data : dataP+"&fromDays="+fromDays+"&toDays="+toDays,
+			dataType : 'json',
+			cache : false,
+			success : function(result) {
+				showResult(result);
+			}
+		});
+	}
+}
+function showResult(result){
+	var content='<table  id="main-order-table" bgcolor="#EEEEEE" cellspacing="1" width="600" cellpadding="5" align="center"><thead>'+
+	'<tr align="center" bgcolor="#95B8E7">'+
+	'<td class="w_100">序号</td>'+
+	'<td class="w_100">UID</td>'+
+	'<td class="w_100">金额</td>'+
+	'<td class="w_100">笔数</td>'+
+	'</tr></thead>';
+	var total = result.total;
+	if(total>0){
+		for(var i=0;i<total;i++){
+			content+='<tbody><tr align="center" bgcolor="';
+			if(i%2==0){
+				content+='white';
+			}else{
+				content+='#F6F7F8';
+			}
+			content+='">'+
+			'<td class="w_40">'+(i+1)+'</td>'+
+			'<td class="w_100">'+result.rows[i].uid+'</td>'+
+			'<td class="w_100">'+result.rows[i].amount+'</td>'+
+			'<td class="w_100">'+result.rows[i].items+'</td>'+
+			'</tr></tbody>';
+		}
+	}else{
+	content+='<tr align="center" bgcolor="white">'+
+				'<td colspan="4">没有相关数据</td>'+
+			 '</tr>';
+	}
+	content+='</table>';
+	$("#top100").html(content);
+}
+function cleanSearch() {
+	$('#searchForm').form('reset');
+	$('#searchForm input').val('');
+	var content='<table  id="main-order-table" bgcolor="#EEEEEE" cellspacing="1" width="600" cellpadding="5" align="center"><thead>'+
+	'<tr align="center" bgcolor="#95B8E7">'+
+	'<td class="w_100">序号</td>'+
+	'<td class="w_100">UID</td>'+
+	'<td class="w_100">金额</td>'+
+	'<td class="w_100">笔数</td>'+
+	'</tr></thead>';
+	'<tr align="center" bgcolor="white">'+
+	'<td colspan="4">没有相关数据</td>'+
+ 	'</tr></table>';
+	$("#top100").html(content);
+}
+
+//导出数据
+function _exportStatisticsData() {
+	var fromDays = $('#fromDays').datebox('getValue');
+	var toDays = $('#toDays').datebox('getValue');
+	var excludeUsers = $("#excludeUsers").val();
+	var dataP = "fromDays="+fromDays+"&toDays"+toDays+"&t="+new Date().getTime()+"&showType=1";
+	if(excludeUsers.length>0){
+		dataP +='&excludeUsers='+excludeUsers;
+	}
+	console.log(dataP);
+	if(fromDays==""){
+		if(confirm("确定导出数据?")){
+			$.ajax({
+				type:'POST',
+				url : 'exportTOP100StatisticsExcel.do',
+				data : {outputData:0},
+				success: function(data){
+						window.open(
+								'${request.contextPath}/statistics/exportTOP100StatisticsExcel.do?'+dataP,
+								'',
+								'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+						window.close();
+				}
+			});
+		}
+	}else{
+		if (fromDays > toDays && fromDays != "" && toDays != "") {
+			$.messager.show({title:'提示', msg:'请选择正确的时间段'});
+			return false;
+		} else {
+			if(confirm("确定导出数据?")){
+				$.ajax({
+					type:'POST',
+					url : 'exportTOP100StatisticsExcel.do',
+					data : {outputData:0},
+					success: function(data){
+						window.open(
+								'${request.contextPath}/statistics/exportTOP100StatisticsExcel.do?'+dataP,
+								'',
+								'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+						window.close();
+					}
+				});
+			}
+		}
+	}
+} 
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div
+		region="north"
+		border="false"
+		title="搜索条件"
+		style="padding: 5px; height: 115px; overflow: hidden; float: left;"
+		align="left">
+		<form id="searchForm">
+			<table
+				width="100%"
+				border="0"
+				cellspacing="1"
+				cellpadding="1">
+				<tr>
+					<td class="lable">排除UID:</td>
+					<td colspan="5">
+						<input id="excludeUsers" name="excludeUsers"  style="width:460px">
+						<font color="red">*　排除多个用户，用户间请用英文逗号(　,　)隔开</font>
+					</td>
+				</tr>
+				<tr>
+					<td class="lable">统计时间:</td>
+					<td colspan="3">从 <input
+						id="fromDays"
+						type="text"
+						name="fromDays"
+						class="easyui-datebox"
+						style="width: 130px" value="${fromDays}"> 到 <input
+						id="toDays"
+						type="text"
+						name="toDays"
+						class="easyui-datebox"
+						style="width: 130px">
+					</td>
+					<td><a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="_search();">搜索</a> <a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="cleanSearch();">取消</a>
+						<a href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="_exportStatisticsData();">导出统计数据</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<div
+		region="center"
+		id="StatisticsTop100Content">
+		<div id="top100">
+			<table
+				id="main-order-table"
+				bgcolor="#EEEEEE"
+				cellspacing="1" width="600" cellpadding="5" align="center">
+				<thead>
+					<tr
+						align="center"
+						bgcolor="#95B8E7">
+						<th class="w_40">序号</th>
+						<th class="w_100">UID</th>
+						<th class="w_100">金额</th>
+						<th class="w_100">笔数</th>
+					</tr>
+				</thead>
+				<tbody>
+					<#if top100List??>
+						<#list top100List as top>
+							<tr
+								align="center"
+								bgcolor="#E8F2FE">
+								<td class="w_40">${top_index}</td>
+								<td class="w_100">${top.uid}</td>
+								<td class="w_100">${top.amount?string.currency}</td>
+								<td class="w_100">${top.items}</td>
+							</tr>
+						</#list>
+					<#else>
+						<tr
+							align="center"
+							bgcolor="white">
+							<td colspan="11">没有相关数据</td>
+						</tr>
+					</#if>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</body>
+</html>

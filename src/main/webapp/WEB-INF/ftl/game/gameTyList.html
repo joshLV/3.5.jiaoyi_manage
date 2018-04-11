@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>退游游戏参数列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var searchForm;
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'getGameTyList',
+			queryParams:{
+				gameId:'${gameId!''}'
+			},
+			title : '退游游戏参数列表',
+			pagination : true,
+			loadMsg:null,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 30,
+			pageList : [30, 40, 50, 100],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : 'game_id',
+			columns : [ [ 
+               {field:'ck',checkbox:true,
+					formatter:function(value,row,index){
+						return row.game_id;
+					}
+				},
+			   {field:'game_id',title:'游戏ID',align:'center',width:50},
+			   {field:'game_name',title:'游戏名称',align:'center',width:150},
+			   {field:'game_initial',title:'首字母',align:'center',width:100},
+			   {field:'name',title:'估值参数名称',align:'center',width:100},
+			   {field:'param_desc',title:'估值参数说明',align:'center',width:100},
+			   {field:'valua_type',title:'估值参数类型',align:'center',width:100,
+				   formatter:function(value,row,index){
+					   if(row.name!=''){
+						   if(row.type_name==''|| row.valua_type==0){
+							   return "以人民币计算";
+						   }else{
+							   return "以"+row.type_name+"计算";
+						   }
+					   }
+				   }
+			   },
+			   {field:'param_type',title:'估值参数设定',align:'center',width:100,
+				   formatter:function(value,row,index){
+					   if(row.param_type==0){
+						   return "文本框";
+					   }else{
+						   return "下拉框";
+					   }
+				   }
+			   },
+			   {field:'operate',title:'操作',align:'center',width:150,
+				   formatter:function(value,row,index){
+					   var operate="";
+					   if(row.name!=''){
+						   var typeId=row.type_id;
+						   if(typeId==''){
+							   typeId=0;
+						   }
+						   operate=operate+"<a href='javascript:editParam("+row.game_id+",\""+row.game_name+"\""+","+typeId+",\""+row.type_name+"\","+row.param_id+");'>修改</a>";
+						   operate=operate+" | <a href='javascript:deleteParam("+row.param_id+");'>删除</a>";
+					   }
+					   return operate;
+				   }   
+			   }
+			 ] ],
+			 toolbar : [ {
+					text : '增加',
+					iconCls : 'icon-add',
+					handler : function() {
+						addParam();
+					}
+			} ]
+		});
+});
+
+//游戏名称列表
+/* $(function() {
+	var url = "${request.getContextPath()}/product/allgameList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='gameId'] option").remove();
+		var def =  "<option value='-1'>请选择</option>";
+		$("select[name='gameId']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='gameId']").append(options);
+		}
+	});
+}); */
+
+//搜索
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+//取消
+function cleanSearch() {
+	$("#searchForm input[name='paramName']").val('');
+	//searchForm.find('input').val('');
+	searchForm.find('select').val('0'); 
+}
+
+//新增估值参数
+function addParam(){
+	var gameId=$("#gameId").val();
+	var gameName=$("#gameName").val();
+	var typeId=$("#typeId").val();
+	var typeName=$("#typeName").val();
+	
+	var url="${request.getContextPath()}/game/gameTyAdd.do?gameId="+gameId;
+	if(gameName!=""){
+		url=url+"&gameName="+gameName;
+	}
+	if(typeId!=""){
+		url=url+"&typeId="+typeId;
+	}
+	if(typeName!=""){
+		url=url+"&typeName="+typeName;
+	}
+	openWindow(url);
+}
+
+//修改估值参数
+function editParam(gameId,gameName,typeId,typeName,paramId){
+	var url="${request.getContextPath()}/game/gameTyEdit.do?gameId="+gameId;
+	if(gameName!=""){
+		url=url+"&gameName="+gameName;
+	}
+	if(typeId!=""){
+		url=url+"&typeId="+typeId;
+	}
+	if(typeName!=""){
+		url=url+"&typeName="+typeName;
+	}
+	if(paramId!=""){
+		url=url+"&paramId="+paramId;
+	}
+	openWindow(url);
+}
+
+//删除估值参数
+function deleteParam(paramId){
+	if(confirm("确定要删除吗？")){
+		$.ajax({
+	        type: "POST",
+	        url: "gameTyDeleteParam",
+	        data: {
+	        	paramId:paramId
+	        },
+	        dataType: "json",
+	        success: function (data) {
+				$.messager.show({
+					title : '操作提示',
+					msg : data.msg
+				});
+				if(data.code==1){
+					_search();
+				}
+	        }
+	      });
+	}
+}
+
+//弹出窗口
+function openWindow(url){
+	window.open(url,'','width=800, height=450, top=200, left=300, toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+}
+</script>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 60px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<input type="hidden" id="gameId" name="gameId" value="${gameId!''}">
+		<input type="hidden" id="gameName" name="gameName" value="${gameName!''}">
+		<input type="hidden" id="typeId" name="typeId" value="${typeId!'0'}">
+		<input type="hidden" id="typeName" name="typeName" value="${typeName!''}">
+		<table>
+			<tr>
+				<!-- <td>游戏名称:<select id="gameId" name="gameId" style="width: 96px"></select>&nbsp;</td> -->
+				<!-- <td>首字母：<input id="gameInitial" name="gameInitial" style="width:100px;" />&nbsp;</td> -->
+				<td>估值参数名称：<input id="paramName" name="paramName" style="width:100px;" />&nbsp;</td>
+		     	<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a> 
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+</body>
+</html>

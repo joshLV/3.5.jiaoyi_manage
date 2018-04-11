@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>公告管理</title><#include "../common_new.html"/>
+<script type="text/javascript">
+	var datagrid;
+	var addDialog;
+	var addForm;
+	var editDialog;
+	var editForm;
+	var showDetailDailog;
+	var searchForm;
+	var KEContentAdd;
+	var KEContentEdit;
+	var sendedTime;
+	$(function() {
+		showDetailDailog = $('#showDetail');
+		showDetailDailog.dialog('close');
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid').datagrid({
+			url : 'announcementList_json',
+			title : '公告列表',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'announcementId',
+			sortName : 'createtime',
+			sortOrder : 'desc',
+			columns : [ [ {
+				field : 'ck',
+				checkbox : true,
+				formatter : function(value, row, index) {
+					return row.obid;
+				}
+			}, {
+				field : 'announcementId',
+				title : '公告ID',
+				align : 'center',
+			}, {
+				field : 'categoryName',
+				title : '类型',
+				align : 'center',
+			}, {
+				field : 'title',
+				title : '标题',
+				align : 'center',
+				width : 100,
+			}, {
+				field : 'template',
+				title : '模板',
+				align : 'center',
+				width : 30,
+			}, {
+				field : 'expDate',
+				title : '有效期',
+				align : 'center',
+			}, {
+				field : 'status',
+				title : '状态',
+				align : 'center',
+			},{
+				field : 'releasePlatform',
+				title : '发布平台',
+				align : 'center',
+			}, {
+				field : 'opreation',
+				title : '操作列表',
+				align : 'center',
+			} ] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '编辑',
+				iconCls : 'icon-edit',
+				handler : function() {
+					edit();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			}
+		});
+		addForm = $('#addForm').form({
+			url : 'announcement_add',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+
+		});
+		editForm = $('#editForm').form({
+			url : 'announcement_edit.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		KEContentAdd = KindEditor.create('#KEContentAdd', options);
+		addDialog = $('#addDialog')
+				.show()
+				.dialog(
+						{
+							title : '添加公告',
+							modal : true,
+							closed : true,
+							maximizable : true,
+							buttons : [ {
+								text : '添加',
+								handler : function() {
+									KEContentAdd.sync();
+									$('#addForm input[name="content"]').val($('#KEContentAdd').val());
+									var validdate = $('#validdate').datetimebox('getValue');
+									$('#validdate').val(validdate);
+									$('#addForm').form({onSubmit : function() {
+															var isValid = $(this).form('validate');
+															if (!isValid) {$.messager.progress('close');
+															}
+															return isValid;
+														},
+													});
+									closeDialog('<p style="color:red">请仔细检查您所发的公告内容,<br>审查完后再确认,以免因失误造成麻烦!!!<p>您确定要添加该公告吗?<br>',
+											'addForm', 'addDailog');
+								}
+							} ]
+						});
+		KEContentEdit = KindEditor.create('#KEContentEdit', options);
+		editDialog = $('#editDialog').show().dialog(
+				{
+					title : '编辑公告信息',
+					modal : true,
+					closed : true,
+					maximizable : true,
+					buttons : [ {
+						text : '保存',
+						handler : function() {
+							KEContentEdit.sync();
+							$('#editForm input[name="content"]').val($('#KEContentEdit').val());
+							var validdate = $('#validdate2').datetimebox('getValue');
+							$('#editForm input[name="validdate"]').val(validdate);
+							var typeName = $("#editForm :radio[value='0']:checked").val();
+							if (typeName != 0) {
+								var sendedTime = $('#sendedTime2').datetimebox('getValue');
+								$('#editForm input[name="sendedTime"]').val(validdate);
+							}
+							$('#editForm').form({
+								onSubmit : function() {
+									var isValid = $(this).form('validate');
+									if (!isValid) {
+										$.messager.progress('close');
+									}
+									return isValid;
+								},
+							});
+							closeDialog('您确定要修改该公告信息吗?', 'editForm','editDialog');
+						}
+					} ]
+				});
+		$('#addDialog :radio').bind(
+				'click',
+				function() {
+					var selected = $('#addForm input[type="radio"]:checked').val();
+					if (selected == 0) {
+						sendedTime = $('#addDialog tr:has(input[name="sendedTime"])').detach();
+					} else if (selected == 1) {
+						$('#addDialog tr:has(input[name="validdate"])').before(sendedTime);
+					}
+				});
+		$('#editDialog :radio').bind(
+				'click',
+				function() {
+					var selected = $('#editForm input[type="radio"]:checked').val();
+					if (selected == 0) {
+						sendedTime = $('#editDialog tr:has(input[name="sendedTime"])').detach();
+					} else if (selected == 1) {
+						$('#editDialog tr:has(input[name="validdate"])').before(sendedTime);
+					}
+				});
+	});
+
+	function add() {
+		addDialog.dialog('open');
+		addForm.form('reset');
+		KEContentAdd.html('');
+		var url = "allAnnoCategoryList_json";
+		$
+				.getJSON(
+						url,
+						function(result) {
+							var categoryCount = result.total;
+							addForm.find("select[name='categoryId'] option").remove();
+							for ( var i = 0; i < categoryCount; i++) {
+								var options = "<option value='"+result.rows[i].categoryId+"'>"+ result.rows[i].categoryName+ "</option>";
+								addForm.find("select[name='categoryId']").append(options);
+							}
+							$('#addForm input[type="radio"][value="1"]').attr('checked', 'checked');
+							var typeName = $("#addForm :radio[value='0']:checked").val();
+							if (typeName == 0) {
+								sendedTime = $('#addDialog tr:has(input[name="sendedTime"])').detach();
+							} else {
+								$('#addDialog tr:has(input[name="validdate"])').before(sendedTime);
+								if ($('#addDialog tr:has(input[name="sendedTime"])').length == 2) {
+									$('#addDialog tr:has(input[name="sendedTime"])').last().remove();
+								}
+							}
+						});
+	}
+
+	function del() {
+		var rows = datagrid.datagrid('getSelections');
+		var ids = [];
+		if (rows.length > 0) {
+			$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+				if (r) {
+					for ( var i = 0; i < rows.length; i++) {
+						ids.push(rows[i].announcementId);
+					}
+					console.log(ids.join(','));
+					$.ajax({
+						url : 'announcement_delete',
+						data : {
+							ids : ids.join(',')
+						},
+						dataType : 'json',
+						success : function(response) {
+							datagrid.datagrid('load');
+							datagrid.datagrid('unselectAll');
+							$.messager.show({
+								title : '提示',
+								msg : response.msg
+							});
+
+						}
+					});
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		}
+	}
+	function edit() {
+		editForm.form('clear');
+		var rows = datagrid.datagrid('getSelections');
+		if (rows.length == 1) {
+			editForm.find("input[type='hidden']").val(rows[0].announcementId);
+			editForm.find("input[name='title']").val(rows[0].title);
+			var url = "allAnnoCategoryList_json";
+			$
+					.getJSON(
+							url,
+							function(result) {
+								var categoryCount = result.total;
+								editForm.find("select[name='categoryId'] option").remove();
+								for ( var i = 0; i < categoryCount; i++) {
+									var options = "<option value='"+result.rows[i].categoryId+"'>"+ result.rows[i].categoryName+ "</option>";
+									editForm.find("select[name='categoryId']").append(options);
+								}
+								KEContentEdit.html(rows[0].content);
+								$("#editForm option[value='"+ rows[0].categoryId + "']").attr("selected", 'selected');
+
+								$('#editForm input[type="radio"][value="1"]').attr('checked', 'checked');
+								var typeName = $("#editForm :radio[value='0']:checked").val();
+								if (typeName == 0) {
+									sendedTime = $('#editDialog tr:has(input[name="sendedTime"])').detach();
+								} else {
+									$('#editDialog tr:has(input[name="validdate"])').before(sendedTime);
+									if ($('#editDialog tr:has(input[name="sendedTime"])').length == 2) {
+										$('#editDialog tr:has(input[name="sendedTime"])').last().remove();
+									}
+								}
+							});
+			editDialog.dialog('open');
+			$("#editForm option[value='"+ rows[0].template + "']").attr("selected", 'selected');
+			$('#editForm input[name="validdate"]').val(rows[0].validdate);
+			$('#editForm input[name="sendedTime"]').val(rows[0].sendedTime);
+			var platform = rows[0].releasePlatform;
+			var platform_id = 1;
+			if(platform == "网站"){
+				platform_id = 0;
+			}
+			$("#editForm option[value='"+platform_id+"']").attr("selected", 'selected');
+			$("#releasePlatform").val(platform_id);
+		} else {
+			$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+		}
+	}
+	function showDetail(announcementId) {
+		datagrid.datagrid('unselectAll');//去除多选
+		$
+				.ajax({
+					url : 'announcement_json',
+					data : {
+						announcementId : announcementId
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(announcement) {
+						$('#showDetail')
+								.window(
+										{
+											title : "温馨提示: 文章过长时阅读完整信息 请点击窗口最大化",
+											content : "<div align=\"center\"><h1>"
+													+ announcement.title
+													+ "</h1></div>"
+													+ "<div align=\"center\">ID："
+													+ announcement.announcementId
+													+ "　　类型:　"
+													+ (announcement.status == 0 ? "已发布"
+															: ((announcement.status == 1) ? "已删除"
+																	: "待发布"))
+													+ "　　发布日期:　"
+													+ announcement.sendedTime
+													+ "　　有效期:　"
+													+ announcement.createtime
+													+ " - "
+													+ announcement.validdate
+													+ "</div><hr>"
+													+ announcement.content
+										});
+						$('#showDetail').window('open');
+					}
+				});
+
+	}
+	function _search() {
+		datagrid.datagrid("unselectAll");
+		var status = searchForm.find('#sfstatus').val();
+		datagrid.datagrid({
+			queryParams : {
+				status : status
+			}
+		});
+		datagrid.datagrid('reload');
+	}
+
+	function cleanSearch() {
+		datagrid.datagrid("unselectAll");
+		searchForm.find('#sfstatus').val('0');
+		datagrid.datagrid({
+			queryParams : {}
+		});
+		datagrid.datagrid('reload');
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="north" border="false" title="搜索条件"
+		style="height: 70px; overflow: hidden; padding: 10px" align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+					<td>公告状态:<select id="sfstatus" name="status">
+							<option value="0">已发布</option>
+							<option value="1">已删除</option>
+							<option value="2">待发布</option>
+					</select>&nbsp;
+					</td>
+					<td><a href="javascript:void(0);" class="easyui-linkbutton"
+						onclick="_search();">筛选</a> <a href="javascript:void(0);"
+						class="easyui-linkbutton" onclick="cleanSearch();">取消</a></td>
+				</tr>
+
+
+			</table>
+		</form>
+	</div>
+	<div region="center" border="false">
+		<table id="datagrid"></table>
+	</div>
+
+	<div id="menu" class="easyui-menu" style="width: 120px; display: none;">
+		<div onclick="add();" iconCls="icon-add">增加</div>
+		<div onclick="edit();" iconCls="icon-add">修改</div>
+		<div onclick="del();" iconCls="icon-remove">删除</div>
+	</div>
+
+	<!--添加表单-->
+	<div id="addDialog" class="easyui-dialog"
+		style="width: 800px; height: 395px" align="center">
+		<form id="addForm" method="post" style="padding: 5px 10px">
+			<table
+				style="width: 100%; border: 0; cellspacing: 1; cellpadding: 1;">
+				<tr>
+					<td class="lable">发布类型:</td>
+					<td><input type="radio" name="typename" value="1">定时发布
+						<input type="radio" name="typename" value="0">立即发布</td>
+				</tr>
+				<tr>
+					<td class="lable">标题：</td>
+					<td><input type="text" name="title" size="20" maxlength="50"
+						class="easyui-validatebox" data-options="required:true"
+						missingMessage="请填写标题" /></td>
+				</tr>
+				<tr class="lable">
+					<td class="lable">分类：</td>
+					<td><select style="width: 155px" name="categoryId"
+						id="announcementCategory"></select></td>
+				</tr>
+				<tr class="lable">
+					<td class="lable">模板：</td>
+					<td><select style="width: 155px" name="template">
+						<option value="" selected="selected">默认</option>
+						<option value="huodong">活动</option>
+					</select></td>
+				</tr>
+			    <tr class="lable">
+					<td class="lable">发布平台：</td>
+					<td><select style="width: 155px" name="releasePlatform">
+						<option value="0" selected="selected">网站</option>
+						<option value="1">APP</option>
+					</select><b style="color: red">* 发布平台只对【分类-公告】生效</b></td>
+				</tr>
+				<tr>
+					<td class="lable">内容：</td>
+					<td><textarea rows="8" cols="50" name="content"
+							maxlength="10000" class="easyui-validatebox"
+							data-options="required:true" missingMessage="请填写内容"
+							id="KEContentAdd"></textarea></td>
+				</tr>
+				<tr>
+					<td class="lable">定时发送：</td>
+					<td><input type="text" name="sendedTime"
+						class="easyui-datetimebox" data-options="validType : 'md[\'\']'"
+						style="width: 155px" /></td>
+				</tr>
+				<tr>
+					<td class="lable">有效期：</td>
+					<td><input type="text" name="validdate" id="validdate"
+						class="easyui-datetimebox" data-options="validType : 'md[\'\']'"
+						style="width: 155px" /></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<!--编辑表单-->
+	<div id="editDialog" class="easyui-dialog"
+		style="width: 800px; height: 395px" align="center">
+		<form id="editForm" method="post" style="padding: 5px 10px">
+			<input type="hidden" name="announcementId">
+			<table
+				style="width: 100%; border: 0; cellspacing: 1; cellpadding: 1;">
+				<tr>
+					<td class="lable">发布类型:</td>
+					<td><input type="radio" name="typename" value="1">定时发布
+						<input type="radio" name="typename" value="0">立即发布</td>
+				</tr>
+				<tr>
+					<td class="lable">标题：</td>
+					<td><input type="text" name="title" size="20" maxlength="50"
+						class="easyui-validatebox" data-options="required:true"
+						missingMessage="请填写标题" /></td>
+				</tr>
+				<tr class="lable">
+					<td class="lable">分类：</td>
+					<td><select style="width: 155px" name="categoryId"
+						id="announcementCategory"></select></td>
+				</tr>
+				<tr class="lable">
+					<td class="lable">模板：</td>
+					<td><select style="width: 155px" name="template">
+						<option value=""  selected="selected">默认</option>
+						<option value="huodong">活动</option>
+					</select></td>
+				</tr>
+				<tr class="lable">
+					<td class="lable">发布平台：</td>
+					<td><select style="width: 155px" name="releasePlatform" id ="releasePlatform">
+						<option value="0" selected="selected">网站</option>
+						<option value="1">APP</option>
+					</select><b style="color: red">* 发布平台只对【分类-公告】生效</b></td>
+				</tr>
+				<tr>
+					<td class="lable">内容：</td>
+					<td><textarea rows="8" cols="50" name="content"
+							maxlength="10000" class="easyui-validatebox"
+							data-options="required:true" missingMessage="请填写内容"
+							id="KEContentEdit"></textarea></td>
+				</tr>
+				<tr>
+					<td class="lable">定时发送：</td>
+					<td><input type="text" name="sendedTime" id="sendedTime2"
+						class="easyui-datetimebox" data-options="validType : 'md[\'\']'"
+						style="width: 155px" /></td>
+				</tr>
+				<tr>
+					<td class="lable">有效期：</td>
+					<td><input type="text" name="validdate" id="validdate2"
+						class="easyui-datetimebox" data-options="validType : 'md[\'\']'"
+						style="width: 155px" /></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<!-- 详细信息窗口 -->
+	<div id="showDetail" class="easyui-window" title="详细信息"
+		data-options="modal:true"
+		style="width: 800px; height: auto; padding: 10px">详细信息内容</div>
+</body>
+</html>

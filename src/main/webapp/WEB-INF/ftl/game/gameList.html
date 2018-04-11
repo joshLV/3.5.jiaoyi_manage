@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>游戏列表</title> <#include "../common.html"/>
+<style type="text/css">
+</style>
+<script type="text/javascript" src="${request.contextPath}/jquery-easyui-1.3.2/jquery.datagrid-detailview.js"></script>
+<script type="text/javascript">
+	var datagrid;
+	var searchForm;
+	var maintenanceForm;
+	var maintenanceDialog;
+	var KEPauseRemark;
+	var beginTimeRadio;
+	var endTimeRadio;
+	var showDetailDailog;
+	
+	var checkItemDialog;
+	var checkItemForm;
+	
+	$(function() {
+		showDetailDailog = $('#showDetail');
+		showDetailDailog.dialog('close');
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid')
+				.datagrid(
+						{
+							url : 'gameList_json.do',
+							title : '游戏列表',
+							pagination : true,
+							pagePosition : 'bottom',
+							rownumbers : true,
+							pageSize : 100,
+							pageList : [ 100, 120, 140, 160 ],
+							fit : true,
+							fitColumns : false,
+							nowrap : true,
+							autoRowHeight : true,
+							border : false,
+							idField : 'gameId',
+							sortName : 'game_id,weight',
+							sortOrder : 'desc',
+							columns : [ [
+									{
+										field : 'ck',
+										checkbox : true,
+										formatter : function(value, row, index) {
+											return row.obid;
+										}
+									},
+									{
+										field : 'gameId',
+										title : '游戏编号',
+										align : 'center',
+									},
+									{
+										field : 'gameName',
+										title : '游戏名字',
+										align : 'center',
+									},
+									{
+										field : 'gameInitial',
+										title : '首字母',
+										align : 'center',
+									},
+									{
+										field : 'isSupportC2cView',
+										title : '是否支持C2C',
+										align : 'center',
+									},
+									{
+										field : 'isSupportApiView',
+										title : '是否支持API',
+										align : 'center',
+									},
+									{
+										field : 'status',
+										title : '显示状态',
+										align : 'center',
+									},
+									{
+										field : 'isHasPartition',
+										title : '是否有区',
+										align : 'center',
+									},
+									{
+										field : 'isHasServer',
+										title : '是否有服',
+										align : 'center',
+									},
+									{
+										field : 'weight',
+										title : '权重',
+										align : 'center',
+										sortable : true,
+									},
+									{
+										field : 'gameCoefficient',
+										title : '游戏系数',
+										align : 'center',
+									},
+									{
+										field : 'marketCoefficient',
+										title : '市场系数',
+										align : 'center',
+									},
+									{
+										field : 'isComCurrency',
+										title : '有无通用货币',
+										align : 'center',
+									},
+									{
+										field : 'operate',
+										title : '操作',
+										align : 'center',
+										formatter : function(value, row, index) {
+											if (value == null || value == '') {
+// 												return "<a href='javascript:void(0)' onclick='manageArea("
+// 														+ row.gameId+",\""+row.gameName
+// 														+ "\")'>管理区服 </a>"
+// 														+"<a href='javascript:void(0)' onclick='batchArea("
+// 														+ row.gameId
+// 														+ ")'>游戏同步 </a>"
+														/* + "　<a href='javascript:void(0)' onclick='maintenance("
+														+ row.gameId
+														+ ")'>停机维护 </a>"
+														+ "　<a href='javascript:void(0)' onclick='remaintenance("
+														+ row.gameId
+														+ ")'>立即恢复停机</a>" */
+												return  "<a href='javascript:void(0)' onclick='setGameChannel("
+														+ row.gameId+",\""+row.gameName
+														+ "\")'>游戏渠道管理 </a>"
+														+"　<a href='javascript:void(0)' onclick='linkToProductGameType("
+														+ row.gameId+")'>商品类型管理</a>"
+// 														+"　<a href='javascript:void(0)' onclick='showGameCategory("
+// 														+ row.gameId+",\""+row.gameName
+// 														+ "\")'>游戏分类管理</a>" 
+														+"　<a href='javascript:void(0)' onclick='TyParameterList("
+														+ row.gameId
+														+ ")'>退游参数管理</a>" 
+														+"　<a href='javascript:void(0)' onclick='gameVersionList("
+														+ row.gameId+",\""+row.gameName
+														+ "\")'>游戏版本管理</a>" 
+
+ 														+"　<a href='javascript:void(0)' onclick='modifygame("
+ 														+ row.gameId+",\""+row.gameName
+ 														+ "\")'>编辑游戏</a>" 
+
+														
+											}
+										}
+									},
+									{field:'opr',title:'检查游戏各项配置',align:'center',width:100,
+										   formatter:function(value,row,index){
+											   var a = "　<a href='javascript:void(0)' onclick='showCheck("+ row.gameId+",\""+row.gameName+ "\")'>检查</a>";
+											   return a;
+// 												if(row.checkNeeded==true){
+// 													return a +'<img alt="" width="20" height="20" src="../images/r002.jpg">';
+// 												}else{
+// 													return a+'<img alt="" width="20" height="20" src="../images/r001.jpg">';
+// 												}
+// 												}  
+									   }
+						}
+
+							] ],
+							toolbar : [ {
+								text : '增加',
+								iconCls : 'icon-add',
+								handler : function() {
+									add();
+								}
+							}, '-', {
+								text : '删除',
+								iconCls : 'icon-remove',
+								handler : function() {
+									del();
+								}
+							}, '-', {
+								text : '修改',
+								iconCls : 'icon-edit',
+								handler : function() {
+									edit();
+								}
+							}, '-', {
+								text : '取消选中',
+								iconCls : 'icon-undo',
+								handler : function() {
+									datagrid.datagrid('unselectAll');
+								}
+							}, '-' ],
+							//右键菜单 
+							onRowContextMenu : function(e, rowIndex, rowData) {
+								e.preventDefault();
+								$(this).datagrid('unselectAll');
+								$(this).datagrid('selectRow', rowIndex);
+								$('#menu').menu('show', {
+									left : e.pageX,
+									top : e.pageY
+								});
+							},
+						   onDblClickRow:function (rowIndex,rowData){
+							   
+								datagrid.datagrid('unselectAll');//去除多选
+								$.ajax({
+									url : 'gameDetail_json',
+									data : {
+										gameId : rowData.gameId
+									},
+									dataType : 'json',
+									cache : false,
+									success : function(game) {
+										$('#showDetail').window({
+											title : "["+game.gameId+"]游戏"+game.gameName+"--详细信息",
+											content : "首字母: "+game.gameInitial+"<br><br>"+
+													  "权重: "+game.weight+"<br><br>"+
+													  "游戏LogoURL: "+game.gamePic+"<br><br>"+
+													  "游戏状态: "+game.status+"<br><br>"+
+													  "查找用户方式: "+game.findUserWay+"<br><br>"+
+													  "API版本号: "+game.apiVersion+"<br><br>"+
+													  "区状态: "+game.isHasPartition+"<br><br>"+
+													  "服状态: "+game.isHasServer+"<br><br>"+
+													  "是否支持C2C: "+game.isSupportC2C+"<br><br>"+
+													  "是否支持API: "+game.isSupportAPI+"<br><br>"+
+													  "是否支持退游: "+game.isTy+"<br><br>"+
+													  "游戏系数: "+game.gameCoefficient+"<br><br>"+
+													  "市场系数: "+game.marketCoefficient+"<br><br>"+
+													  "是否有通用货币: "+game.isComCurrency+"<br><br>"+
+													  "停机维护开始时间: "+game.pauseBeginTime+"<br><br>"+
+													  "停机维护结束时间: "+game.pauseEndTime+"<br><br>"+
+													  "停机备注: <div>"+game.pauseRemark+"</div>"
+										});
+										$('#showDetail').window('open');
+									}
+								});
+							   
+						   },
+						});
+		
+		
+		
+		
+		
+		//----------------------
+		 checkItemForm = $('#checkItemForm').form({
+			url : 'checkItem',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					maintenanceDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+					maintenanceDialog.dialog('close');
+				}
+			},
+			error : function(XMLHttpRequest, textStatus, errorThrown) {
+				alert(textStatus);
+			}
+		}); 
+
+		 checkItemDialog = $('#checkItemDialog').show().dialog(
+				{
+					title : '检查游戏各项配置',
+					modal : true,
+					closed : true,
+					maximizable : true,
+					buttons : [ {
+						text : '重新检查',
+						handler : function() {
+							var gid =$("#check_game_id").val();
+							var gn = $("#check_game_name").val();
+							showCheck(gid,gn);
+						}
+					} ]
+				}); 
+		
+		//----------------------
+		
+
+		/* maintenanceForm = $('#maintenanceForm').form({
+			url : 'maintenance',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					maintenanceDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+					maintenanceDialog.dialog('close');
+				}
+			},
+			error : function(XMLHttpRequest, textStatus, errorThrown) {
+				alert(textStatus);
+			}
+		}); */
+
+		/* maintenanceDialog = $('#maintenanceDialog').show().dialog(
+				{
+					title : '添加停机维护内容',
+					modal : true,
+					closed : true,
+					maximizable : true,
+					buttons : [ {
+						text : '添加',
+						handler : function() {
+							KEPauseRemark.sync();
+							$('#maintenanceForm input[name="content"]').val($('#KEPauseRemark').val());
+							closeDialog('您确定要维护该游戏吗?', 'maintenanceForm',
+									'maintenanceDialog');
+						}
+					} ]
+				}); */
+
+		KEPauseRemark = KindEditor.create('#KEPauseRemark', editOptions);
+		/* $('#maintenanceDialog :radio')
+				.bind(
+						'click',
+						function() {
+							var selected = $(
+									'#maintenanceForm input[type="radio"]:checked')
+									.val();
+							if (selected == 0) {
+								beginTimeRadio = $(
+										'#maintenanceDialog tr:has(input[name="beginTime"])')
+										.detach();
+								// 				endTimeRadio   =$('#maintenanceDialog tr:has(input[name="endTime"])').detach();
+							} else if (selected == 1) {
+								// 				var content = '<tr><td class="lable">开始时间:</td><td><input id="beginTime" type="text" class="easyui-datetimebox combo-f datetimebox-f" style="width: 150px; display: none;" comboname="beginTime"><span class="combo datebox" style="width: 148px; height: 20px;"><input type="text" class="combo-text validatebox-text" autocomplete="off" style="width: 126px; height: 20px; line-height: 20px;"><span><span class="combo-arrow" style="height: 20px;"></span></span><input type="hidden" class="combo-value" name="beginTime" value=""></span></td></tr><tr><td class="lable">结束时间:</td><td><input id="endTime" type="text" class="easyui-datetimebox combo-f datetimebox-f" style="width: 150px; display: none;" comboname="endTime"><span class="combo datebox" style="width: 148px; height: 20px;"><input type="text" class="combo-text validatebox-text" autocomplete="off" style="width: 126px; height: 20px; line-height: 20px;"><span><span class="combo-arrow" style="height: 20px;"></span></span><input type="hidden" class="combo-value" name="endTime" value=""></span></td></tr>';
+								$('#maintenanceForm textarea[name="content"]')
+										.parent().parent().before(
+												beginTimeRadio);
+								// 				$('#maintenanceForm input[name="content"]').parent().parent().before(endTimeRadio);
+							}
+						}); */
+	});
+	
+	function manageArea(gameId,gameName){
+		var link = "${request.contextPath}/game/gameAreaList.do?gameId="+gameId+"&gameName="+gameName;
+		var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"游戏["+gameName+"]区服列表" 
+		};
+		parent.addTab(node);	
+	}
+	
+	function _search() {
+		datagrid.datagrid("unselectAll");
+		datagrid.datagrid('load', sy.serializeObject(searchForm));
+	}
+
+	function cleanSearch() {
+		datagrid.datagrid('load', {});
+		searchForm.find('input').val('');
+	}
+
+	function add() {
+		var link = "${request.contextPath}/game/gameAddPage.do";
+		var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"游戏添加页" 
+		};
+		parent.addTab(node);
+	}
+	
+	function setGameChannel(gameId,gameName){
+		var link = "${request.contextPath}/game/gameChannelList.do?gameId="+gameId+"&gameName="+gameName;
+		var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"游戏["+gameName+"]渠道列表" 
+		};
+		parent.addTab(node);
+	}
+	
+	function del() {
+		var rows = datagrid.datagrid('getSelections');
+		var ids = [];
+		if (rows.length > 0) {
+			$.messager
+					.confirm(
+							'请确认',
+							'您要删除当前所选项目？<br><p style="color:red">删除当前选项后，该选项下对应区服也将被删除!!!<p>',
+							function(r) {
+								if (r) {
+									for ( var i = 0; i < rows.length; i++) {
+										ids.push(rows[i].gameId);
+									}
+									console.log(ids.join(','));
+									$.ajax({
+										url : 'game_delete.do',
+										data : {
+											ids : ids.join(',')
+										},
+										dataType : 'json',
+										success : function(response) {
+											datagrid.datagrid('load');
+											datagrid.datagrid('unselectAll');
+											//var d = JSON.parse(response);
+											$.messager.show({
+												title : '提示',
+												msg : response.msg
+											});
+										}
+									});
+								}
+							});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		}
+	}
+	
+	function edit() {
+		var rows = datagrid.datagrid('getSelections');
+		if (rows.length == 1) {
+			var link = "${request.contextPath}/game/gameEditPage.do?gameId="+rows[0].gameId+"&gameName="+rows[0].gameName;
+			var node = {
+				"attributes":{ "url":link}, 
+				"checked":false,
+				"iconCls":"",
+				"state":"closed",
+				"text":"游戏["+rows[0].gameName+"]编辑页" 
+			};
+			parent.addTab(node);
+		} else {
+			$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+		}
+	}
+	
+	//批量添加区
+	function batchArea(id) {
+		$.messager
+				.confirm(
+						'请确认',
+						'您确定要加载游戏接口的区?<br><p style="color:red">该操作将批量加载游戏接口的数据,有的数据更新,没有的数据直接写入!!!<p>',
+						function(r) {
+							if (r) {
+								$.ajax({
+									url : 'gameBatchAreaAndServer',
+									data : {
+										gameId : id
+									},
+									dataType : 'json',
+									success : function(response) {
+										datagrid.datagrid('load');
+										datagrid.datagrid('unselectAll');
+										if (response.success) {
+											$.messager.show({
+												title : '批量添加区成功',
+												msg : response.msg
+											});
+											currentTree.tree('reload');
+											datagrid.datagrid('reload');
+										} else {
+											$.messager.show({
+												title : '批量添加区失败',
+												msg : response.msg
+											});
+										}
+									}
+								});
+							}
+						});
+	}
+	/* function maintenance(gameId) {
+		$('#maintenanceForm').form('clear');
+		KEPauseRemark.html("");
+		$('#maintenanceForm #gameId').val(gameId);
+		$('#maintenanceForm input[name="status"]').val(3);
+		$('#maintenanceForm input[type="radio"][value="1"]').attr('checked','checked');
+		var typeName = $("#maintenanceForm :radio[value='0']:checked").val();
+		if (typeName == 0) {
+			beginTimeRadio = $('#maintenanceDialog tr:has(input[name="beginTime"])').detach();
+			// 			endTimeRadio = $('#maintenanceDialog tr:has(input[name="endTime"])').detach();
+		} else {
+			$('#maintenanceForm textarea[name="content"]').parent().parent().before(beginTimeRadio);
+			// 			$('#maintenanceForm input[name="content"]').parent().parent().before(endTimeRadio);
+		}
+		$('div.validatebox-tip').remove();
+		maintenanceDialog.dialog('open');
+		$('div.validatebox-tip').remove();
+	} */
+	/* function remaintenance(gameId) {
+		$.messager.confirm('请确认', '您确定维护已经完成?', function(r) {
+			if (r) {
+				$.ajax({
+					url : 'maintenance',
+					data : {
+						gameId : gameId,
+						status : 1
+					},
+					dataType : 'json',
+					success : function(response) {
+						if (response.success) {
+							$.messager.show({
+								title : '恢复停机维护成功',
+								msg : response.msg
+							});
+							datagrid.datagrid('reload');
+						} else {
+							$.messager.show({
+								title : '恢复停机维护失败',
+								msg : response.msg
+							});
+						}
+					}
+				});
+			}
+		});
+	} */
+
+	function showGameCategory(gameId,gameName){
+		var link = encodeURI(encodeURI("${request.contextPath}/game/gameCategoryList?gameId="+gameId+"&gameName="+gameName));
+		var node = {
+				"attributes":{ "url":link}, 
+				"checked":false,
+				"iconCls":"",
+				"state":"closed",
+				"text":"游戏["+gameName+"]分类管理"
+				};
+		parent.addTab(node);
+	}
+	
+	function TyParameterList(gameId){
+		var link = "${request.contextPath}/game/gameTyList.do?gameId="+gameId;
+		var node = {
+				"attributes":{ "url":link}, 
+				"checked":false,
+				"iconCls":"",
+				"state":"closed",
+				"text":"游戏ID["+gameId+"]退游参数管理" 
+				};
+		parent.addTab(node);
+	}
+	
+	function linkToProductGameType(gameId){
+		var link = "${request.contextPath}/game/gameProductType.do?gameId="+gameId;
+		var node = {
+				"attributes":{ "url":link}, 
+				"checked":false,
+				"iconCls":"",
+				"state":"closed",
+				"text":"游戏ID["+gameId+"]游戏商品属性" 
+				};
+		parent.addTab(node);
+	}
+	
+	//转向游戏版本列表页
+	function gameVersionList(gameId,gameName){
+		var link = "${request.contextPath}/game/gameVersionList.do?gameId="+gameId+"&gameName="+gameName;
+		var node = {
+				"attributes":{ "url":link}, 
+				"checked":false,
+				"iconCls":"",
+				"state":"closed",
+				"text":"游戏名["+gameName+"]版本列表" 
+				};
+		parent.addTab(node);
+	}
+	//
+	function showCheck(gameId,gameName){
+		$.ajax({
+			type : "POST",
+	        url : 'gameCheckItem',
+	        data : {
+	        	game_id : gameId
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+			console.log(data[0].logo);	
+			var logo = data[0].logo;
+			var qudaonum = data[0].qudao;
+			var typenum = data[0].type;
+			var versionnum = data[0].version;
+			var area = data[0].area;
+			var link = data[0].link;
+			
+			var title='<img alt="" width="40" height="40" src="../images/p003.jpg">'
+			var rightpic='<img alt="" width="40" height="40" src="../images/r001.jpg">';
+			var wrongpic='<img alt="" width="40" height="40" src="../images/r002.jpg">'
+			
+			
+			$("#check_game_id").val(gameId);
+			$("#check_game_name").val(gameName);
+			
+			$("#check_game_name_titile").html("<font color=red>"+gameName+"</font>");
+			//图片展示
+			if(logo==""){
+				$("#logo_result").html("");
+				$("#logo_result_pic").html(wrongpic)
+			}else{
+				$("#logo_result").html("<img height='50' wigth='50' src="+logo+">");
+				$("#logo_result_pic").html(rightpic);
+			}
+			
+			if(link ==""){
+				$("#th_link_result").html("");
+				$("#th_link_result_pic").html(wrongpic);
+			}else{
+				$("#th_link_result").html(link);
+				$("#th_link_result_pic").html(rightpic)
+			}
+			
+			if(qudaonum >0){
+				$("#qudao_result").html("已配置了  <b>"+qudaonum+" </b>个游戏渠道");
+				$("#qudao_result_pic").html(rightpic);
+			}else{
+				$("#qudao_result").html("游戏渠道没有配置");
+				$("#qudao_result_pic").html(wrongpic);
+			}
+			
+			if(typenum >0){
+				$("#type_result").html("已配置了 <b> "+typenum+" </b>个游戏商品分类");
+				$("#type_result_pic").html(rightpic);
+			}else{
+				$("#type_result").html("游戏商品类型没有配置");
+				$("#type_result_pic").html(wrongpic)
+			}
+			
+			if(versionnum >0){
+				$("#version_result").html("已配置了 <b>"+versionnum +"</b> 版本");
+				$("#version_result_pic").html(rightpic);
+			}else{
+				$("#version_result").html("游戏版本没有配置");
+				$("#version_result_pic").html(wrongpic)
+			}
+			
+			if(area==""){
+				$("#area_result").html("所有版本分区已配置");
+				$("#area_result_pic").html(rightpic);
+			}else{
+				$("#area_result").html(area);
+				$("#area_result_pic").html(wrongpic)
+			}
+			
+		
+			
+			checkItemDialog.dialog('open');
+			   
+			}
+		});	
+		
+	}
+	
+	function gotolink(num){
+		var gid = $("#check_game_id").val();
+		var gn = $("#check_game_name").val();
+		if(num==1){
+			var link = "${request.contextPath}/game/gameEditPage.do?gameId="+gid+"&gameName="+gn;
+			var node = {
+				"attributes":{ "url":link}, 
+				"checked":false,
+				"iconCls":"",
+				"state":"closed",
+				"text":"游戏["+gn+"]编辑页" 
+			}
+			parent.addTab(node);
+		}else if(num ==2){
+			setGameChannel(gid,gn);
+		}else if(num ==3){
+			linkToProductGameType(gid,gn);
+		}else if(num ==4){
+			gameVersionList(gid,gn);
+		}else if(num ==5){
+			
+		}else if(num ==6){
+			
+		}
+	}
+	
+	//编辑游戏 （新）
+	function modifygame(gid,gn){
+		var link = "${request.contextPath}/game/gameonepagemodify?game_id="+gid;
+		var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"游戏["+gn+"]新编辑页" 
+		}
+		parent.addTab(node);
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="north" border="false" title="搜索条件"
+		style="height: 65px; overflow: hidden;" align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+					<td>查找游戏:<input name="gameName" style="width: 100px;" />&nbsp;
+					</td>
+					<td>首字母:<input name="gameInitial" style="width: 100px;" />&nbsp;
+					</td>
+					<td><a href="javascript:void(0);" class="easyui-linkbutton"
+						onclick="_search();">搜索</a> <a href="javascript:void(0);"
+						class="easyui-linkbutton" onclick="cleanSearch();">取消</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+
+	<div region="center" border="false">
+		<table id="datagrid"></table>
+	</div>
+
+	<div id="menu" class="easyui-menu" style="width: 120px; display: none;">
+		<div onclick="add();" iconCls="icon-add">增加</div>
+		<div onclick="del();" iconCls="icon-remove">删除</div>
+		<div onclick="edit();" iconCls="icon-edit">编辑</div>
+	</div>
+
+	<!--添加停机维护内容-->
+	<div id="maintenanceDialog"
+		style="display: none; width: 850px; height: 'auto';" align="center">
+		<form id="maintenanceForm" method="post" style="padding: 5px 10px">
+			<table style="width: 100%; border: 0; cellspacing: 1; cellpadding: 1">
+				<input type="hidden" name="gameId" id="gameId">
+				<input type="hidden" name="status" value="3">
+				<tr>
+					<td class="lable">停机类型:</td>
+					<td><input type="radio" name="typename" value="1">定时停机
+						<input type="radio" name="typename" value="0">立即停机</td>
+				</tr>
+				<tr>
+					<td class="lable">开始时间:</td>
+					<td><input id="beginTime" type="text" name="beginTime"
+						class="easyui-datetimebox" style="width: 150px"></td>
+				</tr>
+				<tr>
+					<td class="lable">结束时间:</td>
+					<td><input id="endTime" type="text" name="endTime"
+						class="easyui-datetimebox" style="width: 150px"></td>
+				</tr>
+				<tr>
+					<td class="lable">停机原因：</td>
+					<td><textarea cols="53" rows="8"
+							class="easyui-validatebox" data-options="required:true"
+							style="width: 421px" name="content" id="KEPauseRemark" missingMessage="请填写停机原因"></textarea></td>
+				</tr>
+			</table>
+		</form>
+	</div>	
+		<!-- 详细信息窗口 -->
+	<div id="showDetail" class="easyui-window" title="详细信息"
+		data-options="modal:true"
+		style="width: 800px; height: auto; padding: 10px">详细信息内容</div>
+		
+		
+	<!--检查各项配置窗口-->
+	<div id="checkItemDialog"
+		style="display: none; width: 800px; height: 500px;" align="center">
+		<form id="checkItemForm" method="post" style="padding: 5px 10px">
+			<table style="width: 100%; border: 0; cellspacing: 1; cellpadding: 1">
+				<input type="hidden" name="gameId" id="check_game_id">
+				<input type="hidden" name="gameName" id="check_game_name">
+				<tr>
+				<th id="check_game_name_titile">配置项目</th>
+				<th>结果</th>
+				<th>&nbsp</th>
+				<th>配置链接</th>
+				</tr>
+			   <tr>
+					<td width="180px;"><img alt="" width="20" height="20" src="../images/p003.jpg">1.游戏logo</td>
+					<td width="450px;" id="logo_result"></td>
+					<td  id="logo_result_pic"></td>
+					<td width="80px;"><a class="easyui-linkbutton" href="#" onclick="gotolink(1)">跳转配置</a></td>
+				</tr>
+				
+				<tr>
+					<td ><img alt="" width="20" height="20" src="../images/p003.jpg">2.游戏官方网站</td>
+					<td id="th_link_result" ></td>
+					<td id="th_link_result_pic" ></td>
+					<td><a class="easyui-linkbutton" href="#" onclick="gotolink(1)">跳转配置</a></td>
+				</tr>
+				<tr>
+					<td ><img alt="" width="20" height="20" src="../images/p003.jpg">3.游戏渠道</td>
+					<td id="qudao_result"></td>
+					<td id="qudao_result_pic"></td>
+					<td><a class="easyui-linkbutton" href="#" onclick="gotolink(2)">跳转配置</a></td>
+				</tr>
+				<tr>
+					<td ><img alt="" width="20" height="20" src="../images/p003.jpg">4.商品类型</td>
+					<td id="type_result"></td>
+					<td id="type_result_pic"></td>
+					<td><a class="easyui-linkbutton" href="#" onclick="gotolink(3)">跳转配置</a></td>
+				</tr>
+				<tr>
+					<td ><img alt="" width="20" height="20" src="../images/p003.jpg">5.游戏版本</td>
+					<td id="version_result"></td>
+					<td id="version_result_pic"></td>
+					<td><a class="easyui-linkbutton" href="#" onclick="gotolink(4)">跳转配置</a></td>
+				</tr>
+				<tr>
+					<td ><img alt="" width="20" height="20" src="../images/p003.jpg">6.游戏分区</td>
+					<td id="area_result"></td>
+					<td id="area_result_pic"></td>
+					<td><a class="easyui-linkbutton" href="#" onclick="gotolink(4)">跳转配置</a></td>
+				</tr>
+			
+			</table>
+			
+		<div style="margin-top: 20px;">
+		<p>说明：游戏logo和官方网站请检查是否正确，游戏版本的区分类没有检查，请自行配置</p>
+		</div>
+		</form>
+	</div>	
+</body>
+</html>

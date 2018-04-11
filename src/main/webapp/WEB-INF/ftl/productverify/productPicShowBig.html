@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>商品大图显示</title>
+<#include "../common.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+
+</head>
+
+
+	
+	<#if imgUrl??>
+			<table  class="table_line">
+			<tr>
+			<td colspan="2" ><b style="font-size: 14px;">商品ID:${productid!''}大图信息信息</b></td>
+			</tr>
+			<tr>
+				<td>&nbsp;大图:</td>
+				<td>
+				<img alt="" src="${imgUrl!''}">
+				</td>
+			</tr>
+		<!-- 
+				<tr>
+				<td>图片地址:</td>
+				<td>
+				<p>${imgUrl!''}</p>
+				</td>
+			</tr>
+		 -->
+
+		</table>
+		<#else>
+		<table  class="table_line">
+		<tr>
+		<td>
+		<font color="red">暂无商品图片信息</font>
+		</td>
+		</tr>
+		</table>
+		</#if>
+</div> 
+
+
+
+	
+</body>
+</html>

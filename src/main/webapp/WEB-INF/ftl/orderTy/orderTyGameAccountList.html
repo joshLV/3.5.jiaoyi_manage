@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>退游订单列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'getOrderTyGameAccountList',
+			title : '退游账号列表',
+			pagination : true,
+			loadMsg:null,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 30,
+			pageList : [30, 40, 50, 100],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : 'order_id',
+			columns : [ [ 
+               {field:'ck',checkbox:true,
+					formatter:function(value,row,index){
+						return row.order_id;
+					}
+				},
+				{field:'good_name',title:'账号名称',align:'left',width:220},
+				{field:'uid',title:'买家UID',align:'center',width:60},
+			   {field:'order_id',title:'订单ID',align:'center',width:150},
+			    {field:'user_price',title:'用户估值',align:'center',width:60,
+			   		formatter:function(value,row,index){
+			   			return value / 100;
+			   		}
+				},
+				{field:'real_price',title:'实际估值',align:'center',width:60,
+			   		formatter:function(value,row,index){
+			   			return value / 100;
+			   		}
+				},
+			 	{field:'kefuFullName',title:'客服',align:'center',width:60},
+			 	{field:'psFullName',title:'物服',align:'center',width:60},
+			   {field:'status',title:'订单状态',align:'center',width:100,
+				   formatter:function(value,row,index){
+					   if (row.status==0){
+						   return "暂存";
+					   }else if(row.status==10){
+						   return "未完善资料";
+					   }else if(row.status==20){
+						   return "等待物服验证";
+					   }else if(row.status==100){
+						   return "验证不过";
+					   }else if(row.status==101){
+						   return "帐号或密码错误";
+					   }else if(row.status==102){
+						   return "帐号异常或被冻结";
+					   }else if(row.status==103){
+						   return "账号内无角色";
+					   }else if(row.status==104){
+						   return "帐号不存在";
+					   }else if(row.status==105){
+						   return "角色内安全锁错误";
+					   }else if(row.status==110){
+						   return "账号已废弃";
+					   }else if(row.status==1000){
+						   return "验证完成";
+					   }else if(row.status==1200){
+						   return "账号已回收";
+					   }else if(row.status==9999){
+						   return "取消";
+					   } 
+					   return row.status;
+					}   
+			   },
+			   {field:'create_time',title:'创建时间',align:'center',width:150},
+			   {field:'operate',title:'操作',align:'center',width:80,
+				   formatter:function(value,row,index){
+				   		if (row.status == 20){
+							return "<a href='javascript:void()' onclick=\"javascript:window.open('gameAccountDetailWufu?tyid=" + row["ty_id"] + "','','width=640,height=450,scrollbars=yes');\">账号处理</a>"; 
+						}else{
+							return "<a href='javascript:void()' onclick=\"javascript:window.open('gameAccountDetailWufu?tyid=" + row["ty_id"] + "','','width=640,height=450,scrollbars=yes')\">详细</a>";
+						}
+					}   
+			   }
+			 ] ]
+		});
+});
+
+//搜索
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+//取消
+function cleanSearch() {
+	searchForm.find('input').val('');
+	searchForm.find('select').val(''); 
+}
+</script>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 60px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>订单ID:<input name="orderId" style="width:140px;" /></td>
+				<td>买家UID:<input name="buyUid" style="width:60px;" /></td>
+				<td>时间:<input name="startDate" style="width:100px;" class="easyui-datebox"/>-<input name="endDate" style="width:100px;" class="easyui-datebox"/></td>
+				<td>
+					<select name="csid">
+						<option value="-1">--选择客服--</option>
+						<#list csList as item>
+						<option value="${item['USER_ID']!''}">${item['FULLNAME']!''}</option>
+						</#list>
+					</select>
+				</td>
+				<td>
+					<select name="psid">
+						<option value="-1">--选择物服--</option>
+						<#list psList as item>
+						<option value="${item['USER_ID']!''}">${item['FULLNAME']!''}</option>
+						</#list>
+					</select>
+				</td>
+				<td>
+				<select name="status">
+					<option value="">--选择状态--</option>
+					<#list gameAccountStatusMap?keys as key>
+					<option value="${key}">${gameAccountStatusMap[key]}</option>
+					</#list>
+				</select>
+				</td>
+		     	<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a> 
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+</body>
+</html>

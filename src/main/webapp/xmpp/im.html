@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8' />
+<link rel="stylesheet" type="text/css" media="screen" href="converse.css">
+<script data-main="main" src="components/requirejs/require.js"></script>
+<title>8868 IM</title>
+</head>
+
+<body>
+<h3>欢迎使用8868 IM</h3>
+<div id="conversejs"></div>
+
+<br/>
+<a id="chat-button" title="Click to chat with this contact" onclick="contactBuyer('88888123@wtfismyip.com', 'xx')" href="javascript:void(0);"><span class="icon-online" title="This contact is online"></span>88888123@wtfismyip.com</a>
+
+<script>
+require(['converse'], function (converse) {
+    converse.initialize({
+        allow_otr: true,
+        auto_list_rooms: false,
+        auto_subscribe: false,
+        allow_muc: false,
+        bosh_service_url: 'https://bind.opkode.im', // Please use this connection manager only for testing purposes
+        //bosh_service_url: 'http://192.168.0.99:7070/http-bind/', 
+        show_only_online_users: false,
+        show_toolbar: false,
+        hide_muc_server: false,
+        prebind: false,
+        show_controlbox_by_default: true,
+        xhr_user_search: false,
+    });
+});
+
+</script>
+</body>
+
+</html>

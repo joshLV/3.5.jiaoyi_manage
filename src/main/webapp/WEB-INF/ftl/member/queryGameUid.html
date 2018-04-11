@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>查询游戏UID</title>
+<#include "../common.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+
+function gameuidshow() {
+	var roleId = $("#roleId").val();
+	var gid = $('#g_id_receiver').val();
+	var pid = $('#g_id_area_receiver').val();
+	var sid = $('#g_id_serverid_receiver').val();
+	if(gid == ""){
+		$.messager.alert("错误提示","请选择游戏");
+		return false;
+	}
+	if(pid == "" || pid == "-1"){
+		$.messager.alert("错误提示","请选择游戏分区");
+		return false;
+	}
+
+	if(roleId==""){
+		$.messager.alert("错误提示","请填写游戏角色ID!");
+		return false;
+	}
+	
+	searchForm.submit();
+	
+}
+
+function gameuidshow1() {
+	var roleId = $("#roleId").val();
+	var gid = $('#g_id_receiver').val();
+	var pid = $('#g_id_area_receiver').val();
+	var sid = $('#g_id_serverid_receiver').val();
+	if(gid == ""){
+		$.messager.alert("错误提示","请选择游戏");
+		return false;
+	}
+	if(pid == "" || pid == "-1"){
+		$.messager.alert("错误提示","请选择游戏分区");
+		return false;
+	}
+
+	if(roleId==""){
+		$.messager.alert("错误提示","请填写游戏角色ID!");
+		return false;
+	}
+	
+	 $('#result_roleid').html("--");
+	 $('#result_game').html("--");
+	 $('#result_area').html("--");
+	 $('#result_service').html("--");
+	 $('#result_gameuid').html("--");
+	 $('#result_bindaccount').html("--");
+	 $('#result_phone').html("--");
+	
+	$.ajax({
+		url : 'query',
+		data : {
+			gameId:gid,partitionId:pid,serverId:sid,roleId:roleId
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+         
+         if(null != data){
+        	 $('#result_roleid').html(data.roleId);
+        	 $('#result_game').html(data.gameId);
+        	 $('#result_area').html(data.partitionId);
+        	 $('#result_service').html(data.serverId);
+        	 $('#result_gameuid').html(data.gameUid);
+        	 $('#result_bindaccount').html(data.loginId);
+        	 $('#result_phone').html(data.phone);
+        	 $('#result').show();
+        	
+         }
+		}
+	});
+	
+}
+
+
+//修改用户手机号码
+function resetmemberphone(){
+  var old = $('#old_telephone').html();
+  var uid = $('#member_uid').html();
+  $('#user_oldphone').val(old);
+  $('#oldphone_for_userphone').val(old);
+  $('#uid_for_userphone').val(uid);
+  resetDialog.dialog('open');
+	
+}
+
+function cleanSearch() {
+	//datagrid.datagrid('load', {searchFlag:1});
+	searchForm.find('input').val('');
+	searchForm.find('select').val('0');
+	$("#g_name_receiver").html("--");
+	 jQuery("#g_id_area_receiver").empty();
+	 jQuery("#g_id_serverid_receiver").empty();
+	 $("#g_id_area_receiver").prepend("<option value='0'>请选择</option>"); 
+	 $("#g_id_serverid_receiver").prepend("<option value='0'>请选择</option>"); 
+}
+
+
+//选择游戏
+function game_select() { 
+	window.open(
+			        '../game/gameList_select',
+					'',
+					'width=1200,height=500,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+}
+
+//游戏选择回调游戏ID和名称
+function selectGameCallBack(gameId,gameName){
+	$("#g_id_receiver").attr("value",gameId);
+	$("#g_name_receiver").html(gameName);
+    selectsub(gameId);
+}
+
+function selectsub(gameId){
+	$("#server_sel").show();
+	$("#area_sel").show();
+	$.ajax({
+		url : '../game/selectGameAreaDetail',
+		data : {
+			gameId : gameId
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+		var area_select =  $("#g_id_area_receiver");
+		var server_select =  $("#g_id_serverid_receiver");
+		
+		var checkIndex=area_select.get(0).selectedIndex;
+		var checkIndex2=server_select.get(0).selectedIndex;
+		
+		//先清理上次分区残留选项
+		var maxindex=$("select[name='partitionId']").find("option:last").index();
+		if(maxindex>=1){
+			for(var j =1;j<=maxindex;j++){
+				 $("#g_id_area_receiver option:last").remove(); 
+			}
+		}
+		
+		//先清理上次服务器残留选项
+		var maxindex2=$("select[name='serverId']").find("option:last").index();
+		if(maxindex2>=1){
+			for(var j =1;j<=maxindex2;j++){
+				 $("#g_id_serverid_receiver option:last").remove(); 
+			}
+		}
+			//添加选项
+			if(typeof data.total!="undefined"){
+				
+				for(var i = 0 ;i<data.total;i++){
+				
+					var patition_id = data.rows[i].partitionId;
+					if((typeof patition_id=="undefined")){
+						//有分区 
+						$("#area_sel").show();
+						 area_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+					}else{
+						//没分区 隐藏分区
+						$("#area_sel").hide();
+						server_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+					}
+				}
+			}
+		}
+	});
+}
+
+function areachange(){
+		var gameId = $("#g_id_receiver").val();
+		var checkValue=$("#g_id_area_receiver").val(); 
+		var server_select =  $("#g_id_serverid_receiver");
+		$.ajax({
+			url : '../game/selectGameAreaDetail',
+			data : {
+				gameId:gameId,partitionId:checkValue
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+				if(typeof data.total!="undefined"){
+				//先清理上次服务器残留选项
+				var maxindex2=$("select[name='serverId']").find("option:last").index();
+				if(maxindex2>=1){
+					for(var j =1;j<=maxindex2;j++){
+						 $("#g_id_serverid_receiver option:last").remove(); 
+					}
+				}
+				for(var i = 0 ;i<data.total;i++){
+					$("#server_sel").show();
+					server_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+					}
+				}else{
+					
+					$("#server_sel").hide();
+				}
+			}
+		});
+}
+
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="center" border="false" title="请输入用户手机号码" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm" action="queryGameUid">
+		<table  class="table_line">
+			<tr>
+			<td>游戏ID：<input name="gameId" style="width:100px;display: none" id="g_id_receiver"  /> <span id="g_name_receiver">--</span> <a href="javascript:void(0);" class="easyui-linkbutton" onclick="game_select();">选择游戏</a>&nbsp;</td>
+			<td id = "area_sel">游戏分区： 
+			    <select name="partitionId" id ="g_id_area_receiver" onchange="areachange()" >
+                <option value="-1">请选择</option>
+                </select>
+                <font id="server_sel">     
+                                游戏服务器： <select name="serverId" id ="g_id_serverid_receiver" >
+                <option value="-1">请选择</option>
+                </select>&nbsp;
+                </font>        
+                 </td>
+            <td>角色ID：<input name="roleId" value="${roleId!''}" style="width:100px;" id="roleId"/>&nbsp;</td>
+		    <td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="gameuidshow1();">搜索</a> 
+			    
+			</td> 
+			</tr>
+		</table>
+	</form>
+
+	<table  class="table_line" id = "result" style="display: none;">
+	<tr>
+	<td >
+	角色ID:&nbsp;
+	</td>
+	<td>
+	<p id ="result_roleid">--</p>
+	</td>
+	</tr>
+	<tr>
+	<td >
+	游戏:&nbsp;
+	</td>
+	<td>
+	<p id="result_game">--</p>
+	</td>
+	</tr>
+    <tr>
+    <td>
+       游戏分区:
+    </td>
+    <td>
+    <p id="result_area">--</p>
+    </td>
+    </tr>
+    
+     <tr>
+    <td>
+    游戏服务器:
+    </td>
+    <td>
+    <p id="result_service">--</p>
+    </td>
+    </tr>
+    
+     <tr>
+    <td>
+    游戏用户ID:
+    </td>
+    <td>
+    <p id="result_gameuid">--</p>
+    </td>
+    </tr>
+    <tr> 
+        <td>
+    绑定平台账号:
+    </td>
+    <td>
+    <p id="result_bindaccount">--</p>
+    </td>
+    </tr>
+    <td>
+    用户手机号码:
+    </td>
+    <td>
+    <p id="result_phone">--</p>
+    </td>
+    </tr>
+    
+	</table>
+
+
+	<table id="no_result" style="display: none;">
+	<tr >
+	<td>
+		<span style="color: red">游戏接口暂无返回有效数据</span>
+	</td>
+	</tr>
+	</table>
+
+	
+</div> 
+
+
+
+	
+	
+</body>
+</html>

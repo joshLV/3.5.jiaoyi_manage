@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>配置商品购买规则（单个)</title> <#include "../common.html"/>
+<style>
+body,div,ul,li {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font: 12px "宋体";
+	text-align: left;
+}
+
+a:link {
+	color: #00F;
+	text-decoration: none;
+}
+
+a:visited {
+	color: #00F;
+	text-decoration: none;
+}
+
+a:hover {
+	color: #c00;
+	text-decoration: underline;
+}
+
+ul {
+	list-style: none;
+}
+
+.main {
+	clear: both;
+	padding: 8px;
+	text-align: left;
+}
+/*第二种形式*/
+#tabs1 {
+	text-align: left;
+	width: 680px;
+}
+
+.menu1box {
+	position: relative;
+	overflow: hidden;
+	height: 26px;
+	width: 680px;
+	text-align: left;
+	margin-top: 5px;
+	margin-left: 5px;
+}
+
+#menu1 {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1;
+}
+
+#menu1 li {
+	float: left;
+	display: block;
+	cursor: pointer;
+	width: 72px;
+	text-align: center;
+	line-height: 25px;
+	height: 25px;
+}
+
+#menu1 li.hover {
+	background: #fff;
+	border-left: 1px solid #999;
+	border-top: 1px solid #999;
+	border-right: 1px solid #999;
+}
+
+.main1box {
+	clear: both;
+	margin-top: -1px;
+	border: 1px solid #999;
+	width: 800px;
+	overflow: auto;
+}
+</style>
+<script type="text/javascript">
+//用于给添加规则计数
+var count = 1;
+
+	function removetr(t, id) {
+		console.log("-888888-" + id);
+		$.messager.confirm('确认框', '您确认要删除?', function(r) {
+			if (r) {
+
+				$.ajax({
+					url : 'singleDel',
+					data : {
+						id : id
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(response) {
+						if (response.success) {
+							$.messager.show({
+								title : '成功',
+								msg : response.msg
+							});
+							$(t).parent().parent().remove();
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : response.msg
+							});
+						}
+					}
+				});
+
+			}
+		});
+	}
+
+	function add() {
+		var index = count++;
+		var pid = $('#product_id_pass').val();
+		var name = $('#name_input').val();
+		var weight = $('#weight_input').val();
+		var filterId = $('#filterId_input').val();
+		var param = $('#param_input').val();
+		var errMessage = $('#errMessage_input').val();
+		var remark = $('#remark_input').val();
+		var btime = $('#main1_input').find("table >tbody> tr input[name='beginTime']").val();
+		var etime = $('#main1_input').find("table >tbody> tr input[name='endTime']").val();
+		
+		
+		var data = "{\"data\":[";
+		data += "{\"name\":\"" + name + "\",\"weight\":"	+ index + "}";
+		data += "]}";
+		$.ajax({
+			url : 'batch',
+			data : {
+				data : data,pids:pid
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '成功',
+						msg : "添加成功"
+					});
+					window.setTimeout("window.location.reload();",1000);
+					
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : response.msg
+					});
+				}
+			}
+		});
+
+
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="center" border="false" title="配置商品购买规则（单个)" style="height: 65px; overflow: hidden;" align="left">
+		
+		<!-- 当前商品信息 -->
+		<div style="padding-bottom: 25px;">
+			<div class="menu1box">
+				<ul id="menu1">
+					<li class="hover" ><font color="red">当前商品信息</font>(${pCount!'0'})</li>
+				</ul>
+			</div>
+
+			<div class="main1box" style="height: 40px;">
+				<div class="main" id="main1_product_list">
+				<#if pList??>
+				        
+					<table id="prduct_data">
+					 <#list pList as p>
+						<tr>
+							<td>${p}</td>
+						</tr>
+		              </#list>
+
+					</table>
+              </#if>
+				</div>
+			</div>
+		</div>
+		
+		
+		
+		
+		
+		<!-- 规则管理 -->
+		<div style="padding-bottom: 25px;">
+			<div class="menu1box">
+				<ul id="menu1">
+					<li class="hover" ><font color="red">规则管理</font></li>
+				</ul>
+			</div>
+
+			<div class="main1box" style="height: 240px;">
+				<div class="main" id="main1">
+					<table id="data_table">
+						<tr>
+						    <th>ID</th>
+							<th>规则名称</th>
+							<th>运行参数</th>
+							<th>排序</th>
+							<th>生效时间</th>
+							<th>备注</th>
+							<th>操作</th>
+						</tr>
+						<#if pfList??>
+						<#list pfList as p>
+						<tr>
+							<td>${p.id!''}</td>
+							<td>${p.name!''}</td>
+							<td>${p.param!''}</td>
+							<td>${p.weight!''}</td>
+							<td>${p.beginTime!'--'}-${p.endTime!'--'}</td>
+							<td>${p.remark!''}</td>
+							<td><a href="javascript:void(0);" onclick="removetr(this,${p.id!'0'})">删除</a></td>
+						</tr>
+						</#list>
+                       </#if>
+					</table>
+
+				</div>
+			</div>
+		</div>
+
+
+		<!-- 添加新规则 -->
+		<div>
+			<div class="menu1box">
+				<ul id="menu1">
+					<li class="hover" ><font color="red">添加新规则</font></li>
+				</ul>
+			</div>
+
+			<div class="main1box">
+				<div class="main" id="main1">
+					<table>
+						<tr>
+							<td>规则名称:</td>
+							<td>
+							<input type="hidden" name="productId" id="product_id_pass" value="${pid!''}"/>
+							<input name="ruleName" />
+							</td>
+					
+						</tr>
+						<tr>
+							<td>权重:</td>
+							<td><input name="ruleName" /></td>
+						</tr>
+							<tr>
+							<td>选择规则:</td>
+							<td><select name="weight">
+									<option value="0">正常</option>
+									<option value="1">隐藏</option>
+							</select></td>
+						</tr>
+						<tr>
+							<td>运行参数:</td>
+							<td><input name="ruleName" /><font color="black">参数填写说明 （显示所选择规则的参数说明）</font></td>
+						</tr>
+						<tr>
+							<td>生效时间:</td>
+							<td>
+							<input name="beginTime" id="beginTime" class="easyui-datetimebox" type="text"  style="width:150px;" />
+							—<input name="endTime" id="endTime" style="width:150px;" class="easyui-datetimebox"   />
+							</td>
+						</tr>
+						<tr>
+							<td>错误提示:</td>
+							<td><input name="ruleName" /></td>
+						</tr>
+						<tr>
+							<td>备注:</td>
+							<td><textarea name="ruleName"></textarea></td>
+						</tr>
+		
+
+						<tr>
+							<td colspan="2" style="text-align: center;"><a href="javascript:void(0);" class="easyui-linkbutton" onclick="add();">添加规则</a></td>
+						</tr>
+
+					</table>
+
+				</div>
+			</div>
+		</div>
+
+
+	</div>
+</body>
+</html>

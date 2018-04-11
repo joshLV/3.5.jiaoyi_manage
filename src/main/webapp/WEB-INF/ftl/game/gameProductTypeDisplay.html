@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>设置商品类型字段自定义</title>
+<#include "../common.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+var resetForm;
+$(function() {	
+
+	
+	//初始化多选框
+	var symbol = ${symbol!'0'};
+
+	if((symbol&1) ==1){
+		$("#id_display_flag").attr("checked",true);
+	}
+    if((symbol&2)==2){
+		$("#role_display_flag").attr("checked",true);
+	}
+     if((symbol&4)==4){
+		$("#account_display_flag").attr("checked",true);
+	}
+     if((symbol&8)==8){
+		$("#password_display_flag").attr("checked",true);
+	}
+     if((symbol&16)==16){
+		$("#safekey_display_flag").attr("checked",true);
+	}
+     if((symbol&32)==32){
+		$("#area_display_flag").attr("checked",true);
+	}
+	
+
+
+});
+
+//全选/全不选
+function CheckAll(){
+	var checkb = $("#checkAll").attr("checked");
+	     var input = document.getElementsByTagName("input");
+	        for (var i = 0; i < input.length; i++)
+	        {
+	            if (input[i].type == "checkbox")
+	                if((checkb=="checked")){
+		            input[i].checked = true;
+	                }else{
+	                input[i].checked = false;
+	                }
+	        } 
+}
+
+
+
+function add() {
+	var tableShow = $('#table_show');
+	//var len = tableShow.find("tr").length;
+	//var lenght = document.getElementById('table_show').rows.length;
+	var gameId = $('#game_id').val();
+	var gptId = $('#gpt_id').val();
+	$.ajax({
+	url : 'queryisExist.do',
+	data : {
+		gameId : gameId,gptid:gptId
+	},
+	dataType : 'json',
+	success : function(response) {
+		
+		$.messager.show({
+			title : '提示',
+			msg : response.msg
+		});
+	}
+    });
+	
+	
+	var len = $("#resetForm > table > tbody > tr").length;
+	var newlen = (len - 3);
+	if(newlen >= 5){
+		$.messager.alert("提示","不能添加超过5条提示信息");
+		return false;
+	}
+	//添加时 按顺序获取类型id
+	var num ;
+	if(newlen == 0){
+		num = 11;
+	}
+	if(newlen == 1){
+		num = 12;
+	}
+	if(newlen == 2){
+		num = 13;
+	}
+	if(newlen == 3){
+		num = 21;
+	}
+	if(newlen == 4){
+		num = 31;
+	}
+	var html = $("#resetForm > table > tbody > tr:first").html();
+	var temphtml=$(html);
+	temphtml.find("#model_id").val("");
+	temphtml.find("#model_property_type").val("1");
+	
+	temphtml.find("#remainder_type_id").val(num);
+	//temphtml.find("#reminder_type").val(newlen+1);
+	$("<tr></tr>").html(temphtml).appendTo($("#resetForm > table"));
+}
+
+
+//删除
+function doDelete(){
+	//判断是否选中
+	 var obj = document.getElementsByName("itemOffset");
+	 var objYN = false;
+	 for (var i = 0;i< obj.length;i++){
+	 if (obj[i].checked==true) {
+	 objYN= true;
+	 break;
+	 }}
+	 if (objYN==false) {
+		 $.messager.confirm('提示框','请至少选择一项?');
+		 return false; 
+	 }
+
+$.messager.confirm('确认框','您确认要删除数据?',function(r){  
+   if (r){ 
+$.ajax({
+	url : 'remindDel.do',
+	data : $("#resetForm").serialize(),
+	dataType : 'json',
+	success : function(response) {
+		
+		$.messager.show({
+			title : '提示',
+			msg : response.msg
+		});
+		location.reload();
+	}
+});
+   }
+});
+}
+
+function save(){
+		$.ajax({
+			url : 'savedisplay.do',
+			data : $("#resetForm").serialize(),
+			dataType : 'json',
+			type:'post',               
+			success : function(json) {
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					window.setTimeout("window.location.reload();", 1000);
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+}
+
+function reload(){
+	location.reload();
+}
+
+function unchange(v){
+	return false;
+}
+
+
+
+
+//全选/全不选
+function CheckAll(){
+	console.log(1 ^ 1);
+	var checkb = $("#checkAll").attr("checked");
+	     var input = document.getElementsByTagName("input");
+	        for (var i = 0; i < input.length; i++)
+	        {
+	            if (input[i].type == "checkbox")
+	                if((checkb=="checked")){
+		            input[i].checked = true;
+	                }else{
+	                input[i].checked = false;
+	                }
+	        } 
+}
+
+</script>
+
+
+</head>
+
+<body class="easyui-layout">
+<div region="center" border="false" title="购买信息[${gameName!''}]-->${ptypeName!''}"  align="center">
+ <form id="resetForm" method="post" action="savedisplay" style="padding: 5px 10px;">
+	   
+			<table  class="table_line" border="0" style="width: 100%" id ="show_table">
+			<tr>
+			<td>
+			&nbsp;
+			</td>
+				<td>
+			图片地址(商品详情页显示)：
+			</td>
+				<td>
+			<input type="text" name="imageUrl" value="${imageUrl!''}" size="100">
+			</td>
+			</tr>
+			<tr>
+			<td>
+			    <input type="hidden" name="game_id" value="${gameid!'0'}" />
+			   <input type="hidden" name="product_type_id" value="${gptid!'0'}" />
+				<input type="checkbox" name="itemOffset" id="checkAll" onClick="javascript:CheckAll();" />
+			</td>
+			<td>
+			    填写自定义信息:
+			</td>
+			</tr>
+			<tr>
+			<td>
+
+			<input type="checkbox" name="id_display_flag"  id="id_display_flag"/>
+	
+			</td>
+			<td>
+			ID前台展现名称：
+			</td>
+			<td>
+			   <input type="text" name="id_display" value="${id_display!''}" >
+			</td>
+			</tr>
+			
+			<tr>
+			<td>
+				<input type="checkbox" name="role_display_flag" id="role_display_flag"  />
+			</td>
+			<td>
+			 角色前台展现名称：
+			</td>
+			<td>
+			  <input type="text" name="role_display"  value="${role_display!''}">
+			</td>
+			</tr>
+			
+			<tr>
+			<td>
+				<input type="checkbox" name="account_display_flag" id="account_display_flag" />
+			</td>
+			<td>
+			账号前台展现名称：
+			</td>
+			<td>
+			   <input type="text" name="account_display"  value="${account_display!''}">
+			</td>
+			</tr>
+			
+			<tr>
+			<td>
+				<input type="checkbox" name="password_display_flag" id="password_display_flag" />
+			</td>
+			<td>
+			密码前台展现名称：
+			</td>
+			<td>
+			   <input type="text" name="password_display"  value="${password_display!''}">
+			</td>
+			</tr>
+			
+			<tr>
+			<td>
+				<input type="checkbox" name="safekey_display_flag"  id="safekey_display_flag" />
+			</td>
+			<td>
+			安全锁前台展现名称：
+			</td>
+			
+			<td>
+			   <input type="text" name="safekey_display"  value="${safekey_display!''}">
+			</td>
+			</tr>
+			
+			<tr>
+			<td>
+				<input type="checkbox" name="area_display_flag" id="area_display_flag"/>
+			</td>
+			<td>
+			 分区前台展现名称：
+			</td>
+			<td>
+			  <input type="text" name="area_display"  value="${area_display!''}">
+			</td>
+			</tr>
+			 
+			</table>
+			
+		<p style="padding-top: 30px;padding-right: 150px;" align="right"><a href="javascript:void(0);" class="easyui-linkbutton" onclick="save();" >保存</a></p>
+ </form>
+</div> 
+
+</body>
+</html>

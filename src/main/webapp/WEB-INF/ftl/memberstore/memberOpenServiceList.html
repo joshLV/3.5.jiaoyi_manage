@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<title>会员服务列表</title> <#include "../common.html"/>
+<script type="text/javascript">
+	var datagrid;
+	var searchForm;
+	$(function() {
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid').datagrid({
+			url : 'memberOpenServiceList_json',
+			title : '会员服务列表',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'uid',
+			sortOrder : 'desc',
+			columns : [ [ {
+				field : 'id',
+				title : 'ID',
+				align : 'center',
+				width:25
+			}, {
+				field : 'uid',
+				title : '用户账户',
+				align : 'center',
+				sortable : true,
+				width:25
+			}, {
+				field : 'serviceName',
+				title : '开通服务名称',
+				align : 'center',
+				width:25
+			}, {
+				field : 'createTime',
+				title : '创建时间',
+				align : 'center',
+				width:25
+			}, ] ]
+		});
+	});
+
+	function _search() {
+		datagrid.datagrid("unselectAll");
+		var uid = $('#uid').val();
+		var serviceId = $('#serviceId').val();
+		datagrid.datagrid({
+			queryParams : {
+				uid : uid,
+				serviceId : serviceId,
+			}
+		});
+		datagrid.datagrid('reload');
+
+	}
+
+	function cleanSearch() {
+		datagrid.datagrid('reload');
+		$('#searchForm').form('clear');
+		datagrid.datagrid({
+			queryParams : {}
+		});
+		datagrid.datagrid('reload');
+	}
+</script>
+</head>
+<body class="easyui-layout">
+	<div
+		region="north"
+		border="false"
+		title="搜索条件"
+		style="padding: 10px; height: 75px; overflow: hidden;"
+		align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+					<td>支付人:<input
+						type="text"
+						id="uid"
+						name="uid"
+						size="20"
+						maxlength="50"
+						class="easyui-numberbox"
+						missingMessage="请填写支付人(用户ID),只能是数字" />&nbsp;
+					</td>
+					<td>会员服务ID:<input
+						type="text"
+						id="serviceId"
+						name="serviceId"
+						size="20"
+						maxlength="50"
+						class="easyui-numberbox"
+						missingMessage="请填写服务ID,只能是数字" />&nbsp;
+					</td>
+					<td><a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="_search();">搜索</a> <a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="cleanSearch();">取消</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<div
+		region="center"
+		border="false">
+		<table id="datagrid"></table>
+	</div>
+</body>
+</html>

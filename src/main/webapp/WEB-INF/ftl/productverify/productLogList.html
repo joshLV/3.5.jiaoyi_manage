@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>商品操作日志列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'productLogList_json.do',
+			title : '商品操作日志列表',
+			//iconCls : 'icon-save',
+			queryParams:{
+				productno:"${productno!''}"
+			},
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'product_id',
+			sortName : 'create_time',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'productId',title:'商品编号',align:'center',sortable:true},				
+			  			
+			   {field:'operateUserid',title:'操作用户',align:'left',
+				   formatter:function(value,row,index){
+					   if(row.operateUserid == 0){
+						   return "系统"
+					   }else{
+						   return row.operateUserid
+					   }
+				   }
+			    },				
+			   {field:'operateType',title:'操作类型',align:'left',width:30,
+				   formatter:function(value,row,index){
+						if(row.operateType==1){
+							return "添加商品";
+						}else if(row.operateType==2){
+							return "更新商品";
+						}else if(row.operateType==3){
+							return "删除商品";
+						}else if(row.operateType==3){
+							return "删除商品";
+						}else if(row.operateType==4){
+							return "更新状态";
+						}else if(row.operateType==5){
+							return "上架商品";
+						}else if(row.operateType==6){
+							return "下架商品";
+						}else if(row.operateType==7){
+							return "库存回滚";
+						}else if(row.operateType==8){
+							return "更新销量";
+						}else if(row.operateType==9){
+							return "扣减库存";
+						}else {
+							return "待定";
+						}
+					
+						}     
+			   
+			   },				
+			   {field:'description',title:'操作描述',align:'left',width:280},
+			   {field:'remark',title:'操作备注',align:'center',width:100},
+			   {field:'createTime',title:'时间',align:'center',width:40,sortable:true},
+			   
+			 ] ]
+
+		
+		});
+
+
+});
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+
+
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>商品编号:<input name="productno" value="${productno!''}" style="width:160px;" />&nbsp;</td>
+				<td>操作用户UID:<input name="userid" style="width:100px;" />&nbsp;</td>
+				<!-- 
+				<td>开始时间<input name="btime"   type="text"  class="easyui-datetimebox" /></td>
+                <td>结束时间<input name="etime"   type="text" class="easyui-datetimebox" /></td>
+                 -->
+                <td>商品状态：
+                <select name="operate_type">
+                <option value="0">未选择</option>
+				    <option value="1">添加商品</option>
+				    <option value="2">更新商品</option>
+				    <option value="3">删除商品</option>
+				    <option value="4">更新状态</option>
+				    <option value="5">上架商品</option>
+				    <option value="6">下架商品</option>
+				    <option value="7">库存回滚</option>
+				    <option value="8">更新销量</option>
+				    <option value="9">扣减库存</option>
+                </select></td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+
+
+
+
+</body>
+</html>

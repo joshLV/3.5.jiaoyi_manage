@@ -1,0 +1,46 @@
+<script type="text/javascript" charset="utf-8">
+function logout(b) {
+	
+}
+var changePwdWindow;
+function showChangePwdWindow() {
+	changePwdWindow = $('<div class="easyui-layout"/>').window({
+		modal : true,
+		title : '修改密码',
+		width : 350,
+		//height : 220,
+		collapsible : false,
+		minimizable : false,
+		maximizable : false,
+		resizable : false, 
+		href : 'changePwd.html',
+		onClose : function() {
+			$(this).window('destroy');
+		}
+	});
+}
+    </script>
+
+
+
+<div>
+聚好玩游戏管理平台
+</div>
+<div style="position: absolute; right: 10px; bottom: 0px; ">
+	<a href="javascript:void(0);" class="easyui-menubutton" menu="#layout_north_pfMenu" iconCls="icon-ok">更换皮肤</a> 
+	<a href="javascript:showChangePwdWindow();" class="easyui-linkbutton" data-options="plain:true" iconCls="icon-edit">修改密码</a> 
+	<a href="logout.jsp" class="easyui-linkbutton" data-options="plain:true" iconCls="icon-back">退出</a>
+</div>
+<div id="layout_north_pfMenu" style="width: 120px; display: none;">
+		<div onclick="sy.changeTheme('default');">default</div>
+		<div onclick="sy.changeTheme('gray');">gray</div>
+		<div onclick="sy.changeTheme('bootstrap');">bootstrap</div>
+		<div onclick="sy.changeTheme('black');">black</div>
+		<div onclick="sy.changeTheme('metro');">metro</div>
+</div>
+<div id="layout_north_kzmbMenu" style="width: 100px; display: none;">
+	<div onclick="showUserInfo();">个人信息</div>
+</div>
+<div id="layout_north_zxMenu" style="width: 100px; display: none;">
+	<div onclick="logout(true);">退出系统</div>
+</div>

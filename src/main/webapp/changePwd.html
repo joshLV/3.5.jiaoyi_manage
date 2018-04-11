@@ -1,0 +1,44 @@
+<script type="text/javascript" charset="utf-8">
+	var userInfoForm;
+	$(function() {
+		userInfoForm = $('#userInfoForm').form({
+			url : 'userinfo_changePwd',
+			success : function(data) {
+				var d = $.parseJSON(data); 
+				if (d.success) {
+					changePwdWindow.window('close');
+				} 
+				$.messager.show({
+					msg : d.msg,
+					title : '提示'
+				});
+			}
+		});
+	});
+</script>
+<div class="easyui-layout" data-options="fit:true">
+	<form id="userInfoForm" method="post">
+		<table class="tableForm" style="padding:20px 20px">
+			<tr>
+				<th>原 密 码:</th>
+				<td><input name="oldPwd" type="password" class="easyui-validatebox" required="true" validType="minLength[5]" missingMessage="请填写原密码" />
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<th>新 密 码:</th>
+				<td><input name="cpwd" type="password" class="easyui-validatebox" required="true" validType="minLength[5]" missingMessage="请填写新密码" />
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<th>重复密码:</th>
+				<td><input name="rePassword" type="password" class="easyui-validatebox" required="true" missingMessage="请再次填写密码" validType="equals['#userInfoForm input[name=cpwd]']" /></td>
+				<td></td>
+			</tr> 
+		</table>
+	</form>
+	<div data-options="region:'south',border:false" style="text-align:right;padding:8px 20px;">
+		<a class="easyui-linkbutton" data-options="iconCls:'icon-ok'" href="javascript:void(0)" onclick="userInfoForm.submit();">修改密码</a> 
+	</div>	
+</div>

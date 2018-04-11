@@ -1,0 +1,318 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>人工转账</title> <#include "../common_new.html"/>
+<script type="text/javascript">
+	//浮点异常处理方法
+	function accMul(arg1,arg2){
+	    var m=0,s1=arg1.toString(),s2=arg2.toString();
+	    try{m+=s1.split(".")[1].length}catch(e){}
+	    try{m+=s2.split(".")[1].length}catch(e){}
+	    return Number(s1.replace(".",""))*Number(s2.replace(".",""))/Math.pow(10,m)
+	}
+	function accAdd(arg1,arg2){
+	    var r1,r2,m;
+	    try{r1=arg1.toString().split(".")[1].length}catch(e){r1=0}
+	    try{r2=arg2.toString().split(".")[1].length}catch(e){r2=0}
+	    m=Math.pow(10,Math.max(r1,r2))
+	    return (arg1*m+arg2*m)/m
+	}
+
+	var checkSubmitFlag = true;
+	function checkSubmit() {
+		var fromUid = $('#fromUid').val();
+		var toUid = $('#toUid').val();
+		var cash = $('#cash').val();
+		var notCash= $('#notCash').val();
+		var vcode = $('#vcode').val();
+		var remark = $('#remark').val();
+		if ($.trim(fromUid).length != 0&& $.trim(toUid).length != 0 && $.trim(cash).length != 0 && $.trim(notCash).length != 0) {
+			$.messager.confirm('请确认', "确定要将【"+fromUid+"】非现金账户资金【" + notCash + "】元转入【" + toUid + "】非现金账户,【"+fromUid+"】现金账户资金【" + cash + "】元转入【" + toUid + "】现金账户？", function(flag) {
+				if(flag){
+					var data = "fromUid=" + fromUid + "&toUid="+toUid+"&cash=" + cash +"&notCash=" + notCash+"&remark=" + remark + "&vcode="+ vcode;
+					$.ajax({
+						type: "post",
+						url: 'transfer',
+						data: data,
+						success: function(response){
+							var json = $.parseJSON(response);
+							if (json && json.success) {
+								$.messager.show({
+									title : '成功',
+									msg : json.msg
+								});
+								$('#transferForm').form('reset');
+								clear();
+							} else {
+								$.messager.show({
+									title : '失败',
+									msg : json.msg
+								});
+							}
+						}
+					});
+				}
+			});
+
+		}
+	}
+	function getTransferInfo() {
+		var uid = $('#fromUid').val();
+		$.ajax({
+			type : "POST",
+			url : "displayMemberInfo",
+			data : "uid=" + uid,
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (data == "") {
+					$('#transferResult').html("没有该用户信息")
+					$('#transferInfo').hide();
+					return;
+				}
+				if (!json.uid) {
+					$('#transferResult').html("没有该用户信息")
+					$('#transferInfo').hide();
+				} else {
+					$('#transferResult').html("");
+					$('#transferInfo').show();
+					$('#mUID').html(json.uid);
+					$('#mloginName').html(json.loginName);
+					$('#mNickName').html(json.nickName);
+					$('#mMobile').html(json.mobile);
+					$('#mUserType').html(json.userType);
+					$('#mIsRealValidate').html(json.isRealValidate);
+					$('#mCash').html(json.cash);
+					$('#mNotCash').html(json.notCash);
+				}
+			}
+		});
+	}
+	function getTurnoutInfo() {
+		var uid = $('#toUid').val();
+		$.ajax({
+			type : "POST",
+			url : "displayMemberInfo",
+			data : "uid=" + uid,
+			success : function(data) {
+				if (data == "") {
+					$('#turnoutResult').html("没有该用户信息")
+					$('#transferInfo').hide();
+					return;
+				}
+				
+				var json = $.parseJSON(data);
+				if (!json.uid) {
+					$('#turnoutResult').html("没有该用户信息")
+					$('#turnoutInfo').hide();
+				} else {
+					$('#turnoutResult').html("");
+					$('#turnoutInfo').show();
+					$('#tUID').html(json.uid);
+					$('#tloginName').html(json.loginName);
+					$('#tNickName').html(json.nickName);
+					$('#tMobile').html(json.mobile);
+					$('#tUserType').html(json.userType);
+					$('#tIsRealValidate').html(json.isRealValidate);
+					$('#tCash').html(json.cash);
+					$('#tNotCash').html(json.notCash);
+				}
+			}
+		});
+	}
+	$(function() {
+		$('#transferInfo').hide();
+		$('#turnoutInfo').hide();
+	});
+	var minuts = 60;
+	var intervalFlag;
+	function sendVCode() {
+		var transferAmount = accAdd($('#cash').val(),$('#notCash').val());
+		if(transferAmount == 0){
+			$.messager.show({
+				title : '无效转账',
+				msg : '转账金额不能为0，转账操作失败。'
+			});
+		}else{
+			$.ajax({
+				type : "POST",
+				url : "sendVerifyCode",
+				data:"amount="+transferAmount,
+				success : function(data) {
+					var json = $.parseJSON(data);
+					if (json && json.success) {
+						$.messager.show({
+							title : '成功',
+							msg : json.msg
+						});
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : json.msg
+						});
+					}
+				}
+			});
+			$('#getVCode').attr("disabled", "disabled");
+			intervalFlag = setInterval(minutsZero, 1000);
+		}
+
+	}
+	function minutsZero() {
+		minuts--;
+		$('#getVCode').val(minuts + '后可以重新发送');
+		if (minuts == 0) {
+			$('#getVCode').val('点击获取');
+			$('#getVCode').removeAttr("disabled");
+			clearInterval(intervalFlag);
+			minuts = 60;
+		}
+	}
+	function clear(){
+		$('#transferInfo').hide();
+		$('#turnoutInfo').hide();
+	}
+	function modChar(field, countfield, maxlimit) {    
+		if (field.value.length > maxlimit){    
+			field.value = field.value.substring(0, maxlimit);  
+			countfield.html(0);   
+		}else{    
+			countfield.html(maxlimit - field.value.length);    
+		}  
+	}
+</script>
+</head>
+<body>
+	<div>
+		<form id="transferForm">
+			<table cellpadding="10" style="min-width: 660px">
+				<tr>
+					<td style="width: 120px;">转出UID:</td>
+					<td><input type="text" name="fromUid" id="fromUid"
+						data-options="required:true" class="easyui-numberbox"
+						missingMessage="请填写转出UID" onblur="getTransferInfo();"></td>
+				</tr>
+				<tr>
+					<td style="width: 120px;">转入UID:</td>
+					<td><input type="text" name="toUid" id="toUid"
+						data-options="required:true" class="easyui-numberbox"
+						missingMessage="请填写转出UID" onblur="getTurnoutInfo();"></td>
+				</tr>
+				<tr>
+					<td>转账非现金金额:</td>
+					<td><input class="easyui-numberbox" id="notCash" name="notCash"
+						class="easyui-validatebox" missingMessage="请填写转账金额" maxLength="12"
+						data-options="required:true,precision:2,groupSeparator:'',decimalSeparator:'.'">元</td>
+				</tr>
+				<tr>
+					<td>转账现金金额:</td>
+					<td><input class="easyui-numberbox" id="cash" name="cash"
+						class="easyui-validatebox" missingMessage="请填写转账金额" maxLength="12"
+						data-options="required:true,precision:2,groupSeparator:'',decimalSeparator:'.'">元</td>
+				</tr>
+				<tr>
+					<td>备注:</td>
+					<td><input type="text" name="remark" id="remark" size="100"
+						data-options="required:true" class="easyui-validatebox"
+						missingMessage="请填写备注"
+						onKeyDown="modChar(this.form.remark,$('#result_content'),30);"
+						onKeyUp="modChar(this.form.remark,$('#result_content'),28);">
+						<font color="red">*(内容长度不超过28个字) 您还可以输入<span
+							id="result_content">28</span>个字符 
+				</tr>
+				<tr>
+					<td>短信验证码:</td>
+					<td><input type="text" name="vcode" id="vcode" >
+						<input type="button" id="getVCode" data-options="required:true"
+						class="easyui-validatebox" missingMessage="请填写校验码"
+						onclick="sendVCode();" value="点击获取"></td>
+				</tr>
+			</table>
+			<input type="button" value="提交" onclick="checkSubmit();"> <input
+				type="reset" value="取消" onclick="clear();">
+		</form>
+	</div>
+	<div style="float: left; width:450px;">
+		转出用户信息:<br>
+		<div id="transferResult" style="color: red"></div>
+		<div id="transferInfo">
+			<table cellspacing="1" border="1" bordercolor="blue"
+				style="min-width: 350px" cellpadding="10" rules="none">
+				<tr>
+					<td>用户UID:</td>
+					<td id="mUID"></td>
+				</tr>
+				<tr>
+					<td>用户类型:</td>
+					<td><span style="color: red;" id="mUserType"></span></td>
+				</tr>
+				<tr>
+					<td>帐号:</td>
+					<td id="mloginName"></td>
+				</tr>
+				<tr>
+					<td>昵称:</td>
+					<td id="mNickName"></td>
+				</tr>
+				<tr>
+					<td>手机号:</td>
+					<td id="mMobile"></td>
+				</tr>
+				<tr>
+					<td>实名认证:</td>
+					<td><span style="color: red;" id="mIsRealValidate"></span></td>
+				</tr>
+				<tr>
+					<td>非现金余额:</td>
+					<td><span style="color: red;" id="mNotCash"></span></td>
+				</tr>
+				<tr>
+					<td>现金余额:</td>
+					<td><span style="color: red;" id="mCash"></span></td>
+				</tr>
+			</table>
+		</div>
+	</div>
+	<div style="float: left;width:450px;">
+		转入用户信息:<br>
+		<div id="turnoutResult" style="color: red"></div>
+		<div id="turnoutInfo">
+			<table cellspacing="1" border="1" bordercolor="blue"
+				style="min-width: 350px" cellpadding="10" rules="none">
+				<tr>
+					<td>用户UID:</td>
+					<td id="tUID"></td>
+				</tr>
+				<tr>
+					<td>用户类型:</td>
+					<td><span style="color: red;" id="tUserType"></span></td>
+				</tr>
+				<tr>
+					<td>帐号:</td>
+					<td id="tloginName"></td>
+				</tr>
+				<tr>
+					<td>昵称:</td>
+					<td id="tNickName"></td>
+				</tr>
+				<tr>
+					<td>手机号:</td>
+					<td id="tMobile"></td>
+				</tr>
+				<tr>
+					<td>实名认证:</td>
+					<td><span style="color: red;" id="tIsRealValidate"></span></td>
+				</tr>
+				<tr>
+					<td>非现金余额:</td>
+					<td><span style="color: red;" id="tNotCash"></span></td>
+				</tr>
+				<tr>
+					<td>现金余额:</td>
+					<td><span style="color: red;" id="tCash"></span></td>
+				</tr>
+			</table>
+		</div>
+	</div>
+</body>
+</html>

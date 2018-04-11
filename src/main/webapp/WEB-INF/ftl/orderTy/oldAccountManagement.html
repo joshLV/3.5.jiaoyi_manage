@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>退游宝旧号管理</title>
+<#include "../common.html"/>
+<style>
+body{
+margin:0px;
+padding:0px;
+}
+.radio{
+  display:inline-block;
+  width:10%;
+}
+#realPrice{
+  border: none;
+  font-size: 20px;
+  color: green;
+  font-weight: bold;
+  width: 45px;
+}
+#tyNum{
+  border: none;
+  font-size: 20px;
+  color: green;
+  font-weight: bold;
+  width: 40px;
+  text-align: center;
+}
+.tips{
+  color: red;
+}
+</style>
+<script type="text/javascript" src="../js/order_helper.js"></script>
+<script type="text/javascript">
+var datagrid;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'getTyAccountList',
+			title : '退游账号列表',
+			pagination : true,
+			loadMsg:null,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 30,
+			pageList : [30, 40, 50, 100],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'ty_id',
+			columns : [ [ 
+               {field:'ck',checkbox:true,
+					formatter:function(value,row,index){
+						return row.ty_id;
+					}
+				},
+			   {field:'ty_id',title:'退游ID',align:'center',width:100},
+			   {field:'order_id',title:'订单ID',align:'center',width:100},
+			   {field:'finish_time',title:'账号回收完成时间',align:'center',width:100},
+			   {field:'product_id',title:'商品ID',align:'center',width:100,
+				   formatter:function(value,row,index){
+				   		if (row.product_id == null || row.product_id == ''){
+				   			return "--";//未上架
+				   		}else{
+				   			return row.product_id;
+				   		}
+				   }
+			   },
+			   {field:'good_name',title:'名称',align:'center',width:120},
+			   {field:'real_price',title:'实际估值',align:'center',width:60,
+			   		formatter:function(value,row,index){
+			   			if (value){
+			   				return value/100;
+			   			}else{
+			   				return "0";
+			   			}
+			   		}
+			   },
+			   {field:'product_price',title:'售价',align:'center',width:60,
+			   		formatter:function(value,row,index){
+			   			if (row.product_price == null || row.product_price == ''){
+				   			return "--";//未上架
+				   		}else{
+				   			return row.product_price;
+				   		}
+			   		}
+			   },
+			   {field:'onsale_time',title:'上架时间',align:'center',width:100,
+			   		formatter:function(value,row,index){
+			   			if (row.product_id == null || row.product_id == ''){
+				   			return "--";//未上架
+				   		}else{
+				   			return row.onsale_time;
+				   		}
+			   		}
+			   },
+			   {field:'product_status',title:'状态',align:'center',width:60,
+				   formatter:function(value,row,index){
+					   if(row.product_status==7){
+						   return "已上架";
+					   }else if(row.product_status==9){
+						   return "已出售";
+					   }else if(row.product_status==12){
+						   return "已下架";
+					   }else{
+						   return "待上架";
+					   }
+				   }
+			   },
+			   {field:'operate',title:'操作',align:'center',width:80,
+				   formatter:function(value,row,index){
+						if(row.product_status==null || row.product_status=='' || row.product_status==12){
+						   return "<a href='#' onclick='onSale(&quot;"+row["ty_id"]+"&quot;,&quot;"+row["real_price"]+"&quot;)'>上架</a>";
+						}else if(row.product_status==7){
+						   //return "<a href='oldAccountOffsale.do?tyId=" + row["ty_id"] + "'>下架</a>";
+							return "<a href='#' onclick='offSale(&quot;"+row["ty_id"]+"&quot;)'>下架</a>";
+						}else{
+						   return "--";
+						}
+					}   
+			   }
+			 ] ],
+				toolbar : [ {
+					text : '批量上架',
+					iconCls : 'icon-edit',
+					handler : function() {
+						onSaleSelected();
+					}
+				}]
+		});
+	
+	editForm = $('#editForm').form({
+		url : 'oldAccountOnsale.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				
+			} else {
+				$.messager.alert('操作完成',json.msg);
+			}
+			datagrid.datagrid('reload');
+			editDialog.dialog('close');
+		}
+	});
+	
+	editDialog = $('#editDialog').show().dialog({
+		title : '上架退游账号',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '上架',
+			handler : function() {
+				if($("#productPrice").parent().parent().css("display")!='none'){
+					var price =$("#productPrice").val();
+					var reg = new RegExp("^[0-9][0-9]*$");
+					if(!price.match(reg)){
+						$.messager.alert("提示","请正确填写出售价格或选择调整价格，售价最小为1元");
+						return false ;
+					}
+					/*if(price==""){
+						$.messager.alert("提示","请填写出售价格或调整价格");
+						return false ;
+					}*/
+				}
+				editForm.submit();
+			}
+		} ]
+	}); 
+});
+
+function onSale(tyId, realPrice){
+	var price = 0;
+	if (realPrice){
+		price = realPrice/100;
+	}
+	$("#tyIds").val("");
+	$("#tyId").val(tyId);
+	$("#realPrice").val(price);
+	$("#original").css("display","none");
+	$("#tyNum").parent().css("display","none");
+	$("#tyId").parent().parent().css("display","");
+	$("#realPrice").parent().parent().css("display","");
+	$("#productPrice").parent().parent().css("display","");
+	editDialog.dialog('open');
+}
+
+
+function onSaleSelected(){
+	var rows = datagrid.datagrid('getSelections');
+	if(rows.length < 1){
+		$.messager.alert('提示', '请最少选择一项要上架的记录！', 'error');
+	}else{
+		if(rows.length == 1){
+			if(rows[0].product_status=='已出售'||rows[0].product_status=='已上架'){
+				$.messager.alert('提示', '请选择"待上架"或"已下架"的记录！', 'error');
+			}else{
+				var tyId = rows[0].ty_id;
+				var realPrice = rows[0].real_price;
+				onSale(tyId, realPrice);
+			}
+		}else if (rows.length > 1) {
+			if(rows[0].product_status=='已出售'||rows[0].product_status=='已上架'){
+				$.messager.alert('提示', '请选择"待上架"或"已下架"的记录！', 'error');
+			}else{
+				var ids = rows[0].ty_id;
+				for(var i=1;i<rows.length;i++){
+					if(rows[i].product_status=='已出售'||rows[0].product_status=='已上架'){
+						$.messager.alert('提示', '请选择"待上架"或"已下架"的记录！', 'error');
+						break;
+					}
+					ids = ids + ',' + rows[i].ty_id;
+				}
+				$("#tyNum").val(rows.length);
+				$("#tyIds").val(ids);
+				$("#original").css("display","block");
+				$("input[name='ratio'][value=0]").attr("checked",true);
+				$("#tyNum").parent().css("display","block");
+				$("#tyId").parent().parent().css("display","none");
+				$("#realPrice").parent().parent().css("display","none");
+				$("#productPrice").parent().parent().css("display","none");
+				editDialog.dialog('open');
+			}
+			
+		} 
+	}
+}
+
+function offSale(tyId){
+	$.ajax({
+        url: "oldAccountOffsale.do",
+        type: "POST",
+        dataType: "json",
+        data: {'tyId': tyId},
+    }).done(function(d) {
+    	if (d && d.success) {
+			$.messager.show({
+				title : '成功',
+				msg : d.msg
+			});
+    	}else{
+    		$.messager.show({
+				title : '失败',
+				msg : d.msg
+			});
+    	}
+    	datagrid.datagrid('reload');
+    });
+}
+
+function adjustPrice(ratio){
+	var realPrice = $("#realPrice").val();
+	var productPrice = parseInt(realPrice*(1+ratio/100));
+	$("#productPrice").val(productPrice);
+}
+
+//搜索
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+//取消
+function cleanSearch() {
+	searchForm.find('input').val('');
+	searchForm.find('select').val('');
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+//所有游戏[查询条件]
+$(function() {
+	var url = "../product/allgameList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='gameId'] option").remove();
+		var def =  "<option value=''>请选择</option>";
+		$("select[name='gameId']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='gameId']").append(options);
+		}
+
+	});
+	
+	
+});
+
+function allgamesearch(){
+	var gameid = $("select[name='gameId']").val();
+	//selectsub(gameid);
+}
+
+</script>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height:100px;min-width:1280px;overflow:hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>退游ID:<input name="tyId" style="width:120px;" /></td>
+				<td>订单ID:<input name="orderId" style="width:120px;" /></td>
+				<td>账号回收完成时间:<input name="fstartDate" style="width:100px;" class="easyui-datebox"/>-<input name="fendDate" style="width:100px;" class="easyui-datebox"/>&nbsp;</td>
+				<td>游戏:<select id="g_id_receiver" name="gameId" onchange="javascript:allgamesearch();" style="width: 96px">
+		        </select>
+                  <!-- select class="easyui-combobox" name="gameId" style="width:120px;">
+					<option value="0">--选择游戏--</option>
+					<#list gameList as item>
+					  <option value="${item['game_id']!''}">${item['game_name']!''}</option>
+					</#list>
+				  </select> -->
+				</td>
+			</tr>
+			<tr>
+				<td>商品ID:<input name="productId" style="width:120px;" /></td>
+				<td>商品状态:
+                    <select name="productStatus" class="easyui-combobox" style="width:120px;">
+						<option value="0">--选择状态--</option>
+						<option value="-1">待上架</option>
+						<option value="7">已上架</option>
+						<option value="12">已下架</option>
+						<option value="9">已出售</option>
+					</select>
+                </td>
+                <td>上架时间范围:<input name="startDate" style="width:100px;" class="easyui-datebox"/>-<input name="endDate" style="width:100px;" class="easyui-datebox"/>&nbsp;</td>
+                <td>
+                	<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+			    	<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 720px;height: 'auto';" align="center">
+  <form id="editForm" method="post" style="padding: 5px 10px">
+    <div>您已选择了<input type="text" name="realPrice" readonly id="tyNum"/>个待上架账号。</div>
+    <input type="hidden" name="tyIds" id="tyIds"/>
+    <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+      <tr>
+        <td class="lable">退游ID：</td>
+        <td><input type="text" name="tyId" readonly id="tyId"/></td>
+      </tr>
+      <tr>
+        <td class="lable">账号实际估值：</td>
+        <td><input type="text" name="realPrice" readonly id="realPrice"/>元</td>
+      </tr>
+      <tr>
+        <td class="lable">出售价格：</td>
+        <td><input type="text" name="productPrice" id="productPrice"/>元</td>
+      </tr>
+      <tr class="roleSelect">
+        <td class="lable">调整价格：</td>
+        <td>
+          <div id="original">
+            <span class="radio">
+              <input type="radio" name="ratio" value="0" checked /><label>0%</label>
+            </span>
+          </div>
+          <span class="radio">
+               <input type="radio" name="ratio" value="-80" onclick="adjustPrice(this.value)"/><label>-80%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="-70" onclick="adjustPrice(this.value)"/><label>-70%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="-60" onclick="adjustPrice(this.value)"/><label>-60%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="-50" onclick="adjustPrice(this.value)"/><label>-50%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="-40" onclick="adjustPrice(this.value)"/><label>-40%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="-30" onclick="adjustPrice(this.value)"/><label>-30%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="-20" onclick="adjustPrice(this.value)"/><label>-20%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="-10" onclick="adjustPrice(this.value)"/><label>-10%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="-5" onclick="adjustPrice(this.value)"/><label>-5%</label>
+          </span>
+          <br/>
+          <span class="radio">
+               <input type="radio" name="ratio" value="5" onclick="adjustPrice(this.value)"/><label>+5%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="10" onclick="adjustPrice(this.value)"/><label>+10%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="20" onclick="adjustPrice(this.value)"/><label>+20%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="30" onclick="adjustPrice(this.value)"/><label>+30%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="40" onclick="adjustPrice(this.value)"/><label>+40%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="50" onclick="adjustPrice(this.value)"/><label>+50%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="60" onclick="adjustPrice(this.value)"/><label>+60%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="70" onclick="adjustPrice(this.value)"/><label>+70%</label>
+          </span>
+          <span class="radio">
+               <input type="radio" name="ratio" value="80" onclick="adjustPrice(this.value)"/><label>+80%</label>
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td class="tips">温馨提示：</td>
+        <td class="tips">商品上架后需要手动下架才能修改价格，请慎重操作。</td>
+      </tr>
+    </table> 
+  </form>
+</div>
+</body>
+</html>

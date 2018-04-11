@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=UTF-8">
+<title>批量充值</title> <#include "../common.html"/>
+<script type="text/javascript">
+	var checkSubmitFlag = true;
+	function checkSubmit(){
+	　　if(true == checkSubmitFlag){
+		var excelFile = $('#excelFile');
+			if ($.trim(excelFile).length != 0){
+				$.messager.confirm('请确认', "您确定要导入该批量充值文件吗？",
+					function(flag){
+					excelUploadForm.submit();
+					}
+				);
+		}else{
+			$.messager.alert("请选择上传的Excel文件！");
+		}
+	　　	checkSubmitFlag = false;
+	　　}
+	}
+	
+</script>
+<style type="text/css">
+hr {
+	border: #999 1px dashed;
+}
+</style>
+</head>
+<body>
+	<div>
+		<form
+			action="excelUpload.do"
+			name="excelUploadForm"
+			method="post"
+			enctype="multipart/form-data">
+			<table
+				cellpadding="10"
+				style="min-width: 660px">
+				<tr>
+					<td style="width: 222px;">上传批量充值Excel文件:</td>
+					<td><input
+						type="file"
+						name="file"
+						id="excelFile"
+						data-options="required:true"
+						class="easyui-validatebox"
+						missingMessage="请选择上传文件"><#if msg??>${msg!''}</#if></td>
+				</tr>
+				<tr>
+					<td colspan="2"><input
+						type="button"
+						value="提交"
+						onclick="checkSubmit();"></td>
+				</tr>
+			</table>
+
+		</form>
+		<hr>
+		说明：<br>
+		请按模板文件格式填写相关数据，每个Excel文件只读取一个工作薄且一次最大处理500条记录。<br>
+		模板文件下载：<a href="generateTemplate.do">[下载]</a>
+	</div>
+</body>
+</html>

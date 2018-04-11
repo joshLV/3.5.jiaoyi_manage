@@ -1,0 +1,18 @@
+ <#if pageInfo.items??>
+{"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+{
+
+"id":${item.id!'0'},
+"failReson":"${item.failReson!''}",
+"remark":"${item.remark!''}",
+"status":"${item.status!''}"
+}
+
+<#t>
+<#if item_has_next>,</#if>
+</#list>
+]}
+  <#else>
+  {"total":0,"rows":[]}
+</#if>

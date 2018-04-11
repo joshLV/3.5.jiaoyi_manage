@@ -1,0 +1,161 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>订单列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url :'timeOutListJson',
+		    queryParams:{
+            	beginTime:'${beginTime!''}',
+            	endTime:'${endTime!''}',
+			},
+			title : '超时赔付统计列表',
+			//iconCls : 'icon-save',
+			singleSelect:true,
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ ${pageList!'100'}, 150, 200],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : '',
+			sortName : '',
+			sortOrder : '',
+			columns : [ [
+			   {field:'record_uid',title:'用户ID',align:'center',width:140,sortable:true },		
+			   {field:'fullname',title:'责任人',align:'center',width:140,sortable:true },				
+			   {field:'record_reason',title:'超时原因',align:'center',width:200,sortable:true },				
+			   {field:'recordmoney',title:'赔付金额(元)',align:'center',width:100,sortable:true },
+			   {field:'notPayCount',title:'不赔付超时订单数',align:'center',width:150,sortable:true },
+			   {field:'recordispay',title:'赔付超时订单数',align:'center',width:150,sortable:true},
+			   {field:'radio',title:'超时比例(5:30:60)',align:'center',width:150,
+				   formatter:function(value,row,index){
+					   return row.radio1+":" + row.radio2 + ":" + row.radio3;
+				   }
+			   },
+			   {field:'recordtime',title:'日期',align:'center',width:150,sortable:true},
+			   {field:'operate',title:'操作',align:'center',width:150,sortable:true,
+				   formatter:function(value,row,index){
+					    if(row.operate==null || row.operate==''){
+					    	var a = '<a href="javascript:void(0)" onclick="follow(0,\''+row.recordtime+'\')" >赔付订单</a>';
+					    	var b = '<a href="javascript:void(0)" onclick="follow(1,\''+row.recordtime+'\')" >不赔付订单</a>';
+					    	return a + "|" + b;
+					    }
+					}
+			   	},
+			 ] ],
+			});
+
+
+
+});
+function selectReason(value){
+	$("#reasonForm").attr("value",value);
+}
+function follow(flag,time){
+	var uid = $("#uid").val();
+	var reasonMsg = $("#reasonForm").val();
+	$.ajax({
+		url : 'queryTimeOutOrderStr',
+		type : 'POST',
+		data : {
+			uid : uid,
+			reason : reasonMsg,
+			time : time,
+			ispay : flag
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+			if(data != null){
+				if(data.code == 1){
+					alert(data.msg);
+				}else{
+					showOrderInfo(data.idStr);
+				}
+			}
+		}
+	});
+}
+
+function showOrderInfo(idStr){
+	var link = "${request.contextPath}/order/orderList.do?idStr="+idStr;
+	idStr = idStr.substring(0,idStr.indexOf(","));
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"超时订单"+idStr+"..等订单详情"
+			};
+	parent.addTab(node);
+}
+
+function _search() {
+	var  btime = searchForm.find("table >tbody> tr input[name='beginTime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='endTime']").val();
+	var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+</script>
+</head>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 70px;overflow: hidden;" align="left">
+	<form id="searchForm" action="orderListXls.do">
+		<input type="hidden" name="reasonForm" id="reasonForm" />
+		<table>
+			<tr>
+				<td>责任人: <input id="uid" name="uid" style="width:150px;" /></td>
+				<td>开始时间:<input name="beginTime" id="beginTime" class="easyui-datebox" type="text" value="${beginTime}" style="width:100px;" />
+				—<input name="endTime" id="endTime" style="width:100px;" class="easyui-datebox" value="${endTime}"  /></td>
+				<td>超时原因:
+					<select id="reason" name="reason" style="width:250px;" onchange="selectReason(this.value)">
+						<option value="">所有状态</option>
+				    	<#list reasonList as reason>
+				    		<option value="${reason.reasonRemark}">${reason.reasonRemark}</option>  
+				    	</#list>
+					</select>
+				</td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">复合查询</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+</body>
+</html>

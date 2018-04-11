@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>设置游戏商品类型自定义属性</title>
+<#include "../common.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+var resetForm;
+$(function() {	
+	//修改
+	resetForm = $('#resetForm').form({
+		url : 'saveproperty.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+			$.messager.show({
+					title : '修改成功',
+					msg : json.msg
+				});
+			setTimeout("reload()",1200);
+			} else {
+				$.messager.show({
+					title : '修改失败',
+					msg : json.msg
+				});
+				//resetDialog.dialog('close');
+			}
+		},
+		error:function(XMLHttpRequest, textStatus, errorThrown){
+			alert(textStatus);
+		}
+	});
+
+
+});
+
+
+
+//function setheight() { 
+//alert("+++");
+//var div=document.getElementById("luckOption"); 
+//var maindiv=document.getElementById("table_show_1");
+//div.style.height=500; 
+//div.style.overflow="auto"; 
+//alert(maindiv.clientHeight);
+//var h = maindiv.clientHeight;
+//var scrHeight = document.getElementById("table_show_1").scrollTop();
+//alert("gundongtiao =" + scrHeight);
+//if(h>250){
+	//alert("变大");
+//	maindiv.style.height = "auto"
+//}
+//} 
+//window.onload=setheight; 
+
+//全选/全不选
+function CheckAll(){
+	var checkb = $("#checkAll").attr("checked");
+	     var input = document.getElementsByTagName("input");
+	        for (var i = 0; i < input.length; i++)
+	        {
+	            if (input[i].type == "checkbox")
+	                if((checkb=="checked")){
+		            input[i].checked = true;
+	                }else{
+	                input[i].checked = false;
+	                }
+	        } 
+}
+
+//全选/全不选
+function CheckAll2(){
+	var checkb = $("#checkAll2").attr("checked");
+	     var input = document.getElementsByTagName("input");
+	        for (var i = 0; i < input.length; i++)
+	        {
+	            if (input[i].type == "checkbox")
+	                if((checkb=="checked")){
+		            input[i].checked = true;
+	                }else{
+	                input[i].checked = false;
+	                }
+	        } 
+}
+//商品自定义
+function add() {
+	var len = $("#table_show_1 > tbody > tr").length;
+	//alert(len);
+	if(len>52){
+		$.messager.alert("提示","只能添加50个自定义商品信息");
+		return false;
+	}
+	var html = $("#resetForm > table > tbody > tr:first").html();
+	var temphtml=$(html);
+	temphtml.find("#model_id").val("");
+	temphtml.find("#model_property_type").val("1");
+	$("<tr></tr>").html(temphtml).appendTo($("#resetForm > table"));
+	//setheight();
+
+}
+//卖家
+function add2() {
+	var len = $("#sell_info >table > tbody > tr").length;
+	//alert(len);
+	if(len>51){
+		$.messager.alert("提示","只能添加50个自定义卖家信息");
+		return false;
+	}
+	var html = $("#resetForm > table > tbody > tr:first").html();
+	var temphtml=$(html);
+	temphtml.find("#model_id").val("");
+	temphtml.find("#model_property_type").val("2");
+	$("<tr></tr>").html(temphtml).appendTo($("#sell_info > table"));
+}
+//购买
+function add3() {
+	var len = $("#buy_info >table > tbody > tr").length;
+	//alert(len);
+	if(len>51){
+		$.messager.alert("提示","只能添加50个自定义购买信息");
+		return false;
+	}
+	var html = $("#resetForm > table > tbody > tr:first").html();
+	var temphtml=$(html);
+	temphtml.find("#model_id").val("");
+	temphtml.find("#model_property_type").val("3");
+	$("<tr></tr>").html(temphtml).appendTo($("#buy_info > table"));
+}
+
+function add4() {
+	var len = $("#define_info >table > tbody > tr").length;
+	//alert(len);
+	if(len>51){
+		$.messager.alert("提示","只能添加50个自定义退游信息");
+		return false;
+	}
+	var html = $("#resetForm > table > tbody > tr:first").html();
+	var temphtml=$(html);
+	temphtml.find("#model_id").val("");
+	temphtml.find("#model_property_type").val("4");
+	$("<tr></tr>").html(temphtml).appendTo($("#define_info > table"));
+}
+
+//删除
+function doDelete(){
+	//判断是否选中
+	 var obj = document.getElementsByName("itemOffset");
+	 //alert(obj.length);
+	 var objYN = false;
+	 for (var i = 0;i< obj.length;i++){
+	 if (obj[i].checked==true) {
+	 objYN= true;
+	 break;
+	 }}
+	 if (objYN==false) {
+		 $.messager.confirm('提示框','请至少选择一项?');
+		 return false; 
+	 }
+	 //删除页面数据
+	 //var str ="";
+	 //for (var j = 0;j< obj.length;j++){
+	 //if (obj[j].checked==true) {
+	 //alert(j);
+	 //flag = true;
+	 //obj[j].parentElement.parentElement.remove();
+	 //alert(obj[j].parentElement.parentElement.name);
+	 //}
+	 //}
+	
+	   
+	
+$.messager.confirm('确认框','您确认要删除数据?',function(r){  
+   if (r){ 
+
+		$.ajax({
+			url : 'propertyDel.do',
+			data : $("#resetForm").serialize(),
+			dataType : 'json',
+			success : function(response) {
+			   //删除页面数据
+			   var num = 0;
+				$(':checkbox[name=itemOffset]').each(function(){
+					if($(this).attr('checked')){
+						$(this).closest('tr').remove();
+						num++;
+					}
+				})
+				//alert('共删除了【'+num+'】行');
+				$.messager.show({
+					title : '提示',
+					msg : response.msg
+				});
+				//location.reload();
+			}
+		});
+		   }
+		});
+}
+
+function save(){
+	 resetForm.submit();
+}
+
+function reload(){
+	location.reload();
+}
+
+function typeUnitshow(v){
+	var type_var = $(v).val();
+	var target = $(v).parent().next();
+
+	if(type_var == "0" || type_var == "1"){
+		target.find("#type_limit_unit_html").html("字数");
+	}
+	
+	if(type_var == "2" || type_var == "3"){
+		target.find("#type_limit_unit_html").html("&nbsp;&nbsp;&nbsp;&nbsp;");
+	}
+	
+	if(type_var == "4"){
+		target.find("#type_limit_unit_html").html("张数");
+	}
+
+}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="center" border="false" title="商品自定义属性 [${gameName!''}]-->${ptypeName!''}" style="height: 600px;" align="center" id="maincontent">
+ <form id="resetForm" method="post" action="saveproperty" style="padding: 5px 10px;">
+	
+	  
+	        <input type="hidden" name="gameid" value="${gameid!'0'}"/>
+	        <input type="hidden" name="gptid" value="${gptid!'0'}"/>
+	       
+			<table  class="table_line" id="table_show_1" style="width: 950px;" >
+			<!-- 模板 -->
+			<tr style="display: none;">
+			<td >
+			<input type="hidden" name="id" value="-1" id="model_id"/>
+			<input type="hidden" name="property_type" value="0" id="model_property_type"/>
+			
+			 <input type="checkbox" name="itemOffset" id="selectAllid" />&nbsp;&nbsp;&nbsp;
+			 <!--  
+			<b style="color: red">属性&nbsp;</b>&nbsp;
+			-->
+			<input type="text" name="p_key" /></td>
+			<td colspan="2">
+			<select name="p_key_type" onchange="typeUnitshow(this);">
+			<option value="0" >文本</option>
+			<option value="1" >数值</option>
+			<option value="2" >单选</option>
+			<option value="3" >多选</option>
+			<!-- 
+			<option value="4" >图片</option>
+			 -->
+			</select>
+			</td>
+			<td colspan="2" >
+			<input type="text" size="5" maxlength="3" name="value_type_limit" />
+			<font id="type_limit_unit_html">字数</font>
+			</td>
+			<td colspan="2"><input type="text" size="18" maxlength="250" name="value" /></td>
+			<td colspan="2">
+			<select name="value_required" >
+			<option value="0" >否</option>
+			<option value="1" >是</option>
+			</select>
+			</td>
+			<td colspan="2">
+			<select name="value_encode" >
+			<option value="0" >否</option>
+			<option value="1" >是</option>
+			</select>
+			</td>
+			<td colspan="2">
+			<input type="text" size="3" maxlength="3" name="p_weight" value="100"/>
+			<font id="type_limit_unit_html"></font>
+			</td>
+			
+			<td colspan="2">
+			<input type="text" size="25" maxlength="25" name="p_key_desc" />
+			</td>
+			
+			</tr>
+			<!-- 模板 end -->
+			
+			
+			<tr>
+			<td colspan="4"><!-- 
+			<input type="checkbox" name="checkAll" id="checkAll" onClick="javascript:CheckAll();"/>
+			 -->
+			 <p>
+			<b>自定义商品信息</b>&nbsp;
+			<a href="javascript:void(0);" class="easyui-linkbutton" onclick="add();">添加自定义商品属性</a>
+			<a href="javascript:void(0);" class="easyui-linkbutton" onclick="doDelete();">删除</a>
+			</p>
+			</td>
+			</tr>
+			<!-- 标题 start -->
+			<tr >
+			<td >
+			<!-- 
+			<input type="checkbox" name="itemOffset" id="selectAllid" />
+			
+			<b style="color: red">属性&nbsp;</b>&nbsp;
+			 -->
+			<b>前台展现名称</b>
+			</td>
+			<td colspan="2"><b>字段类型</b></td>
+			<td colspan="2"><b>限制</b></td>
+			<td colspan="2"><b>侯选值</b></td>
+			<td colspan="2"><b>是否必填</b></td>
+			<td colspan="2"><b>是否加密</b></td>
+			<td colspan="2"><b>权重</b></td>
+			<td colspan="2"><b>字段说明</b></td>
+			</tr>
+			<!-- 标题 end -->
+			
+			<#if showList??>
+			<#list showList as list>
+			<tr>
+			<td >
+			<input type="hidden" name="id" value="${list.id}"/>
+			 <input type="hidden" name="property_type" value="${list.property_type}" />
+			 <input type="checkbox" name="itemOffset" id="selectAllid" value="${list.id}"/>
+			<b>${list_index+1}</b>&nbsp;
+			<input type="text" name="p_key" value="${list.p_key!''}"/>
+			</td>
+			<td colspan="2">
+			<select name="p_key_type" onchange="typeUnitshow(this);" >
+			<option value="0" <#if (0 == list.p_key_type)>selected="selected"</#if>>文本</option>
+			<option value="1" <#if (1 == list.p_key_type)>selected="selected"</#if>>数值</option>
+			<option value="2" <#if (2 == list.p_key_type)>selected="selected"</#if>>单选</option>
+			<option value="3" <#if (3 == list.p_key_type)>selected="selected"</#if>>多选</option>
+			<!-- 
+			<option value="4" <#if (4 == list.p_key_type)>selected="selected"</#if>>图片</option>
+			 -->
+			</select>
+			</td>
+			<td colspan="2">
+			<input type="text" size="5" maxlength="3" name="value_type_limit" value="${list.value_type_limit!''}"/>
+			<font id="type_limit_unit_html">
+			<#if (0 == list.p_key_type)>字数</#if>
+			<#if (1 == list.p_key_type)>字数</#if>
+			<#if (2 == list.p_key_type)>&nbsp;&nbsp;</#if>
+			<#if (3 == list.p_key_type)>&nbsp;&nbsp;</#if>
+			<!--  
+			<#if (4 == list.p_key_type)>张数</#if>
+			-->
+			</font>
+			</td>
+			<td colspan="2"><input type="text" size="18" maxlength="250" name="value" value="${list.p_value!''}"/></td>
+			<td colspan="2">
+			<select name="value_required" >
+			<option value="0" <#if (0 == list.value_required)> selected="selected" </#if>>否</option>
+			<option value="1" <#if (1 == list.value_required)> selected="selected" </#if>><font color="red">是</font></option>
+			</select>
+			</td>
+			<td colspan="2">
+			<select name="value_encode" >
+			<option value="0" 	<#if (0 == list.value_encode)>selected="selected" </#if>>否</option>
+			<option value="1"   <#if (1 == list.value_encode)>selected="selected" </#if>><font color="red">是</font></option>
+			</select>
+			</td>
+			
+			
+			<td colspan="2">
+			<input type="text" size="3" maxlength="3" name="p_weight" value="${list.weight!'100'}"/>
+			</td>
+			
+			<td colspan="2">
+			<input type="text" size="25" maxlength="25" name="p_key_desc" value="${list.key_desc!''}"/>
+			</td>
+			</tr>
+		    </#list> 
+		    </#if>
+		    </table>
+		 
+		    
+		    <div id ="sell_info" style="padding-top: 50px;">
+		    <table style="width: 950px;">
+		    <tr>
+			<td >
+			<!-- 
+			<input type="checkbox" name="checkAll2" id="checkAll2" onClick="javascript:CheckAll2();"/>
+			 -->
+			<b>自定义卖家信息</b>&nbsp;
+			<a href="javascript:void(0);" class="easyui-linkbutton" onclick="add2();">添加自定义卖家属性</a>
+			<!--  
+			<a href="javascript:void(0);" class="easyui-linkbutton" onclick="doDelete();">删除</a>
+			-->
+			</td>
+			</tr>
+			<!-- 标题 start -->
+			<tr >
+			<td ><!-- 
+			<input type="checkbox" name="itemOffset" id="selectAllid" />
+			
+			<b style="color: red">属性&nbsp;
+			 -->
+			</b>&nbsp;<b>前台展现名称</b>
+			</td>
+			<td colspan="2"><b>字段类型</b></td>
+			<td colspan="2"><b>限制</b></td>
+			<td colspan="2"><b>侯选值</b></td>
+			<td colspan="2"><b>是否必填</b></td>
+			<td colspan="2"><b>是否加密</b></td>
+			<td colspan="2"><b>权重</b></td>
+			<td colspan="2"><b>字段说明</b></td>
+			</tr>
+			<!-- 标题 end -->
+			
+			<#if showList2??>
+			<#list showList2 as list>
+			<tr>
+			<td >
+			<input type="hidden" name="id" value="${list.id}"/>
+			 <input type="checkbox" name="itemOffset" id="selectAllid" value="${list.id}"/>
+			  <input type="hidden" name="property_type" value="${list.property_type}" />
+			<b>${list_index+1}</b>&nbsp;
+			<input type="text" name="p_key" value="${list.p_key!''}"/>
+			</td>
+			<td colspan="2">
+			<select name="p_key_type" onchange="typeUnitshow(this);">
+			<option value="0" <#if (0 == list.p_key_type)>selected="selected"</#if>>文本</option>
+			<option value="1" <#if (1 == list.p_key_type)>selected="selected"</#if>>数值</option>
+			<option value="2" <#if (2 == list.p_key_type)>selected="selected"</#if>>单选</option>
+			<option value="3" <#if (3 == list.p_key_type)>selected="selected"</#if>>多选</option>
+			<!--  
+			<option value="4" <#if (4 == list.p_key_type)>selected="selected"</#if>>图片</option>
+			-->
+			</select>
+			</td>
+			<td colspan="2">
+			<input type="text" size="5" maxlength="3" name="value_type_limit" value="${list.value_type_limit!''}"/>
+			<font id="type_limit_unit_html">
+			<#if (0 == list.p_key_type)>字数</#if>
+			<#if (1 == list.p_key_type)>字数</#if>
+			<#if (2 == list.p_key_type)>&nbsp;&nbsp;</#if>
+			<#if (3 == list.p_key_type)>&nbsp;&nbsp;</#if>
+			<!-- 
+			<#if (4 == list.p_key_type)>张数</#if>
+			 -->
+			</font>
+			
+			</td>
+			<td colspan="2"><input type="text" size="18" maxlength="250"  name="value" value="${list.p_value!''}"/></td>
+			<td colspan="2">
+			<select name="value_required" >
+			<option value="0" <#if (0 == list.value_required)> selected="selected" </#if>>否</option>
+			<option value="1" <#if (1 == list.value_required)> selected="selected" </#if>><font color="red">是</font></option>
+			</select>
+			</td>
+			<td colspan="2">
+			<select name="value_encode" >
+			<option value="0" 	<#if (0 == list.value_encode)>selected="selected" </#if>>否</option>
+			<option value="1"   <#if (1 == list.value_encode)>selected="selected" </#if>><font color="red">是</font></option>
+			</select>
+			</td>
+			
+			<td colspan="2">
+			<input type="text" size="3" maxlength="3" name="p_weight" value="${list.weight!'100'}"/>
+			</td>
+			
+			<td colspan="2">
+			<input type="text" size="25" maxlength="25" name="p_key_desc" value="${list.key_desc!''}"/>
+			</td>
+			</tr>
+		    </#list> 
+		    </#if>
+			</table>
+			</div>
+			
+			 <div id ="buy_info" style="padding-top: 50px;">
+		    <table style="width: 950px;">
+		    <tr>
+			<td >
+			<!-- 
+			<input type="checkbox" name="checkAll2" id="checkAll2" onClick="javascript:CheckAll2();"/>
+			 -->
+			<b>自定义购买信息</b>&nbsp;
+			<a href="javascript:void(0);" class="easyui-linkbutton" onclick="add3();">添加自定义购买属性</a>
+			<!--  
+			<a href="javascript:void(0);" class="easyui-linkbutton" onclick="doDelete();">删除</a>
+			-->
+			</td>
+			</tr>
+			<!-- 标题 start -->
+			<tr >
+			<td ><!-- 
+			<input type="checkbox" name="itemOffset" id="selectAllid" />
+			
+			<b style="color: red">属性&nbsp;
+			 -->
+			</b>&nbsp;<b>前台展现名称</b>
+			</td>
+			<td colspan="2"><b>字段类型</b></td>
+			<td colspan="2"><b>限制</b></td>
+			<td colspan="2"><b>侯选值</b></td>
+			<td colspan="2"><b>是否必填</b></td>
+			<td colspan="2"><b>是否加密</b></td>
+			<td colspan="2"><b>权重</b></td>
+			<td colspan="2"><b>字段说明</b></td>
+			</tr>
+			<!-- 标题 end -->
+			
+			<#if showList3??>
+			<#list showList3 as list>
+			<tr>
+			<td >
+			<input type="hidden" name="id" value="${list.id}"/>
+			 <input type="checkbox" name="itemOffset" id="selectAllid" value="${list.id}"/>
+			  <input type="hidden" name="property_type" value="${list.property_type}" />
+			<b>${list_index+1}</b>&nbsp;
+			<input type="text" name="p_key" value="${list.p_key!''}"/>
+			</td>
+			<td colspan="2">
+			<select name="p_key_type" onchange="typeUnitshow(this);">
+			<option value="0" <#if (0 == list.p_key_type)>selected="selected"</#if>>文本</option>
+			<option value="1" <#if (1 == list.p_key_type)>selected="selected"</#if>>数值</option>
+			<option value="2" <#if (2 == list.p_key_type)>selected="selected"</#if>>单选</option>
+			<option value="3" <#if (3 == list.p_key_type)>selected="selected"</#if>>多选</option>
+			<!--  
+			<option value="4" <#if (4 == list.p_key_type)>selected="selected"</#if>>图片</option>
+			-->
+			</select>
+			</td>
+			<td colspan="2">
+			<input type="text" size="5" maxlength="3" name="value_type_limit" value="${list.value_type_limit!''}"/>
+			<font id="type_limit_unit_html">
+			<#if (0 == list.p_key_type)>字数</#if>
+			<#if (1 == list.p_key_type)>字数</#if>
+			<#if (2 == list.p_key_type)>&nbsp;&nbsp;</#if>
+			<#if (3 == list.p_key_type)>&nbsp;&nbsp;</#if>
+			<!-- 
+			<#if (4 == list.p_key_type)>张数</#if>
+			 -->
+			</font>
+			
+			</td>
+			<td colspan="2"><input type="text" size="18" maxlength="250"  name="value" value="${list.p_value!''}"/></td>
+			<td colspan="2">
+			<select name="value_required" >
+			<option value="0" <#if (0 == list.value_required)> selected="selected" </#if>>否</option>
+			<option value="1" <#if (1 == list.value_required)> selected="selected" </#if>><font color="red">是</font></option>
+			</select>
+			</td>
+			<td colspan="2">
+			<select name="value_encode" >
+			<option value="0" 	<#if (0 == list.value_encode)>selected="selected" </#if>>否</option>
+			<option value="1"   <#if (1 == list.value_encode)>selected="selected" </#if>><font color="red">是</font></option>
+			</select>
+			</td>
+			
+			<td colspan="2">
+			<input type="text" size="3" maxlength="3" name="p_weight" value="${list.weight!'100'}"/>
+			</td>
+			
+			<td colspan="2">
+			<input type="text" size="25" maxlength="25" name="p_key_desc" value="${list.key_desc!''}"/>
+			</td>
+			</tr>
+		    </#list> 
+		    </#if>
+			</table>
+			</div>
+			
+			
+			<div id ="define_info" style="padding-top: 50px;">
+		    <table style="width: 950px;">
+		    <tr>
+			<td >
+			<!-- 
+			<input type="checkbox" name="checkAll2" id="checkAll2" onClick="javascript:CheckAll2();"/>
+			 -->
+			<b>自定义退游信息</b>&nbsp;
+			<a href="javascript:void(0);" class="easyui-linkbutton" onclick="add4();">添加自定义退游属性</a>
+			<!--  
+			<a href="javascript:void(0);" class="easyui-linkbutton" onclick="doDelete();">删除</a>
+			-->
+			</td>
+			</tr>
+			<!-- 标题 start -->
+			<tr >
+			<td ><!-- 
+			<input type="checkbox" name="itemOffset" id="selectAllid" />
+			
+			<b style="color: red">属性&nbsp;
+			 -->
+			</b>&nbsp;<b>前台展现名称</b>
+			</td>
+			<td colspan="2"><b>字段类型</b></td>
+			<td colspan="2"><b>限制</b></td>
+			<td colspan="2"><b>侯选值</b></td>
+			<td colspan="2"><b>是否必填</b></td>
+			<td colspan="2"><b>是否加密</b></td>
+			<td colspan="2"><b>权重</b></td>
+			<td colspan="2"><b>字段说明</b></td>
+			</tr>
+			<!-- 标题 end -->
+			
+			<#if showList4??>
+			<#list showList4 as list>
+			<tr>
+			<td >
+			<input type="hidden" name="id" value="${list.id}"/>
+			 <input type="checkbox" name="itemOffset" id="selectAllid" value="${list.id}"/>
+			  <input type="hidden" name="property_type" value="${list.property_type}" />
+			<b>${list_index+1}</b>&nbsp;
+			<input type="text" name="p_key" value="${list.p_key!''}"/>
+			</td>
+			<td colspan="2">
+			<select name="p_key_type" onchange="typeUnitshow(this);">
+			<option value="0" <#if (0 == list.p_key_type)>selected="selected"</#if>>文本</option>
+			<option value="1" <#if (1 == list.p_key_type)>selected="selected"</#if>>数值</option>
+			<option value="2" <#if (2 == list.p_key_type)>selected="selected"</#if>>单选</option>
+			<option value="3" <#if (3 == list.p_key_type)>selected="selected"</#if>>多选</option>
+			<!--  
+			<option value="4" <#if (4 == list.p_key_type)>selected="selected"</#if>>图片</option>
+			-->
+			</select>
+			</td>
+			<td colspan="2">
+			<input type="text" size="5" maxlength="3" name="value_type_limit" value="${list.value_type_limit!''}"/>
+			<font id="type_limit_unit_html">
+			<#if (0 == list.p_key_type)>字数</#if>
+			<#if (1 == list.p_key_type)>字数</#if>
+			<#if (2 == list.p_key_type)>&nbsp;&nbsp;</#if>
+			<#if (3 == list.p_key_type)>&nbsp;&nbsp;</#if>
+			<!-- 
+			<#if (4 == list.p_key_type)>张数</#if>
+			 -->
+			</font>
+			
+			</td>
+			<td colspan="2"><input type="text" size="18" maxlength="250"  name="value" value="${list.p_value!''}"/></td>
+			<td colspan="2">
+			<select name="value_required" >
+			<option value="0" <#if (0 == list.value_required)> selected="selected" </#if>>否</option>
+			<option value="1" <#if (1 == list.value_required)> selected="selected" </#if>><font color="red">是</font></option>
+			</select>
+			</td>
+			<td colspan="2">
+			<select name="value_encode" >
+			<option value="0" 	<#if (0 == list.value_encode)>selected="selected" </#if>>否</option>
+			<option value="1"   <#if (1 == list.value_encode)>selected="selected" </#if>><font color="red">是</font></option>
+			</select>
+			</td>
+			
+			<td colspan="2">
+			<input type="text" size="3" maxlength="3" name="p_weight" value="${list.weight!'100'}"/>
+			</td>
+			
+			<td colspan="2">
+			<input type="text" size="25" maxlength="25" name="p_key_desc" value="${list.key_desc!''}"/>
+			</td>
+			</tr>
+		    </#list> 
+		    </#if>
+			</table>
+			</div>
+			
+		<p style="padding-top: 30px;padding-right: 150px;" align="right"><a href="javascript:void(0);" class="easyui-linkbutton" onclick="save();" >保存</a></p>
+ </form>
+</div> 
+
+</body>
+</html>

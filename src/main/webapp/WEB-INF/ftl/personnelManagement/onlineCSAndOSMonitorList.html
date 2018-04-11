@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<title>在线客服/物服监控</title> <#include "../common.html"/>
+<style>
+.table_line tr td {
+	border-bottom: #999 1px dashed;
+}
+</style>
+<script type="text/javascript">
+// var datagrid;
+// var addDialog;
+// var addForm;
+// var editDialog;
+// var editForm;
+// var searchForm;
+
+$(function() {
+// 	searchForm = $('#searchForm').form();//条件搜索框
+// 	datagrid = $('#datagrid').datagrid({
+// 			url : 'onlineCSAndOSMonitorList_json',
+// 			title : '客服在岗情况列表',
+// 			//iconCls : 'icon-save',
+// 			pagination : true,
+// 			pagePosition : 'bottom',
+// 			rownumbers : true,
+// 			pageSize : 100,
+// 			pageList : [ 100, 120, 140, 160 ],
+// 			fit : true,
+// 			fitColumns : true,
+// 			nowrap : true,
+// 			border : false,
+// 			idField : 'id',
+// 			sortName : 'on_duty',
+// 			sortOrder : 'desc',
+// 			columns : [ [ 
+// 			   {field:'id',title:'编号',align:'center'},				
+// 			   {field:'postNo',title:'客服岗位号',align:'center'},				
+// 			   {field:'loginName',title:'讯鸟后台账号',align:'center'},				
+// 			   {field:'fullname',title:'姓名',align:'center'},				
+// 			   {field:'workStatus',title:'工作状态',align:'center'},
+// 			   {field:'csType',title:'客服类型',align:'center'},
+// 			   {field:'tradingPattern',title:'交易模式',align:'center'},
+// 			   {field:'businessProcess',title:'业务过程',align:'center'},
+// 			   {field:'productType',title:'商品类型',align:'center'},
+// 			   {field:'games',title:'游戏',align:'center'}
+// 			 ] ]
+// 		});
+// 	$('#fromDays').datebox({
+// 		validType : 'date[\'\']'
+// 	});
+// 	$('#toDays').datebox({
+// 		validType : 'date[\'\']'
+// 	});
+	var url = "allCategoryList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='workStatus'] option").remove();
+		var all = "<option value='-1'>全部</option>";
+		$("select[name='workStatus']").append(all);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='workStatus']").append(options);
+		}
+	});
+});
+// function _search() {
+// 	datagrid.datagrid("unselectAll");
+// 	datagrid.datagrid('load', sy.serializeObject(searchForm));
+// 	var fromDays = $('#fromDays').datebox('getValue');
+// 	var toDays = $('#toDays').datebox('getValue');
+// 	if(fromDays==""){
+// 		var postNoId = $('#postNoID').val();
+// 		var fullname = $('#fullnameID').val();
+// 		var customerType = $('#searchForm select option:selected').val();
+// 		datagrid.datagrid({
+// 			queryParams : {
+// 				postNo : postNoId,
+// 				fullname : fullname,
+// 				customerType : customerType,
+// 			}
+// 		});
+// 		datagrid.datagrid('reload');
+// 	}else{
+// 		if (fromDays > toDays && fromDays != "" && toDays != "") {
+// 			$.messager.show({title:'提示', msg:'请选择正确的时间段'});
+// 			return false;
+// 		} else {
+// 			var postNoId = $('#postNoId').val();
+// 			var fullnameId = $('#fullnameId').val();
+// 			var customerType = $('#searchForm select option:selected').val();
+// 			datagrid.datagrid({
+// 				queryParams : {
+// 					postNo : postNoId,
+// 					fullname : fullnameId,
+// 					customerType : customerType,
+// 					fromDays : fromDays + "",
+// 					toDays : toDays + ""
+// 				}
+// 			});
+// 			datagrid.datagrid('reload');
+// 		}
+// 	}
+// }
+
+// function cleanSearch() {
+// 	$('#searchForm').form('clear');
+// 	searchForm.find('input').val('');
+// 	datagrid.datagrid({
+// 		queryParams : {}
+// 	});
+// 	datagrid.datagrid('reload');
+// }
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div
+		region="north"
+		border="false"
+		title="搜索条件"
+		style="padding: 5px; height: 115px; overflow: hidden;"
+		align="left">
+		<form id="searchForm">
+			工作状态:<select
+				id="workStatus"
+				name="workStatus"
+				style="width: 66px">
+			</select> 
+			客服类型: <select name="customerType">
+				<option value="-1" selected="selected">全部</option>
+				<option value="0">寄售客服</option>
+				<option value="1">寄售物服</option>
+				<option value="2">审核员</option>
+			</select> 
+			 交易模式:<select name="tradingPattern" >
+                    <option value="-1" selected="selected">全部</option>
+				    <option value="1">寄售</option>
+				    <option value="2">API</option>
+				    <option value="3">担保</option>
+			</select>
+			  业务过程: <select name="businessProcess" >
+                    <option value="-1" selected="selected">全部</option>
+				    <option value="1">上架</option>
+				    <option value="2">售中</option>
+			</select>
+			商品类型: <select name="role_product_type" >
+                    <option value="-1" selected="selected">全部</option>
+	  				 <#list productTypeList as list>
+					    <option value="${list.id}">${list.name}</option>
+		       		</#list> 
+			</select>
+			<br><br>
+			岗位号: <input
+				id="postNoID"
+				name="postNo"
+				style="width: 100px;" />&nbsp; 姓名: <input
+				id="fullnameID"
+				name="fullname"
+				style="width: 100px;" />&nbsp; <a
+				href="javascript:void(0);"
+				class="easyui-linkbutton"
+				onclick="_search();">搜索</a> <a
+				href="javascript:void(0);"
+				class="easyui-linkbutton"
+				onclick="cleanSearch();">取消</a>
+		</form>
+	</div>
+
+	<div
+		region="center"
+		border="false">
+		<table id="datagrid"></table>
+	</div>
+</body>
+</html>

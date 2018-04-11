@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>退游订单列表</title>
+<#include "../common.html"/>
+<script type="text/javascript" src="../js/jquery.zclip.js"></script>  
+<script type="text/javascript" src="../js/order_helper.js"></script>
+
+<style>
+body{ padding: 0px ;margin: 0px;}
+.table_line{
+	width: 100%;
+	background-color: #fefefe;
+}
+.table_line tr td{
+	border-bottom: #999 1px dashed;
+	line-height: 20px;
+}
+.table_line .title{
+	padding:0px;
+	width:100px;
+	text-align: right;
+}
+.table_line .info{
+	padding:0px;
+}
+.pc{ font-size: 24px;font-family: 微软雅黑; }
+.pc_userPrict{ color: #ff0000 }
+.pc_realPrict{ color: #ff00ff  }
+.pc_cut{ color: #0000ff  }
+.tyBalance{ font-size: 18px;font-family: 微软雅黑;  color: #ff0000}
+.myTille{ padding: 3px; background-color: #ddd; line-height: 22px; font-weight: bold;}
+.myHead{ background-color: #ddd}
+</style>
+<script>
+$(function() {
+	showDialog= $('#showDialog').show().dialog({
+		title : '领取骏网卡',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '一键复制卡信息',
+			handler : function() {
+				//addForm.submit();
+			}
+		} ]
+
+	});
+	copyinfo();
+
+});
+//客服派单
+function doPaiDan(){
+	var orderId = $("#orderId").val();
+	if (!orderId){
+		alert("订单状态不正确");
+		return ;
+	}
+	$.messager.confirm('提示', '确定进行操作？', function(r){
+        if (r){
+        	var param = {orderId:orderId};
+        	doAjaxRequest("paiDan",param);
+        }
+    });
+}
+//生成差价订单
+function doAddCaJiaOrder(){
+	var cajia = $("#ty_cajia").val();
+	var orderId = $("#orderId").val();
+	if (cajia <=0){
+		$.messager.alert('提示','订单无需要补差价!','error');
+		 return ;
+	}
+	$.messager.confirm('提示', '只能生成一次差价订单,确定进行操作？', function(r){
+        if (r){
+        	var win = $.messager.progress({
+                 title:'处理中',
+                 msg:'请稍等 ...'
+             });
+        	$.ajax({
+        		url:"addCajiaOrder",
+        		type:"POST",
+        		data:{"orderId":orderId,"amount":cajia},
+        		dataType:"json",
+        		success:function(data){
+        			$.messager.progress('close');
+        			if (data.success){
+        				var msg = '操作成功! 支付地址 ：http://m.8868.cn/order/detail?order_id=' + data.data.orderId;
+        				$.messager.alert('提示', msg ,'success',function(){
+        					document.location.reload();
+        				});           				
+        			}else{
+        				$.messager.alert('提示',data.msg,'error');
+        			}
+        		},
+        		error:function(req,err,obj){
+        			alert("操作失败");
+        			$.messager.progress('close');
+        		}
+        	});
+        }
+    });
+}
+//补差价
+function doPuCaJia(){
+	var cajia = $("#ty_cajia").val();
+	var pc = $("#ty_pc").val();//差价
+	var orderId = $("#orderId").val();
+	if (cajia <=0){
+		$.messager.alert('提示','订单无需要补差价!','error');
+		 return ;
+	}
+	if (pc <= 0){
+		 $.messager.alert('提示','请输入正确的抵扣值!','error');
+		 return ;
+	}
+	$.messager.confirm('提示', '确定进行操作？', function(r){
+        if (r){
+        	doAjaxRequest("puCaJia",{"orderId":orderId, "cajia":pc * 100});
+        }
+    });
+}
+//打开发货链接
+function goToSendGoodBefore(){
+	//发货前判断是否已经保存了支付方式
+	var rechargeType='${rechargeTypeId!'-1'}';
+	var orderId = $("#orderId").val();
+	//如果没保存订单充值方式
+	if(rechargeType =="1"){
+			$.ajax({
+				url:"orderC2crechargeType",
+				type:"POST",
+				data:{"orderId":orderId},
+				dataType:"json",
+				success:function(data){
+					if (data.success){
+					 //打开发货链接
+					 goToSendGood();
+		
+					}else{
+						$.messager.alert('提示',data.msg,'error');
+					}
+				},
+				error:function(req,err,obj){
+					alert("操作失败");
+					$.messager.progress('close');
+				}
+			});
+	
+	}else{
+		 //打开发货链接
+		 goToSendGood();
+	}
+	
+
+}
+
+//打开发货链接
+function goToSendGood(){
+	//标志调用不同的js
+	var flag = "0";
+	var orderId = $("#orderId").val();
+	var url = "goToSendGood?orderId=" + orderId;
+	var link = "orderTy/goToSendGood";
+	var type = "toSendGoodTy";
+	try{
+		flag = $(window.parent.document).find("#temp_order_id").val();
+	}catch(e){
+		
+	}
+	if(typeof flag =="undefined"){
+		window.open(url,"send_good","width=750,height=650");
+	}else{
+		outhostlink(orderId,link,type);
+	}
+	$("#btnFinish").attr("disabled", false);
+}
+
+//打开商品发货页面 不带订单号
+function goToSendGood2(){
+	//标志调用不同的js
+	var flag = "0";
+	var orderId = $("#orderId").val();
+	var url = "changerShow?orderId="+orderId;
+	var link = "orderTy/changerShow";
+	var type = "linktoSendGoodTy";
+	try{
+		flag = $(window.parent.document).find("#temp_order_id").val();
+	}catch(e){
+		
+	}
+	if(typeof flag =="undefined"){
+		window.open(url,"linktosendgoods","width=650,height=450");
+	}else{
+		outhostlink(orderId,link,type);
+	}
+	$("#btnFinish").attr("disabled", false);
+
+}
+
+//撤单（取消并退款）
+function orderCancel(){
+	var orderId = $("#orderId").val();
+	var cancelReason = $("#cancelReason").val();
+	var cancelRemark = $("#cancelRemark").val();
+	if(cancelReason == ""){
+		$.messager.confirm('提示', '请选择取消原因');
+		$("#cancelReason").focus();
+		return ;
+	}
+	/*
+	if(cancelRemark == ""){
+		$.messager.confirm('提示', '请输入备注');
+		$("#cancelRemark").focus();
+		return ;
+	}*/
+	
+	$.messager.confirm('提示', '确定进行[撤单]操作？', function(r){
+		if (r){
+			var param = {orderId:orderId, reason:cancelReason,remark:cancelRemark};
+       		doAjaxRequest("orderCancel",param);
+        }
+	});
+}
+//发货成功
+function orderSuccess(){
+	var orderId = $("#orderId").val();
+	var tyCajia = $("#ty_cajia").val();
+	var realPriceTotail = $("#realPriceTotail").val();
+	if (tyCajia > 0){
+		$.messager.alert("提示","差价不为0，不能进行操作","error");
+		return ;
+	}
+	$.messager.confirm('提示', '确定进行[发货成功]操作 ？', function(r){
+		if (r){
+			var param = {"orderId":orderId,"tyCajia":tyCajia,"realPriceTotail":realPriceTotail};
+       		doAjaxRequest("orderSuccess",param);
+        }
+	});
+}
+//取消账号
+function gameAccountCancle(tyid){
+	$.messager.confirm('提示', '确定进行[取消收购]操作？', function(r){
+		if (r){
+			var param = {tyid:tyid};
+       		doAjaxRequest("gameAccountCancle",param);
+        }
+	}); 
+}
+//处理ajax，并弹出结果 
+function doAjaxRequest(url,param){
+	var win = $.messager.progress({
+        title:'处理中',
+        msg:'请稍等 ...'
+    });
+	$.ajax({	
+		url:url,
+		type:"POST",
+		data:param,
+		dataType:"json",
+		success:function(data){
+			$.messager.progress('close');
+			if (data.success){
+				$.messager.alert('提示','操作成功!','success',function(){
+					document.location.reload();
+				});       				
+			}else{
+				$.messager.alert('提示',data.msg,'error');
+			}
+		},
+		error:function(req,err,obj){
+			alert("操作失败");
+			$.messager.progress('close');
+		}
+	});
+}
+
+
+//账号跟进
+function followOrder(tyid,orderid){
+	//标志调用不同的js
+	var flag = "0";
+	var url = "gameAccountDetailKefu?tyid=" + tyid +"&orderId="+orderid+"&r="+Math.random();
+	var link = "orderTy/gameAccountDetailKefu?tyid=" + tyid;
+	var type = "toFollowOrder";
+	try{
+		flag = $(window.parent.document).find("#temp_order_id").val();
+	}catch(e){
+		
+	}
+	if(typeof flag =="undefined"){
+		window.open(url,"follow_order","width=750,height=670");
+	}else{
+		outhostlink(orderid,link,type);
+	}
+	$("#btnFinish").attr("disabled", false);
+
+}
+
+//跨域调用 
+function outhostlink(orderId,link,type){
+	var url = "${request.contextPath}/webDate/linkto_kefu_callback_js.jsp?orderid="+orderId +"&link="+link+"&type="+type;
+	if(typeof(exec_obj)=='undefined'){
+		exec_obj = document.createElement('iframe');
+		exec_obj.name = 'tmp_frame';
+		exec_obj.src = url;
+		exec_obj.style.display = 'none';
+		document.body.appendChild(exec_obj);
+	}else{
+		exec_obj.src = url;
+	}
+}
+ 
+//获取骏网卡信息 1骏网卡 12 天下卡 13qq卡（智能）
+function fetchCard(type){
+	$('#select_recharge_area_slect_card').hide();
+	$('#select_recharge_area_result').show();
+	var oid = '${order['order_id']!''}';
+	$.ajax({
+		url : 'fetchCard.do',
+		data : {order_id:oid},
+		dataType : 'json',
+		success : function(response) {
+			var type = "--";
+			var typename="---"
+			var html="";
+			if(response != null){
+				var size = response.length;
+				//html+="<tr><th >面额</th><th>卡号</th><th>卡密</th></tr>";
+				
+				for(var i =0;i<size;i++){
+					type = response[i].TYPE;
+					if(type == 11){
+						typename ="骏网卡";
+					}else if(type == 12){
+						typename = "天下卡";
+					}else if(type ==13){
+						typename = "QQ卡";
+					}
+					html +="<tr><th>所选的是：<font id='auto_fetch_card_type_name'>"+typename+"</font></th></tr>";
+					html +="<tr>";
+				    html +="<td>面额"+(i+1)+":"+response[i].denomination+"元  </td>";
+				    html +="<td>卡号"+(i+1)+":"+response[i].number+"  </td>";
+				    html +="<td>卡密"+(i+1)+":"+response[i].npassword+"  </td>";
+				    html +="</tr>";
+				}
+				$("#chat_copy_buttom_test").show();
+				copyinfo();
+				$('#rechargeType_radio_'+type).attr("checked","checked");
+			}else{
+				html +="<tr>";
+				html +="<td colspan=3>无匹配的卡种，请手动选择骏网卡，天下卡或QQ卡，如已有客服组长分配的千元卡，请点击使用卡号进行记录</td>";
+				html +="<tr>";
+			}
+		
+			$("#select_recharge_area_result").html(html);
+			
+			
+		}
+	});
+	//showDialog.dialog('open');
+}
+//保存充值方式
+function saveRechargeType(){
+	var oid = '${order['order_id']!''}';
+	var type = $("input[name='rechargeType']:checked").val();
+	
+	$.ajax({
+		url : 'cardIsSended.do',
+		data : {order_id:oid},
+		dataType : 'json',
+		success : function(data) {
+// 		    if(data.flag==true&&type==2){
+// 		    	$.messager.confirm('提示', '您已经领取过卡密,确认要选择支付宝为充值方式？', function(r){
+// 		    		if (r){
+// 		    			//需要提示
+		    			 doSaveRechargeType();
+// 		            }
+// 		    	});
+// 		    }else{
+// 		    	//不用提示
+// 			    doSaveRechargeType();
+// 		    }
+
+		}
+	});
+
+}
+
+function  doSaveRechargeType(){
+	$.ajax({
+		url : 'saveRechargeType.do',
+		data :  $("#rechageTypeForm").serialize(),
+		dataType : 'json',
+		success : function(data) {
+			if (data.success){
+				$.messager.alert('提示','保存充值方式成功!','success',function(){
+				});       				
+			}else{
+				$.messager.alert('提示',data.msg,'error');
+			}
+		}
+	});
+}
+
+//一键复制卡信息
+function copyinfo(){
+	var url ="../js/ZeroClipboard.swf";
+    $('#chat_copy_buttom_test').zclip({  
+        path:url,  
+        copy: function(){
+        	var con = $("#select_recharge_area_result").text();
+       	   return con;
+        }
+    });  
+	//return oid;
+}
+
+function verify(type){
+	var oid = '${order['order_id']!''}';
+	$.ajax({
+		url : 'cardIsSendedByType.do',
+		data : {order_id:oid,type:type},
+		dataType : 'json',
+		success : function(data) {
+			fetchCard(type);
+// 		    if(data.flag==true){
+// 		    	$.messager.confirm('提示', '您已经领取过卡密,确认要领取其它类型的卡密？', function(r){
+// 		    		if (r){
+// 		    			//需要提示
+// 		    			fetchCard(type);
+// 		            }
+// 		    	});
+// 		    }else{
+// 		    	//不用提示
+// 		    	fetchCard(type);
+// 		    }
+
+		}
+	});
+}
+
+
+
+//手动匹配的卡（骏网，天下，qq）
+function kefugetcard(type){
+	$("input[name='rechargeType']").attr("checked",false);
+	$("#select_recharge_area_result").html("");
+	//设置当前卡类型
+	$('#cardType_for_fetch_already_get').val(type);
+	 var oid = '${order['order_id']!''}';
+	$.ajax({
+		url : 'cardTypeDenomination.do',
+		type:'post',
+		data : {type:type,order_id:oid},
+		dataType : 'json',
+		success : function(d) {
+		 var html='';
+		 var status =d.status;
+	     var allcount = 0;
+	     var typename="--";
+	     
+	 	var oprice = '${order["product_original_price"]!"0"}';
+		var ocount = '${order.goods_count!'0'}';
+		var orderAmount = oprice*ocount;
+		
+		if(type == 11){
+			typename ="骏网卡";
+		}else if(type == 12){
+			typename = "天下卡";
+		}else if(type ==13){
+			typename = "QQ卡";
+		}
+	     if(status == 0){
+	    	var len = d.list.length;
+	    	    html+='<tr><td colspan="3"><b>'+typename+'</b></td></tr>'
+	    	 for(var i=0;i<len;i++){
+	    		 var de = d.list[i].denomination;
+	    		 html+='<tr>';
+	    		 html+='<td style="width:100px;">';
+	    		 html+='<input type="checkbox" name="type_1" value="'+de+'"  onchange="checkCardNoCount()" />';
+	    		 html+=de+'元  &nbsp;*';
+	    		 html+='</td><td>'
+	    		 html+='<input name="type_value_'+de+'" value="" size="3" onchange="checkCardNoCount()"/>张 ';
+	    		 //html+='<input name="type_value_'+de+'" value="" size="3" />张 ';
+	    		 html+='</td><td><font id="show_result_area"></font>'
+	    		 html+='</td></tr>';
+	    	 }
+	    	 
+	    	 html+='<tr>';
+	    	 html+='<td>卡总面额：</td>';
+	    	 html+='<td ><font id="card_all_count">'+allcount+'</font>元 &nbsp;&nbsp;</td>';
+	    	 html+='<td><font color=red id="card_all_count_msg"></font></td>';
+	    	 html+='</tr>';
+	    	 
+	    	 html+='<tr>';
+	    	 html+='<td>订单金额：</td>';
+	    	 html+='<td colspan="2"><font id="order_o_amount">'+orderAmount+'</font>元</td>';
+	    	 html+='</tr>';
+	    	 
+	     	 html+='<tr>';
+	    	 html+='<td colspan="3"><input type="button" onclick="receive()" value="确认领取"/> ';
+	    	
+	    	
+	    	 html+='</td>'
+	    	 html+='</tr>';
+	         $('#select_recharge_area_slect_card').show();
+		     $('#select_recharge_area_slect_card').html(html);
+		     $('#select_recharge_area_result').show();
+	     }else if(status ==2){
+				type = d.list[0].TYPE;
+				if(type == 11){
+					typename ="骏网卡";
+				}else if(type == 12){
+					typename = "天下卡";
+				}else if(type ==13){
+					typename = "QQ卡";
+				}
+				html +="<tr><th>所选的是：<font id='auto_fetch_card_type_name'>"+typename+"</font></th></tr>";
+				for(var i=0;i<d.list.length;i++){
+					html+="<tr>";
+					html+='<td>面额'+(i+1)+':'+d.list[i].denomination+'元</td>';
+					html+='<td>卡号'+(i+1)+':'+d.list[i].number+'</td>';
+					html+='<td>卡密'+(i+1)+':'+d.list[i].npassword+'</td>';
+					html+='</tr>'
+				}
+				$("#chat_copy_buttom_test").show();
+				copyinfo();
+				
+				$('#select_recharge_area_slect_card').hide();
+				$('#select_recharge_area_result').show();
+				$('#select_recharge_area_result').html(html);
+				$('#rechargeType_radio_'+type).attr("checked","checked");
+    		
+	     }
+	
+	     
+		}
+	});
+}
+
+
+
+//提交领取
+function receive(){
+	$("input[name='rechargeType']").attr("checked",false);
+	$.ajax({
+		type:'get',
+		url : 'getCard.do?ran='+Math.random(),
+		data : $("#rechageTypeForm").serialize(),
+		dataType : 'json',
+		success : function(d) {
+		
+		if(d.status==-1){
+			$.messager.alert("提示",d.msg);
+			return;
+		}
+		//$.messager.alert("提示",(d.status==2) +"++"+d.status);
+		//$.messager.alert("提示",(d.status==1) +"__"+d.status);
+		var html="";
+		var typename="";
+		
+		//已经领过的卡
+		if(d.status==2){
+			type = d.list[0].TYPE;
+			if(type == 11){
+				typename ="骏网卡";
+			}else if(type == 12){
+				typename = "天下卡";
+			}else if(type ==13){
+				typename = "QQ卡";
+			}
+			html +="<tr><th>所选的是：<font id='auto_fetch_card_type_name'>"+typename+"</font></th></tr>";
+			for(var i=0;i<d.list.length;i++){
+				html+="<tr>";
+				html+='<td>面额'+(i+1)+':'+d.list[i].denomination+'元</td>';
+				html+='<td>卡号'+(i+1)+':'+d.list[i].number+'</td>';
+				html+='<td>卡密'+(i+1)+':'+d.list[i].npassword+'</td>';
+				html+='</tr>'
+			}
+			$("#chat_copy_buttom_test").show();
+			copyinfo();
+			$('#select_recharge_area_result').html(html);
+			$('#select_recharge_area_slect_card').hide();
+			$('#select_recharge_area_result').show();
+			$('#rechargeType_radio_'+type).attr("checked","checked");
+			
+		}
+		
+		
+		//新领的卡
+		if(d.status==1){
+			type = d.list[0].TYPE;
+			if(type == 11){
+				typename ="骏网卡";
+			}else if(type == 12){
+				typename = "天下卡";
+			}else if(type ==13){
+				typename = "QQ卡";
+			}
+			html +="<tr><th>所选的是：<font id='auto_fetch_card_type_name'>"+typename+"</font></th></tr>";
+			for(var i=0;i<d.list.length;i++){
+				html+="<tr>";
+				html+='<td>面额'+(i+1)+':'+d.list[i].denomination+'</td>';
+				html+='<td>卡号'+(i+1)+':'+d.list[i].number+'</td>';
+				html+='<td>卡密'+(i+1)+':'+d.list[i].npassword+'</td>';
+				html+='</tr>'
+			}
+			$("#chat_copy_buttom_test").show();
+			$('#select_recharge_area_slect_card').hide();
+			copyinfo();
+			$('#select_recharge_area_result').html(html);
+			$('#rechargeType_radio_'+type).attr("checked","checked");
+			
+		}
+		
+		}
+	});
+}
+
+//使用卡号
+function userCard(){
+	var html;
+	var oprice = '${order["product_original_price"]!"0"}';
+	var ocount = '${order.goods_count!'0'}';
+	var orderAmount = oprice*ocount;
+	html+='<tr>';
+	html+='<td><b style="weight:12;">卡1类型：</b>';
+	html+='<select name="card_type" id="card_type_kefu_input1" ><option value="11" >骏网卡 </option><option value="12" >天下卡 </option><option value="13" >QQ卡</option></select></td>';
+	html+='<td><b style="weight:12;">卡2类型：</b>';
+	html+='<select name="card_type" id="card_type_kefu_input2" ><option value="11" >骏网卡 </option><option value="12" >天下卡 </option><option value="13" >QQ卡</option></select></td>';
+	
+	html+='</tr>';
+	
+	html+='<tr>';
+	html+='<td><b style="weight:12;">卡1面额：</b>';
+	html+='<input type="text" name="card_amount" id="card_amount_kefu_input1"/></td>';
+	html+='<td><b style="weight:12;">卡2面额：</b>';
+	html+='<input type="text" name="card_amount" id="card_amount_kefu_input2"/></td>';
+	html+='</tr>';
+	
+	html+='<tr>';
+	html+='<td><b style="weight:12;">&nbsp;&nbsp;卡号1：</b>';
+	html+='<input type="text" name="card_num" id="card_num_kefu_input1"/></td>';
+	html+='<td><b style="weight:12;">&nbsp;&nbsp;卡号2：</b>';
+	html+='<input type="text" name="card_num" id="card_num_kefu_input2"/></td>';
+	html+='</tr>';
+	
+	html+='<tr>';
+	html+='<td><b style="weight:12;">卡1使用金额：</b>';
+	html+='<input type="text" name="order_amount" value="'+orderAmount+'" id="order_amount_kefu_input1" size="16px" /></td>';
+	html+='<td><b style="weight:12;">卡2使用金额：</b>';
+	html+='<input type="text" name="order_amount" value="'+orderAmount+'" id="order_amount_kefu_input2" size="16px"  /></td>';
+	html+='</tr>';
+	
+	html+='<tr>';
+	html+='<td conspan="2"><input type="button"  value="确认使用" onclick="kefuinputsubmit()" /></td>';
+	html+='</tr>';
+	
+	$('#select_recharge_area_slect_card').html("");
+	$('#select_recharge_area_slect_card').show();
+	$('#select_recharge_area_slect_card').html(html);
+	$('#select_recharge_area_result').hide();
+	//kefuinputsubmit();
+}
+
+
+//确认使用手动输入的卡（提交）
+function kefuinputsubmit(){
+	var card_type = $('#card_type_kefu_input').val();
+	var card_amount= $('#card_amount_kefu_input').val();
+	var card_num   = $('#card_num_kefu_input').val();
+	var order_amount = $('#order_amount_kefu_input').val();
+	var oid = '${order['order_id']!''}';
+	
+	$.ajax({
+		url : 'cardKefuInput.do',
+		data : $("#rechageTypeForm").serialize(),
+		dataType : 'json',
+		success : function(d) {
+			var status = d.status;
+			var oprice = '${order["product_original_price"]!"0"}';
+			var ocount = '${order.goods_count!'0'}';
+			var orderAmount = oprice*ocount;
+			if(status ==1){
+				$.messager.alert("提示",d.msg);
+				return;
+			}
+			console.dirxml(d)
+
+
+            //显示已经添加过的卡密
+            kefuReacords();
+			
+		
+			$('#select_recharge_area_result').hide();
+			$('#rechargeType_radio_'+d.cardType).attr("checked","checked");
+		}
+	});
+}
+
+//动态获取当前金额
+function checkCardNoCount(){
+	$.ajax({
+		type:'get',
+		url : 'checkCardTypeNum.do',
+		data : $("#rechageTypeForm").serialize(),
+		dataType : 'json',
+		success : function(d) {
+			$('#card_all_count').html(d.allamountCount);
+			$('#card_all_count_msg').html(d.msg);
+		}
+	});
+}
+
+//客服手动输入的记录
+function kefuReacords(){
+	var oid =  '${order['order_id']!''}';
+	$.ajax({
+		type:'get',
+		url : 'cardKefuInputrecords.do',
+		data : {order_id:oid},
+		dataType : 'json',
+		success : function(d) {
+			var html="";
+
+			var len = d.list.length;
+			if(len >0){
+				html+='<tr>';
+				html+='<th style="width:100px">卡类型</th><th>卡面额</th><th>卡号</th><th>使用金额</th>'
+				html+='</tr>';
+				for(var i=0;i <len;i++){
+					var type = d.list[i].card_type;
+					var typename = "";
+					if(type == 11){
+						typename ="骏网卡";
+					}else if(type == 12){
+						typename = "天下卡";
+					}else if(type ==13){
+						typename = "QQ卡";
+					}
+					html+='<tr>';
+					html+='<td>'+typename+'</td>';
+					html+='<td>'+d.list[i].denomination+'</td>';
+					html+='<td>'+d.list[i].number+'</td>';
+					html+='<td>'+d.list[i].recharge_amount+'</td>';
+					html+='</tr>'
+					//console.log(d.list[i].order_id);
+					
+				}
+			}
+			$('#select_recharge_area_slect_card').html("");
+			$('#select_recharge_area_slect_card').show();
+			$('#select_recharge_area_slect_card').html(html);
+			$('#select_recharge_area_result').hide();
+		}
+	});
+}
+
+
+</script>
+<body >
+<#assign orderModel=order['order_model']/>
+<div class="easyui-panel" title="订单信息[${order['order_id']}] <a href='javascript:document.location.reload()'>刷新</a>">
+	<div class="myTille">
+		${order['goods_name']}
+			[<script>document.write(OrderHelper.getOrderModelName(${orderModel}));</script>] &nbsp;&nbsp;&nbsp;
+		<input type="button" value="订单操作历史" onclick="OrderHelper.showOrderOperatorLog('${order['order_id']}')"/>
+		
+	</div>
+	<table class="table_line">
+		<tr>
+		<#if orderModel !=20>
+			<td class="title">应充面额 ：</td>
+			<td class="info">
+				${order['product_original_price']!'--'}元
+			</td>
+		<#else>
+		<td class="title">--</td>
+			<td class="info">--</td>
+		</#if>
+		
+		
+			<td class="title">订单状态 ：</td>
+			<td class="info">
+			<script>document.write(OrderHelper.getOrderStatusName(${order['order_status']}));</script>
+			</td>
+		</tr>
+		<tr>
+			<td class="title">支付状态 ：</td>
+			<td class="info">
+				<#if (order['order_ispay'] == 1)>
+				已支付
+				<#else>
+				<font color="#ff0000">未支付</font>
+				</#if>
+			</td>
+			<td class="title">支付时间：</td>
+			<td class="info">${order['order_pay_success_time']!'--'}</td>
+		</tr>
+		<tr>
+		    <td class="title">订单金额：</td>
+			<td class="info">${order['order_amount']}元</td>
+			
+			<td class="title">当次所需退游值：</td>
+			<td class="info">
+				${order['ty_amount_now']/100}
+			</td>
+
+			
+		</tr>
+		<tr>
+	
+			<td class="title">支付历史退游值：</td>
+			<td class="info">
+				${order['ty_amount']/100}
+			</td>
+			<td class="title">抵扣退游值：</td>
+			<td class="info">
+			${order['ty_dikou_amount']/100}
+			</td>
+
+		</tr>
+		
+		<#if seller??>
+		<tr>
+			<td class="title">卖家UID：</td>
+			<td class="info">${seller.nickName!'--'} (UID:${seller.uid})</td>
+			<td class="title">卖家手机：</td>
+			<td>${seller.mobile!'--'}</td>
+		</tr>
+		</#if>
+		<#if buyer??> 
+		<tr>
+			<td class="title">买家昵称：</td>
+			<td class="info">${buyer.nickName!'--'} (UID:${buyer.uid})</td>
+			<td class="title">买家联系QQ：</td>
+			<td>${order['order_buy_qq']!'--'}</td>
+		</tr>
+		<tr>
+			<td class="title">买家手机：</td>
+			<td class="info">${buyer.mobile}</td>
+			<td class="title">商品数量：</td>
+			<td class="info">${order.goods_count!'--'}</td>
+		</tr>
+		<tr>
+			<td class="title">渠道：</td>
+			<td class="info">${channelName!'--'}</td>
+			<td class="title">子渠道：</td>
+			<td class="info">
+			${order.son_channel_id!'--'}
+		    <#if order.son_channel_id??>
+ 		    <#include "../qudao_name.html"/> 
+			</#if>
+			
+			</td>
+		</tr>
+		</#if>
+		<#if order.buyuser_game_account??>
+		<tr>
+			<td class="title">买家账号：</td>
+			<td class="info">${order.buyuser_game_account!''}</td>
+			<td class="title">账号密码：</td>
+			<td class="info">${order.buyuser_game_account_pwd!'--'}</td>
+		</tr>
+	    <tr>
+			<td class="title">安全锁：</td>
+			<td class="info">${order.buyuser_game_safekey!''}</td>
+			<#if orderModel == 119>
+            <td class="title">商品数量：</td>
+			<td class="info">${order.goods_count!'--'}</td>
+			<#else>
+			 <td class="title">&nbsp;</td>
+			<td class="info">&nbsp;</td>
+			</#if>
+		
+		</tr>
+		<#if orderModel == 119>
+		<tr>
+			<td class="title">第三方订单号：</td>
+			<td class="info">${order.third_party_order_id!'--'}</td>
+			 <td class="title">&nbsp;</td>
+			<td class="info">&nbsp;</td>
+		</tr>
+		<tr>
+			<td class="title">游戏：</td>
+			<td class="info">${order.game_name!'--'}</td>
+			<td class="title">区/服：</td>
+			<td class="info">${order.game_area_name!'--'}</td>
+		</tr>
+		<tr>
+	        <td class="title">备注</td>
+			<td class="info" colspan="3">${order.remark!''}</td>
+		</tr>
+		</#if>
+		<tr>
+	        <td class="title">买家角色ID</td>
+			<td class="info">${order.order_buy_game_role_id!''}</td>
+			<td class="title">买家角色名称：</td>
+			<td class="info">${order.order_buy_game_role_name!''}</td>
+		</tr>
+
+		</#if>
+		
+		<#if orderModel != 119>
+		<#if gameInfo??>
+		<tr>
+			<td class="title">游戏：</td>
+			<td class="info">${gameInfo['game_name']!''}</td>
+			<td class="title">区/服：</td>
+			<td class="info">${gameInfo['partition_name']!''}</td>
+		</tr>
+		</#if>
+		</#if>
+		
+
+	</table>
+	
+	<!-- 订单自定义信息 -->
+	<#if orderSelfDefined??>
+	<#assign data1=orderSelfDefined.orderSelfDefined?eval />
+	<table class="table_line">
+	    <tr>
+		<#if (data1?? && data1.sellProperty??)>
+	        <#-- 找到用户填写的值-->
+	        <#list data1.sellProperty as item2>
+	           <td class="title">${item2.key!''}：</td>
+	           <td class="info">${item2.value!''}</td>
+	           <#if (item2_index%2==1)>
+	           </tr><tr>
+	           </#if>
+	        </#list>
+	      </#if>
+	    </tr>
+	</table>
+	<table class="table_line">
+	    <tr>
+		<#if (data1?? && data1.buyProperty??)>
+	        <#-- 找到用户填写的值-->
+	        <#list data1.buyProperty as item2>
+	           <td class="title">${item2.key!''}：</td>
+	           <td class="info">${item2.value!''}</td>
+	           <#if (item2_index%2==1)>
+	           </tr><tr>
+	           </#if>
+	        </#list>
+	      </#if>
+	    </tr>
+	</table>
+	<div class="myTille">商品信息：</div>
+	<table class="table_line">
+	    <tr>
+		<!-- 自定义信息 -->
+		<#if (data1?? && data1.productProperty??)>
+	        <#-- 找到用户填写的值-->
+	        <#list data1.productProperty as item2>
+	           <td class="title">${item2.key!''}：</td>
+	           <td class="info">${item2.value!''}</td>
+	           <#if (item2_index%2==1)>
+	           </tr><tr>
+	           </#if>
+	        </#list>
+	      </#if>
+	    </tr>
+	</table>
+	</#if>
+	
+	<#if (orderModel == 20 || orderModel == 30)>
+	<div class="myTille">
+	账号明细：
+	<#if (order['order_status']==2 && order['ty_material_submit']==1 && order['physic_service_id']?? && order['physic_service_id'] <=0 )>
+	 <a href="#" class="easyui-linkbutton" data-options="iconCls:'icon-edit'" onclick="doPaiDan()">派单</a>
+	 </#if>
+	 <#if (order['ty_amount_now'] > 0 && order['ty_material_submit'] == 0)>
+	 <span style="color:#ff0000">注意：用户未完善账号资料</span>
+	 </#if>
+	</div>
+	<table class="table_line">
+		<thead class="myHead">
+			<tr>
+				<td>账号</td>
+				<td>原估值</td>
+				<td>实际估值</td>
+				<td width='80'>物服ID</td>
+				<td width='80'>处理结果</td>
+				<td>操作</td>
+			</tr>
+		</thead>
+		<tbody>
+		<#-- 退游账号列表 -->
+		<#list gameAccountList as item>
+			<#assign status = item['status']/>
+			<tr>
+				<td>${item['good_name']!'----'}</td>	
+				<td>${item['user_price']/100}</td>
+				<td>
+					<#if (status == 1000 || status == 1200)>
+					${item['real_price']/100}
+					<#else>
+					--
+					</#if>
+				</td>
+				<td>${item['ps_fullname']!'---'}</td>
+				<td>${gameAccountStatusMap[status+'']!'---'}</td>
+				<td>
+				<#if (status < 1200)>
+				<a href="javascript:void()" class="cl_cj" onclick="gameAccountCancle('${item['ty_id']}')">取消收购</a>
+				</#if>
+				<#if (status >= 101 && status <= 1000)>
+<!-- 				<a href="javascript:window.open('./gameAccountDetailKefu?tyid=${item['ty_id']}&orderId=${order['order_id']}&r='+Math.random(),'','width=620,height=450')">账号跟进</a> -->
+				<a href="#" onclick="followOrder('${item['ty_id']}','${order['order_id']}')" >账号跟进</a>
+				</#if>
+				</td>
+			</tr>
+		</#list>
+			<tr>
+				<td >合计:</td>	
+				<td>${userPriceTotail/100}</td>
+				<td>${realPriceTotail/100} </td>
+				<td>&nbsp;</td>
+				<td>&nbsp;</td>
+				<td>&nbsp;</td>
+			</tr>
+		</tbody>
+	</table>
+	</#if>
+	<div class="myTille">订单操作：<input type="button" value="复制卡信息" onclick="copyinfo()" id="chat_copy_buttom_test" style="display: none"/></div>
+	<#if (order['order_status']==2)>
+	<!-- 非退游 成功状态 -->
+	<#if orderModel == 10 ||((orderModel != 20)&&(isAccountFinish==1))>
+	<#if  rechargeTypeId??>
+	<#if (order['product_original_price']>0)>
+	 <!-- 骏网卡 -->
+	<form id="rechageTypeForm" action="saveRechgrType.do">
+	<table>
+        <tbody id ="select_recharge_area">
+        <!-- 骏网卡 -->
+        <tr>
+       
+        <td colspan="5">
+          <input type="hidden" name="rechargeType_order_id" value="${order['order_id']!''}"/>
+	     <input type="hidden" name="order_amount_id_fetch" value="${order['product_original_price']!'0'}" />
+	      <input type="hidden" name="goods_count_fetch" value="${order.goods_count!'0'}" />
+	      <input type="hidden" name="cardType_for_fetch" id="cardType_for_fetch_already_get" value="0" />
+         <#if rechargeTypeId?index_of("_1_")!=-1||rechargeTypeId?index_of("_12_")!=-1||rechargeTypeId?index_of("_13_")!=-1>
+        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="verify(0);">智能领卡&nbsp;</a>
+         </#if>
+    
+        <#if rechargeTypeId?index_of("_1_")!=-1>
+        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="kefugetcard(11);">领取骏网卡</a>&nbsp;
+        </#if>
+        
+        <#if rechargeTypeId?index_of("_12_")!=-1>
+        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="kefugetcard(12);">领取天下卡</a>&nbsp;
+        </#if>
+        
+         <#if rechargeTypeId?index_of("_13_")!=-1>
+        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="kefugetcard(13);">领取QQ卡</a>&nbsp;       
+         </#if>
+        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="userCard();">使用卡号</a>
+         <a href="javascript:void(0);" class="easyui-linkbutton" onclick="kefuReacords();">使用卡号记录</a>         
+        </td>
+        
+        </tr>
+       
+          <!-- 客服手动选卡区域-->
+             <tbody id="select_recharge_area_slect_card">
+            </tbody>
+       
+        
+             <!-- 结果区域 -->
+             <tbody id="select_recharge_area_result">
+            </tbody>
+	    
+	    
+	    <tr>
+	    <td colspan=3>
+	   
+	    <input type='radio' name='rechargeType' value='11' id="rechargeType_radio_11">使用骏网卡充值成功
+	    </td>
+	    </tr>
+	    
+	    <tr>
+	    <td colspan=3>
+	    <input type='radio' name='rechargeType' value='12' id="rechargeType_radio_12">使用天下卡充值成功
+	    </td>
+	    </tr>
+	    
+	    <tr>
+	    <td colspan=3>
+	    <input type='radio' name='rechargeType' value='13' id="rechargeType_radio_13">使用QQ卡充值成功
+	    </td>
+	    
+	    <tr>
+	    <td colspan=3>
+	    <input type='radio' name='rechargeType' value='2' >无法用已有卡类充值，经主管同意，改为支付宝自充
+	    </td>
+	    </tr>
+	
+	    <tr>
+	    <td colspan=3>
+	    <input type="button" value="保存支付方式 " onclick="saveRechargeType()">&nbsp;&nbsp;
+	    </td>
+	    </tr>
+	  </tbody> 
+	</table>
+	 </form>
+	 </#if>
+	 
+	 
+     <#if rechargeTypeId?index_of("_2_")!=-1>
+	 <table>
+	 <tr>
+	 <td>渠道配置支付方式：<font color="red">支付宝自充</font></td>
+	 </tr>
+	 </table>
+     </#if>
+     
+     <#if rechargeTypeId?index_of("_3_")!=-1>
+	 <table>
+	 <tr>
+	 <td>渠道配置支付方式：<font color="red">支付宝白名单</font></td>
+	 </tr>
+	 </table>
+     </#if>
+     
+<!-- 	 <table> -->
+<!-- 	 <tr> -->
+<!-- 	 <td><font color="red">渠道暂无配置充值方式</font></td> -->
+<!-- 	 </tr> -->
+<!-- 	 </table> -->
+	 
+	</#if> 
+	</#if>
+	
+	<!-- 撤单原因 -->
+	<table>
+		<tr>
+			<td>
+				<div>撤单原因：</div>
+				<div>
+				<select id="cancelReason">
+					<option value="" >--请选择--</option>
+					<#list reasonList as reason>
+					<option value="${reason.cancelReason}" >${reason.cancelReason}</option>
+					</#list>
+				</select>
+				</div>
+				<div>备注：</div>
+				<div>
+					<textarea rows="5" cols="25" id="cancelRemark"></textarea>
+				</div>
+				<div>
+					<input type="button" onclick="javascript:orderCancel();" value="     撤        单       "/>
+				</div>
+			</td>
+			<td>
+			<#if orderModel == 10>
+				<div style="padding: 5px 0px;">请与买家确认意向后，点击
+				<input type="button" value=" 去发货 " onclick="goToSendGoodBefore()">&nbsp;&nbsp;<input type="button" value=" 活动发货 " onclick="goToSendGood2()"/>发货成功后点击
+				 <input type="button" id="btnFinish" value="  发 货 成 功  " onclick="orderSuccess()" disabled="true">
+				</div>
+			<#elseif orderModel != 20>
+			<!--首充，或者换游戏-->
+				<div style="padding: 5px 0px;">1.点击派单，把帐号列表派给物服处理</div>
+				<div style="padding: 5px 0px;">2.估值偏差处理：</div>
+				<div class="pc">
+				 <sapn class="pc_userPrict">${payTyAmount/100}</sapn> 
+				 - <span class="pc_realPrict">${realPriceTotail/100}</span>
+				  = <span class="pc_cut">${guZhiPianCa/100}</span>元
+				</div>
+				<#if (guZhiPianCa > 0) >
+				<div style="color:#ff0000">=====需要补差价==> 需补 ${guZhiPianCa/100} 差价<#if (tyDiKouAmount > 0)>,已补扣：${tyDiKouAmount/100}</#if> </div>
+				<div>
+					&nbsp;&nbsp;
+					a.买家退游值：<sapn class="tyBalance">${tyBalance/100}</sapn>
+					， 使用<input type="text" name="ty_pc" id="ty_pc" value="${caJia /100}" size="5"/>
+					<input type="button" class="btnPuCaJia" value="抵扣差价" onclick="javascript:doPuCaJia()"/>
+				</div>
+				<div>
+					&nbsp;&nbsp;
+					b.补差价：${caJia/100}，  
+					<#if (!childOrder??)>
+					<input type="button" value="生成差价单" class="btnPuCaJia" onclick="javascript:doAddCaJiaOrder()"/>
+					</#if>
+				</div>
+				<#if childOrder??>
+					&nbsp;&nbsp;&nbsp;&nbsp;
+					>> 差价单： ${childOrder['order_id']},
+					${childOrder['order_amount']}元,
+					<#if (childOrder['order_ispay'] == 1)>
+					已支付
+					<#else>
+					<font color="red">[未支付]</font>
+					</#if>
+					<div>
+					&nbsp;&nbsp;&nbsp;&nbsp;WAP版本：http://m.8868.cn/order/detail?order_id=${childOrder['order_id']}<br/>
+					&nbsp;&nbsp;&nbsp;&nbsp;PC版本：http://www.8868.cn/order/detail?order_id=${childOrder['order_id']}
+					</div>
+				</#if>
+				
+				<#elseif (caJia < 0)>
+				<div>(多出来的部分存入用户退游值)</div>
+				<#else>
+				<div>(全部帐号估值准确，无需处理差价)</div>
+				</#if>
+				<div style="padding: 5px 0px;">3.点击帐号列表右边的帐号跟进，回收帐号。</div>
+				<#if (isAccountFinish==1)> 
+				<div style="padding: 5px 0px;">4.请与买家确认意向后，点击
+				<input type="button" value=" 去发货 " onclick="goToSendGoodBefore()">&nbsp;&nbsp;发货成功后点击
+				 <input type="button" id="btnFinish" class="btnFinish" value="  发 货 成 功  " onclick="orderSuccess()" disabled="true">
+				</div>
+				</#if>
+			<#else>
+			<!--退游的单子-->
+				<div class="pc">
+					原估值总额：<sapn class="pc_userPrict">${userPriceTotail/100}</sapn> 
+					实际估值总额：<span class="pc_realPrict">${realPriceTotail/100}</span>
+				</div>
+				<div>确保帐号的绑定信息和密码都已处理后，点击:</div>
+				<div style="padding:10px 5px;"> 
+					<#if (isAccountFinish==1)> 
+					<input type="button" class='btnFinish' name="btn1" value="  我已完成账号回收操作，订单完成  " style="padding:10px" onclick="orderSuccess()"/>
+					<#else>
+					<input type="button" class='btnFinish' name="btn1" value="  我已完成账号回收操作，订单完成  " style="padding:10px" />
+					</#if>
+				</div>
+				<div>点击后，帐号的实际估值将存入买家账户上。</div>
+			</#if>
+
+			</td>
+		</tr>
+	</table>
+	<input type="hidden" name="ty_cajia" id="ty_cajia" value="${caJia}" size="10"/>
+	<input type="hidden" name="orderId" id="orderId" value="${order['order_id']}" size="10"/>
+	<input type="hidden" name="realPriceTotail" id="realPriceTotail" value="${realPriceTotail!'0'}" size="10"/>
+	
+	<#else>
+	<div style="padding: 10px;">当前订单状态不能进行操作。 [状态为：${order['order_status']}]</div>
+	</#if>
+</div>
+<script>
+<#if (isAccountFinish==0)> 
+$(".btnPuCaJia").attr("disabled", true);
+$(".btnFinish").attr("disabled", true);
+</#if>
+</script>
+
+<!--骏网卡-->
+<div id="showDialog" style="display: none;width: 720px;height:auto;" align="center">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		<tr>
+		<td colspan="3"><font color="red">领取之后，请务必使用卡密充值,如要改用支付宝充值,请联系主管回收卡密</font></td>
+		</tr>
+		<tbody id="show_list">
+		
+		
+		</tbody>
+		<tr>
+		<td colspan="3">
+		<a href="javascript:void(0);" id ="chat_copy_buttom" onclick="copyinfo();" class="easyui-linkbutton"  style="text-align: right;">复制信息</a>
+      
+		</td>
+		</tr>
+		  </table> 
+</div>
+
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>${title}</title>
+
+        <link rel="stylesheet" type="text/css" href="${request.contextPath}/extjs/resources/css/ext-all.css">
+        <link rel="stylesheet" type="text/css" href="${request.contextPath}/extjs/ux/css/ux-all.css">
+        <link rel="stylesheet" type="text/css" href="${request.contextPath}/extjs/ux/css/SuperBoxSelectEX.css">
+        <script type="text/javascript" src="${request.contextPath}/extjs/adapter/ext/ext-base.js"></script>
+        <script type="text/javascript" src="${request.contextPath}/extjs/ext-all.js"></script>
+        <script type="text/javascript" src="${request.contextPath}/extjs/ux/ColumnHeaderGroup.js"></script>
+        <script type="text/javascript" src="${request.contextPath}/extjs/ux/DateTimeField.js"></script>
+        <script type="text/javascript" src="${request.contextPath}/extjs/ux/SuperBoxSelectEX.js"></script>
+        <script type="text/javascript" src="${request.contextPath}/seajs/dist/sea.js"></script>
+
+
+        <link rel="stylesheet" type="text/css" href="${request.contextPath}/extjs/RowspanView.css">
+        <script type="text/javascript" src="${request.contextPath}/extjs/RowspanView.js"></script>
+
+        <style>
+            .x-selectable, .x-selectable * {
+                -webkit-user-select: initial! important;
+            }
+        </style>
+
+        <script type="text/javascript">
+            if  (!Ext.grid.GridView.prototype.templates) {
+                Ext.grid.GridView.prototype.templates = {};
+            }
+            Ext.grid.GridView.prototype.templates.cell =  new  Ext.Template(
+                 '<td class="x-grid3-col x-grid3-cell x-grid3-td-{id} x-selectable {css}" style="{style}" tabIndex="0" {cellAttr}>' ,
+                 '<div class="x-grid3-cell-inner x-grid3-col-{id}" {attr}>{value}</div>' ,
+                 '</td>'
+            ); 
+        </script>
+
+    </head>
+    <body>
+        <#assign entry_url = "${request.contextPath}/static?file=${entry_js}"/>
+        <#if param??>
+            <#list param?keys as key>
+                <#if key != "param">
+                <#assign entry_url = entry_url + "&" + key + "=" + param[key] />
+                </#if>
+            </#list>
+        </#if>
+        <script type="text/javascript">
+            seajs.use("${entry_url}");
+        </script>
+    </body>
+</html>

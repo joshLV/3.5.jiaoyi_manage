@@ -1,0 +1,15 @@
+.product_type_info table {
+	border-spacing: 0;
+	border-collapse: collapse;
+}
+.product_type_info td, .product_type_info th {
+	padding: 5px;
+	border: 1px solid #888;
+}
+.product_type_info th {
+	text-align: left;
+	background: #ddd;
+}
+.head1 {
+	width: 120px;
+}

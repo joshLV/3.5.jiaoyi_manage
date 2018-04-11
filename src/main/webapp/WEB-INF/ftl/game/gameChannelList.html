@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>游戏渠道列表</title> <#include "../common.html"/>
+<script type="text/javascript">
+	var datagrid;
+	var addDialog;
+	var addForm;
+	var editDialog;
+	var editForm;
+	var searchForm;
+	var gameName = decodeURI("${gameName}");
+	$(function() {
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid').datagrid({
+ 			url : 'gameChannelList_json.do',
+			queryParams : {
+				gameId:${gameId}
+			}, 
+			title : '游戏['+gameName+']渠道列表',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : '',
+			sortName : '',
+			sortOrder : '',
+			columns : [ [ {
+				field : 'ck',
+				checkbox : true,
+				formatter : function(value, row, index) {
+					return row.obid;
+				}
+			}, {
+				field : 'id',
+				title : 'ID',
+				align : 'center'
+			}, {
+				field : 'channelId',
+				title : '渠道ID',
+				align : 'center'
+			}, {
+				field : 'channelName',
+				title : '渠道名称',
+				align : 'center'
+			}, {
+				field : 'isTy',
+				title : '是否支持退游',
+				align : 'center',
+			}, {
+				field : 'qudaoCoefficient',
+				title : '渠道系数',
+				align : 'center',
+			}
+			, {
+				field : 'downUrl',
+				title : '下载路径',
+				align : 'center',
+				sortable : true
+			}, {
+				field : 'fileSize',
+				title : '文件大小',
+				align : 'center'
+			},{
+				field : 'versionName',
+				title : '游戏版本名称',
+				align : 'center'
+			}
+			] ],
+			toolbar : [  {
+				text : '添加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-',  {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '修改',
+				iconCls : 'icon-edit',
+				handler : function() {
+					edit();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			},
+
+			//双击事件
+			onDblClickRow : function(rowIndex, rowData) {
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				edit();
+			}
+		});
+			
+		addForm = $('#addForm').form({
+			url : 'gameChannel_add',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		
+		editForm = $('#editForm').form({
+			url : 'gameChannel_update',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加游戏渠道',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					isGameChannelExist($('#addForm select[name="channelId"]').val(),$('#addForm input[name="gameId"]').val(),'您确定要添加该游戏渠道吗?','addForm', 'addDialog');
+					//addForm.submit();
+					}
+				} ]
+			});
+		editDialog = $('#editDialog').show().dialog({
+			title : '编辑游戏渠道',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					$.messager.confirm('请确认', '您要修改渠道吗?', function(r) {
+						//isGameChannelExist($('#editForm input[name="gameChannelId"]').val(),$('#editForm input[name="gameId"]').val(),'您确定要修改该游戏渠道信息吗?','editForm', 'editDialog');
+						editForm.submit();
+					});
+				}
+			} ]
+		});
+		});
+	function add(){
+		addDialog.dialog('open');
+		addForm.form('reset');
+	}
+	
+	function edit() {
+		var rows = datagrid.datagrid('getSelections');
+		if (rows.length == 1) {
+			$.messager.progress({
+				text : '数据加载中....',
+				interval : 100
+			});
+			$.ajax({
+				url : 'gameChannel_edit',
+				data : {
+					id : rows[0].id
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(response) {
+					editForm.form('clear');
+					console.log(response.gameVersionId);
+					//$('#editForm select[name="gameVersionId"]').val(response.gameVersionId);
+					editForm.form('load', response);
+					$('div.validatebox-tip').remove();
+					editDialog.dialog('open');
+					$.messager.progress('close');
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+		}
+	}
+	
+	function del() {
+		var rows = datagrid.datagrid('getSelections');
+		var channelids =[];
+		var gameId = $('#addForm input[name="gameId"]').val();
+		if (rows.length > 0) {
+			$.messager.confirm('请确认', '您确定要删除选中的渠道吗？', function(r) {
+				if (r) {
+					for ( var i = 0; i < rows.length; i++) {
+						channelids.push(rows[i].channelId);
+					}
+					console.log(channelids.join(','));
+					$.ajax({
+						url : 'gameChannel_delete',
+						data : {
+							channelids : channelids.join(','),
+							gameId : gameId
+						},
+						dataType : 'json',
+						success : function(response) {
+							datagrid.datagrid('load');
+							datagrid.datagrid('unselectAll');
+							$.messager.show({
+								title : '提示',
+								msg : response.msg
+							});
+						}
+					});
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		}
+	}
+	
+	function isGameChannelExist(gameChannelId,gameId,msgContent,form,dialog) {
+		if (gameChannelId == 0 || gameId == 0) {
+			return $.messager.show({
+				title : '提示',
+				msg : '请输入游戏渠道ID'
+			});
+		}
+		$.ajax({
+			url : 'gameChannelIsExist',
+			type : 'post',
+			data : {
+				gameId : gameId,
+				gameChannelId : gameChannelId
+			},
+			dataType : 'json',
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+					closeDialog(msgContent,form,dialog);
+				} else {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+				}
+			}
+		});
+	}
+	
+	function allGameVersion(){
+		var link = "${request.contextPath}/game/gameVersionList.do";
+		var node = {
+				"attributes":{ "url":link}, 
+				"checked":false,
+				"iconCls":"",
+				"state":"closed",
+				"text":"所有游戏版本" 
+				};
+		parent.addTab(node);
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="center" border="false">
+		<table id="datagrid"></table>
+	</div>
+	<div id="menu" class="easyui-menu" style="width: 120px; display: none;">
+		<div onclick="add();" iconCls="icon-add">增加</div>
+		<div onclick="del();" iconCls="icon-remove">删除</div>
+		<div onclick="edit();" iconCls="icon-edit">编辑</div>
+	</div>
+	<!--添加表单-->
+	<div id="addDialog" style="display: none; width: 600px; height: auto;"
+		align="center">
+		<form id="addForm" method="post" style="padding: 5px 10px">
+			<input type="hidden" name="gameId" value="${gameId}">
+			<table width="100%" border="0" cellspacing="5" cellpadding="5">
+				<tr>
+					<td>渠道ID：</td>
+					<td>
+					<#if channelList??>
+					<select name="channelId" >
+					<option value="0">请选择</option>
+					<#list channelList as c>
+					<option value="${c.id!'0'}">${c.name!''}</option>
+					</#list>
+					</select>
+					</#if>
+					</td>
+				</tr>
+				<tr>
+					<td>游戏版本名称：</td>
+					<td><select name="gameVersionId">
+							<option value="-1">请选择</option>
+							<#if versionList??>
+								<#list versionList as item>
+								<option value="${item.id}">${item.name!''}</option>
+								</#list>
+							</#if>
+						</select><span>&nbsp;&nbsp;<a href="javascripst:void(0);" onclick="allGameVersion();">所有游戏版本</a></span></td>
+				</tr>
+				<tr>
+					<td>渠道系数：</td>
+					<td><input type="text" name="qudaoCoefficient" size="20" onkeyup="value=value.replace(/[^\-?\d.]/g,'')"/></td>
+				</tr>
+				<tr>
+					<td>是否支持退游：</td>
+					<td><select name="isTy">
+							<option value="0" selected="selected">不支持</option>
+							<option value="1">支持</option>
+					</select></td>
+				</tr>
+
+				<tr>
+					<td>游戏包下载地址：</td>
+					<td><input type="text" name="downUrl" /></td>
+				</tr>
+
+				<tr>
+					<td>游戏包大小：</td>
+					<td><input type="text" name="fileSize" /></td>
+				</tr>
+
+			</table>
+
+		</form>
+	</div>
+	<!--编辑表单-->
+	<div id="editDialog" style="display: none; width: 600px; height: auto;"
+		align="center">
+		<form id="editForm" method="post" style="padding: 5px 10px"
+			class="pageForm required-validate">
+			<input type="hidden" name="id"> 
+			<input type="hidden" name="gameId">
+			<input type="hidden" name="channelId">
+			<table width="100%" border="0" cellspacing="5" cellpadding="5">
+				<tr>
+					<!-- <td>渠道ID：</td>
+					<td><input
+						type="text"
+						name="gameChannelId"
+						size="20"
+						maxlength="50"
+						class="easyui-validatebox"
+						data-options="required:true"
+						missingMessage="请填写渠道ID"/>
+					</td> -->
+					<tr>
+					<td>游戏版本名称：</td>
+					<td><select name="gameVersionId">
+							<option value="-1">请选择</option>
+							<#if versionList??>
+								<#list versionList as item>
+								<option value="${item.id}">${item.name!''}</option>
+								</#list>
+							</#if>
+						</select><span>&nbsp;&nbsp;<a href="javascripst:void(0);" onclick="allGameVersion();">所有游戏版本</a></span></td>
+				    </tr>
+					<td>渠道系数：</td>
+					<td><input type="text" name="qudaoCoefficient" size="20" onkeyup="value=value.replace(/[^\-?\d.]/g,'')"/></td>
+				</tr>
+				<tr>
+					<td>是否支持退游：</td>
+					<td><select name="isTy">
+							<option value="0" selected="selected">不支持</option>
+							<option value="1">支持</option>
+					</select></td>
+				</tr>
+
+				<tr>
+					<td>游戏包下载地址：</td>
+					<td><input type="text" name="downUrl" /></td>
+				</tr>
+
+				<tr>
+					<td>游戏包大小：</td>
+					<td><input type="text" name="fileSize" /></td>
+				</tr>
+
+			</table>
+		</form>
+	</div>
+</body>
+</html>

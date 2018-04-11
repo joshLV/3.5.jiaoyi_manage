@@ -1,0 +1,12 @@
+{"total":${roleList?size},"rows":[
+<#list roleList as item>
+{
+"roleId":${item.roleId},
+"roleName":"${item.roleName}",
+"roleCode":"${item.roleCode!''}",
+"createTime":"${item.createTime?string('yyyy-MM-dd HH:mm:ss')}",
+"status":${item.status},
+"isCustomerR":${item.isCustomerR}}<#t>
+<#if item_has_next>,</#if>
+</#list>
+]}

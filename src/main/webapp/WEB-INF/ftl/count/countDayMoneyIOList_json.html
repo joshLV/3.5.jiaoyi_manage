@@ -1,0 +1,33 @@
+<#if pageInfo.items??>
+{"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+
+{
+
+"id":${item.id},
+"takeMemberNum":${item.takeMemberNum!'0'},
+"takeNum":${item.takeNum!'0'},
+"takeMemberSucNum":${item.takeMemberSucNum!'0'},
+"takeSucNum":${item.takeSucNum!'0'},
+"takeMoneyDayCount":${item.takeMoneyDayCount!'0'},
+
+"rechargeMemberNum":${item.rechargeMemberNum!'0'},
+"rechargeNum":${item.rechargeNum!'0'},
+
+"rechargeMoneyCount":${item.rechargeMoneyCount!'0'},
+"accountAmount":${item.accountAmount!'0'},
+
+<#if item.countDay??>
+"countDay":"${item.countDay?string('yyyy-MM-dd')!''}"
+<#else>
+"countDay":""
+</#if>
+
+}
+<#t>
+<#if item_has_next>,</#if>
+</#list>
+]}
+  <#else>
+  {"total":0,"rows":[]}
+</#if>

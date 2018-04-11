@@ -1,0 +1,51 @@
+<#if pageInfo??>
+{"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+
+{
+"productId":"${item.productId}",
+"sellPid":"${item.sellPid!''}",
+"productType":"${item.productType}",
+"productName":"${item.productName!''}",
+"gameAreaAndServerName":"${item.gameAreaAndServerName!''}",
+"productSingleNumber":"${item.productSingleNumber!'0'}",
+"productStock":"${item.productStock!'0'}",
+"productSinglePrice":"${item.productSinglePrice!''}",
+"productOriginalPrice":"${item.productOriginalPrice!''}",
+"gameId":"${item.gameId}",
+"gameAreaId":"${item.gameAreaId}",
+"productStatus":"${item.productStatus}",
+"sonChannelId":"${item.sonChannelId!'--'}",
+
+ <#if item.userNickname??>
+ <#if item.userNickname?index_of("\\")!=-1 && item.userNickname?index_of("\\")!=-1>
+"userNickname":"${item.userNickname?replace('\\','\\\\')?replace('\"','\\"')}",
+ <#elseif item.userNickname?index_of("\\")!=-1>
+"userNickname":"${item.userNickname?replace('\\','\\\\')}",
+ <#elseif item.userNickname?index_of("\"")!=-1>
+"userNickname":"${item.userNickname?replace('\"','\\"')}",
+ <#else>
+"userNickname":"${item.userNickname!''}",
+ </#if>
+ 
+"gameNameShow":"${item.gameNameShow!''}",
+"userId":${item.userId},
+"customerServiceId":${item.customerServiceId},
+<#if item.onSaleTime??>
+"onSaleTime":"${item.onSaleTime?string('yyyy-MM-dd HH:mm:ss')!''}",
+<#else>
+"onSaleTime":"",
+</#if>
+<#if item.offShelvesTime??>
+"offShelvesTime":"${item.offShelvesTime?string('yyyy-MM-dd HH:mm:ss')!''}"
+<#else>
+"offShelvesTime":""
+</#if>
+}
+<#t>
+<#if item_has_next>,</#if>
+</#list>
+]}
+  <#else>
+  {"total":0,"rows":[]}
+</#if>

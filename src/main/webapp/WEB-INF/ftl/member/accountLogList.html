@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>资金流水列表</title>
+<#include "../common.html"/>
+<style>
+
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+
+ }
+</style>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'accountLogList_json',
+			title : '资金流水列表',
+			singleSelect:true,
+			//iconCls : 'icon-save',
+			queryParams:{
+						uid:${uuuuid}
+					},
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : 'create_time',
+			sortName : '',
+			sortOrder : 'desc',
+			columns : [ [ 
+			           {field:'id',title:'ID',align:'center',width:50,sortable:true},	
+					   {field:'uid',title:'用户UID',align:'center',sortable:true},	
+					   {field:'accountType',title:'账号类型',align:'left',width:90,
+						   formatter:function(value,row,index){
+							   if (row.accountType==1){
+								   return "<font color=red>现金账号</font>"
+							   }else if(row.accountType==2){
+								   return "非现金账号";
+							   }else{
+								   return "未知";
+							   }
+							}  
+					   },
+					   {field:'operatorType',title:'操作',align:'center',width:80,
+						   formatter:function(value,row,index){
+							   if (row.operatorType==1){
+								   return "充值"
+							   }else if(row.operatorType==5){
+								   return "支付";
+							   }else if(row.operatorType==10){
+								   return "收入";
+							   }else if(row.operatorType==12){
+								   return "冻结押金";
+							   }else if(row.operatorType==13){
+								   return "解冻押金";
+							   }else if(row.operatorType==15){
+								   return "提现";
+							   }else if(row.operatorType==20){
+								   return "退费";
+							   }else{
+								   return "未选择";
+							   }
+							}  
+					   },
+					   {field:'orderId',title:'订单号',align:'left',width:145},
+					   {field:'amount',title:'金额',align:'center',width:90},	
+					   {field:'balance',title:'账户余额',align:'center',width:90},	
+					   {field:'totalBalance',title:'总余额=现金余额+非现金余额',align:'center',width:90},	
+					   {field:'remark',title:'备注',align:'left',width:400},
+					   {field:'createTime',title:'时间',align:'center',width:160},
+				
+			 ] ],
+		
+			//右键菜单 
+		//	onRowContextMenu : function(e, rowIndex, rowData) {
+		//		e.preventDefault();
+		//		$(this).datagrid('unselectAll');
+		//		$(this).datagrid('selectRow', rowIndex);
+		//		$('#menu').menu('show', {
+		//			left : e.pageX,
+		//			top : e.pageY
+		//		});
+		//	}
+					
+			 //双击事件
+			   onDblClickRow:function (rowIndex,rowData){
+				   $(this).datagrid('unselectAll');
+				   $(this).datagrid('selectRow', rowIndex);	
+				   edit();
+			   }			
+		});
+		editForm = $('#editForm').form({
+			url : 'depositLog_edit.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '资金流水详情',
+			modal : true,
+			closed : true,
+			maximizable : true
+		
+		}); 
+		
+
+
+
+});
+function _search() {
+	var  btime = searchForm.find("table >tbody> tr input[name='btime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='etime']").val();
+	var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+
+function edit() {
+	var rows = datagrid.datagrid('getSelections');
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'memberAccountLog_json.do',
+			data : {
+				id : rows[0].id
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				editForm.form('clear');
+				editForm.form('load', response);
+				editForm.find('input[name=userPassword]').val('');//清空登录密码字段
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+				showRoleSelect('editForm',$("#editUserType").val());
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项记录！', 'error');
+	}
+}
+
+function showRoleSelect(formName,value){
+	if (value == 0){
+		$("#"+formName+" .roleSelect").hide();
+	}else{
+		$("#"+formName+" .roleSelect").show();
+	}
+}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>用户UID:<input name="uid" value="${uuuuid}" style="width:100px;" />&nbsp;</td>
+				<td>开始时间:<input name="btime"   type="text"  class="easyui-datebox" style="width:90px"/></td>
+                <td>结束时间:<input name="etime"   type="text" class="easyui-datebox" style="width:90px"/></td>
+                <td>操作类型:
+                <select name="p_type">
+                <option value="0">未选择</option>
+				    <option value="1">充值 </option>
+				    <option value="5">支付</option>
+				    <option value="10">收入</option>
+				    <option value="12">冻结押金</option>
+				    <option value="13">解冻押金</option>
+				    <option value="15">提现 </option>
+				    <option value="20">退费</option>
+                </select></td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+  <!-- 
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+
+	<div onclick="edit();" iconCls="icon-edit">查看详情</div>
+	
+</div>
+ -->
+
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 700px;height: 300px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="uid" />
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" class="table_line">
+		    <tr>
+		      <td class="lable">用户UID：</td>
+		      <td><input type="text" name="uid" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		      <td class="lable">用户账号：</td>
+		      <td><input type="text" name="infoUserName" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		    </tr>
+		      <tr>
+		      <td class="lable">操作类型：</td>
+		      <td>
+		        <select name="operatorType" style="color: red;border: thin;"  disabled="disabled">
+                <option value="0">未选择</option>
+				    <option value="1">充值 </option>
+				    <option value="5">支付</option>
+				    <option value="10">收入</option>
+				    <option value="12">冻结押金</option>
+				    <option value="13">解冻押金</option>
+				    <option value="15">提现 </option>
+				    <option value="20">退费</option>
+                </select>
+		      
+		      </td>
+		      <td class="lable">账户类型：</td>
+		      <td>
+		         <select name="accountType"  style="color: red;border: thin;"  disabled="disabled">
+                <option value="0">未选择</option>
+				    <option value="1">现金账户 </option>
+				    <option value="2">非现金账户</option>
+				    
+                </select>
+		      
+		      </td>
+		    </tr>
+		    <tr>
+		      <td class="lable">操作方式：</td>
+		     <td >
+		        <select name="payType"  style="color: red;border: thin;" disabled="disabled" >
+                <option value="0">未选择</option>
+				    <option value="1">易宝 </option>
+				    <option value="2">银联</option>
+				    
+                </select>
+		      </td>
+		      <td class="lable">银行ID：</td>
+		      <td colspan="3"><input type="text" name="bankId" size="30" maxlength="40" readonly style="border:thin;"/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">银行卡：</td>
+		      <td colspan="3"><input type="text" name="bankCardNo" size="50" maxlength="40" readonly style="border:thin;"/></td>
+		   
+		   </tr>
+		   
+		    <tr>
+		      <td class="lable">神州行卡号：</td>
+		      <td colspan="3"><input type="text" name=cardNo size="20" maxlength="100" readonly style="border:thin;"/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">押金：</td>
+		      <td><input type="text" name="depositType" size="20" maxlength="5" readonly style="border:thin;"/></td>
+		      <td class="lable">操作金额：</td>
+		      <td><input type="text" name="amount" size="20" maxlength="5" readonly style="border:thin;"/></td>
+		    </tr>
+	        <tr>
+		      <td class="lable">手续费：</td>
+		      <td><input type="text" name="fee" size="20" maxlength="5" readonly style="border:thin;"/></td>
+		      <td class="lable">账户余额：</td>
+		      <td><input type="text" name="balance" size="20" maxlength="5" readonly style="border:thin;"/></td>
+		    </tr>
+		    
+		      <tr>
+		      <td class="lable">总余额：</td>
+		      <td><input type="text" name="totalBalance" size="20" maxlength="5" readonly style="border:thin;"/></td>
+		      <td class="lable">添加时间：</td>
+		      <td><input type="text" name="infoCreateTime" size="20" maxlength="5" readonly style="border:thin;"/></td>
+		    </tr>
+		      <tr>
+		      <td class="lable">订单ID：</td>
+		      <td><input type="text" name="orderId" size="30" maxlength="5" readonly style="border:thin;"/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">备注：</td>
+		      <td colspan="3">
+		      <textarea  rows="4" cols="65" name ="remark" readonly style="border:thin;"></textarea>
+		      </td>
+		    </tr>
+		 
+		  </table> 
+	</form>
+</div>
+
+</body>
+</html>

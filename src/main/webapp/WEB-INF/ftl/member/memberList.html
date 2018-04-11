@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>会员列表</title>
+<#include "../common_new.html"/>
+
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+var verifyForm;
+var verifyDialog;
+
+var depositForm;
+var depositDialog;
+
+var blackForm;
+var blackDialog;
+
+var userTypeForm;
+var userTypeDialog;
+
+var addOpenServiceForm;
+var addOpenServiceDialog;
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'memberList_json.do',
+			queryParams:{
+				uid:${uid}
+			},
+			title : '会员列表',
+			singleSelect:true,
+			loadMsg:null,
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ ${pageList!'100'}, 120, 140, 160 ],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : 'uid',
+			sortName : 'uid',
+			sortOrder : 'desc',
+			columns : [ [ 
+			 
+			   {field:'uid',title:'用户UID',align:'center',sortable:true},				
+			   {field:'loginName',title:'用户账号',align:'left',width:120},
+			   {field:'qq',title:'用户QQ',align:'center',width:30},	
+			   {field:'mobile',title:'用户手机',align:'left',width:120},	
+			   //{field:'email',title:'用户邮箱',align:'center',width:50},
+			   {field:'createTime',title:'注册时间',align:'center',width:160},	
+			   {field:'lastTime',title:'最后登录时间',align:'center',width:160},
+			   {field:'lastTime',title:'最后登录时间',align:'center',width:160},
+			   {field:'userTerrace',title:'下单平台',align:'center',width:160},
+			   {field:'status',title:'账号状态',align:'center',width:100,
+				   formatter:function(value,row,index){
+						  
+					   if (row.status==2){
+						   return "<font color='red'>临时锁定</font>";
+					   }else if(row.status==3){
+						   return "<font color='red' >长期锁定</font>";
+					   }else if(row.status==1){
+						   return "正常";
+					   }else{
+						   return "未知状态";
+					   }
+					}  
+				   
+				   },
+				{field:'userType',title:'用户类型',align:'center',width:100,
+					   formatter:function(value,row,index){
+							  
+						   if (row.userType==2){
+							   return "<font color='red' >VIP用户</font>";
+						   }else if (row.userType==3){
+							   return "<font color='red' >高级VIP用户</font>";
+						   }else {
+							   return "普通用户";
+						   }
+						}  
+					   
+					 },
+			  {field:'oprate2',title:'操作',align:'left',width:450,
+					formatter : function(value, row, index) {
+						var a = "<a href='javascript:void(0)' onclick='tempLock("+ row.uid+ ","+row.status+")' ><font color='red' >解锁</font></a>";
+						var b = "<a href='javascript:void(0)' onclick='tempLock("+ row.uid+ ","+row.status+")' >锁定</a>";
+						var d = "<a href='javascript:void(0)' onclick='toresetpaypass("+ row.uid+ ")' >重置支付密码</a>"
+						var e = "<a href='javascript:void(0)' onclick='updateusertype2("+ row.uid+ ","+row.userType+")' >更改用户类型</a>";
+						var g = "<a href='javascript:void(0)' onclick='updateusertype2("+ row.uid+ ","+row.userType+")' >更改用户类型</a>";
+						var h = "<a href='javascript:void(0)' onclick='addtoBlack("+ row.uid+ ",0)' >打入黑名单</a>";
+						var i = "<a href='javascript:void(0)' onclick='addtoBlack("+ row.uid+ ",1)' ><font color='red' >移除黑名单</font></a>";
+						var j = "<a href='javascript:void(0)' onclick='openService("+ row.uid+ ")' >开通服务</a>";
+						//var g = "<a href='javascript:void(0)' onclick='updateusertype3("+ row.uid+ ","+row.userType+")' >设为高级VIP用户</a>";
+						if (row.status == 1 ) {
+							if(row.userType == 1){
+								if (row.isBlackList == 1 ) {
+								    return b +" || "+d +" || "+h+" || "+e+" || "+j 
+								}
+								if (row.isBlackList == 0 ) {
+									return b +" || "+d +" || "+i+" || "+e+" || "+j
+								}
+							}else if(row.userType == 2 ){
+								if (row.isBlackList == 1 ) { 
+								    return b +" || "+d +" || "+h+" || "+g+" || "+j
+								}
+								if (row.isBlackList == 0 ) {
+									return b +" || "+d +" || "+i+" || "+g+" || "+j
+								}
+							}else{
+								if (row.isBlackList == 1 ) {
+								    return b +" || "+d +" || "+h+" || "+e+" || "+j
+								}
+								if (row.isBlackList == 0 ) {
+									return b +" || "+d +" || "+i+" || "+e+" || "+j
+								}
+							}
+							
+							}
+						if (row.status == 2 ) {
+							if(row.userType == 1){
+								if (row.isBlackList == 1 ) {
+							           return a +" || "+d+" || "+h+" || "+e+" || "+j
+								}
+								if (row.isBlackList == 0 ) {
+									   return a +" || "+d+" || "+i+" || "+e	+" || "+j
+								}
+							}else if(row.userType == 2 ){
+								if (row.isBlackList == 1 ) {
+							           return a +" || "+d+" || "+h+" || "+g+" || "+j
+								}
+								if (row.isBlackList == 0 ) {
+									   return a +" || "+d+" || "+i+" || "+g	+" || "+j
+								}
+							}else{
+								if (row.isBlackList == 1 ) {
+							           return a +" || "+d+" || "+h+" || "+e+" || "+j
+								}
+								if (row.isBlackList == 0 ) {
+									   return a +" || "+d+" || "+i+" || "+e	+" || "+j
+								}
+							}
+							
+							}
+						if (row.status == 3 ) {
+							if(row.userType == 1){
+								if (row.isBlackList == 1 ) {
+								      return a +" || "+d+" || "+e+" || "+h+" || "+j
+								}
+								if (row.isBlackList == 0 ) {
+									  return a +" || "+d+" || "+e+" || "+i+" || "+j
+								}
+							}else if(row.userType == 2){
+								if (row.isBlackList == 1 ) {
+								      return a +" || "+d+" || "+g+" || "+h+" || "+j
+								}
+								if (row.isBlackList == 0 ) {
+									 return a +" || "+d+" || "+g+" || "+i+" || "+j
+								}
+							}else{
+								if (row.isBlackList == 1 ) {
+								      return a +" || "+d+" || "+e+" || "+h+" || "+j
+								}
+								if (row.isBlackList == 0 ) {
+									  return a +" || "+d+" || "+e+" || "+i+" || "+j
+								}
+							}
+							
+							}
+					} 
+			  }
+			 ] ],
+
+			
+	  //双击事件
+	   onDblClickRow:function (rowIndex,rowData){
+		   //alert(rowData.uid);
+		   //$(this).datagrid('unselectAll');
+		   //$(this).datagrid('selectRow', rowIndex);	
+		   //var bbbTime = $("#searchForm > table >tbody> tr input[name='btime']").val();
+		   //alert(bbbTime);
+		   edit(rowData.uid);
+	   }
+			
+	 
+			
+			
+		});
+	
+	verifyForm = $('#verifyForm').form({
+		url : 'updateMemStatus',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				datagrid.datagrid('reload');
+				verifyDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+				verifyDialog.dialog('close');
+			}
+		},
+		error:function(XMLHttpRequest, textStatus, errorThrown){
+			alert(textStatus);
+		}
+	});
+	//用户锁定/解锁 页面
+    verifyDialog = $('#verifyDialog').show().dialog({
+		title : '用户锁定/解锁',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '提交',
+			handler : function() {
+				var uid = $("#id_for_update").val();
+				var uremark =$("#remark_for_status").val();
+				var lockday =$("#lockDay_for_update").val();
+				var statuslock = $('input[name="lock_type"]').filter(':checked').val();
+				if(statuslock==2&&lockday==0){
+					$.messager.alert("提示","请选择临时锁定的天数");
+					return false ;
+				}
+                if(uremark==""){
+					$.messager.alert("提示","请填写审核备注!");
+					return false;
+				}
+				$.messager.confirm('确认框','您确认要更改该用户的账号状态?',function(r){  
+				    if (r){  
+				verifyForm.submit();
+				            }  
+				         });
+			}
+		} ]
+	});	
+	
+	
+	
+	//增加押金页面
+    depositDialog = $('#depositDialog').show().dialog({
+		title : '增加押金金额',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '提交',
+			handler : function() {
+			
+				var deposit_add = $("#deposit_add").val();
+				var uremark =$("#deposit_remark").val();
+				if(deposit_add==""){
+					$.messager.alert("提示","请填写押金金额");
+					return false ;
+				}
+                if(uremark==""){
+					$.messager.alert("提示","请填写备注!");
+					return false;
+				}
+				$.messager.confirm('确认框','您确认要增加押金!?',function(r){  
+				    if (r){  
+				    	depositForm.submit();
+				            }  
+				         });
+			}
+		} ]
+	});	
+	
+	//增加押金页面
+	depositForm = $('#depositForm').form({
+		url : 'depositUpdate.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			//alert(data);
+			if (json && json.success) {
+				//alert(json.msg);
+				var da =json.msg
+				var msg = da.split(":")[0];
+				var deposit =da.split(":")[1];
+				$("#deposit_for_show").val(deposit);
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				datagrid.datagrid('reload');
+				depositDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+				depositDialog.dialog('close');
+			}
+		},
+		error:function(XMLHttpRequest, textStatus, errorThrown){
+			alert(textStatus);
+		}
+	});
+	
+	//修改用户类型
+    userTypeDialog = $('#userTypeDialog').show().dialog({
+		title : '修改用户类型',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '提交',
+			handler : function() {
+			
+				var uremark =$("#userType_remark").val();
+                if(uremark==""){
+					$.messager.alert("提示","请填写备注!");
+					return false;
+				}
+				$.messager.confirm('确认框','您确认要更改该用户的类型!?',function(r){  
+				    if (r){  
+				    	userTypeForm.submit();
+				            }  
+				         });
+			}
+		} ]
+	});	
+	
+	//修改用户类型
+	userTypeForm = $('#userTypeForm').form({
+		url : 'memberTypeUpdate.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				datagrid.datagrid('reload');
+				userTypeDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+				userTypeDialog.dialog('close');
+			}
+		},
+		error:function(XMLHttpRequest, textStatus, errorThrown){
+			alert(textStatus);
+		}
+	});
+	
+	//添加黑名单对话框
+    blackDialog = $('#blackDialog').show().dialog({
+		title : '添加/移除 黑名单',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '提交',
+			handler : function() {
+
+				var uremark =$("#black_remark").val();
+
+                if(uremark==""){
+					$.messager.alert("提示","请填写备注!");
+					return false;
+				}
+                var st = $("#black_status").val();
+
+                if(st==0){
+            		$.messager.confirm('确认框','您确认要将该用户添加到黑名单!?',function(r){  
+    				    if (r){  
+    				    	blackForm.submit();
+    				            }  
+    				         });
+                }else if(st==1){
+            		$.messager.confirm('确认框','您确认要将该用户从黑名单中解除!?',function(r){  
+    				    if (r){  
+    				    	blackForm.submit();
+    				            }  
+    				         });
+                }else{
+                	$.messager.alert("提示","参数错误!");
+                	return false;
+                }
+		
+			}
+		} ]
+	});	
+	
+	//添加黑名单
+	blackForm = $('#blackForm').form({
+		url : 'addBlackList.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			//alert(data);
+			if (json && json.success) {
+				//alert(json.msg);
+				var da =json.msg
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				datagrid.datagrid('reload');
+				blackDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+				blackDialog.dialog('close');
+			}
+		},
+		error:function(XMLHttpRequest, textStatus, errorThrown){
+			alert(textStatus);
+		}
+	});
+	editForm = $('#editForm').form({
+		url : 'updateMemStatus.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				datagrid.datagrid('reload');
+				editDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+	});
+	
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '会员信息详情',
+			toolbar : [{
+				text : '实名认证',
+				iconCls : 'icon-edit',
+				//pagination : true,
+				handler : function(d) {
+					memberlink(1);
+				}
+			}, {
+				text : '资金流水',
+				iconCls : 'icon-edit',
+				handler : function() {
+					memberlink(4);
+				}
+			} ,	{
+				text : '提现申请',
+				iconCls : 'icon-edit',
+				handler : function() {
+					memberlink(5);
+				}
+			} 
+			
+			
+			],
+	
+			modal : true,
+			closed : true,
+			maximizable : true
+		
+		}); 
+		addOpenServiceForm = $('#addOpenServiceForm').form({
+			url : 'openService.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		addOpenServiceDialog = $('#addOpenServiceDialog').show().dialog({
+			title : '开通服务',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					closeDialog('您确定要更改开通配置吗?', 'addOpenServiceForm', 'addOpenServiceDialog');
+				}
+			} ]
+		}); 	
+
+});
+
+
+
+
+
+function _search() {
+	var  btime = searchForm.find("table >tbody> tr input[name='btime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='etime']").val();
+	var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+	datagrid.datagrid("unselectAll");
+	$('#searchFlag_search').val(1);
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {searchFlag:1});
+	searchForm.find('input').val('');
+	searchForm.find('select').val('');
+}
+
+function add() {
+	addDialog.dialog('open');
+	addForm.find("input[type='text']").val("");
+}
+function del() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].uid);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'member_delete.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						//var d = JSON.parse(response);
+						
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	} 
+}
+function edit(uid) {
+	//var rows = datagrid.datagrid('getSelections');
+	//if (rows.length == 1) {
+	//	$.messager.progress({
+	//		text : '数据加载中....',
+	//		interval : 100
+	//	});
+		$.ajax({
+			url : 'member_json.do',
+			data : {
+				uid : uid
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				//会员开通服务列表
+				//var serList = response.serviceList;
+				//var serinfo = ""
+				//if(serList.length >0){
+				//	jQuery.each(serList, function(i,item){ 
+				//		   serinfo +="【"+item.name+"】"; 
+						   //if(i < (serList.length -1)){
+						   //serinfo += "--";
+						   // }
+			    //        });
+				//	$("#service_show").html(serinfo);
+				// }else{
+				//	$("#service_show").html("未开通");
+				//}
+                //-------------------------
+			
+				if(response.status!=2){
+					$("#unlockTime_for_status").hide();
+				}else{
+					$("#unlockTime_for_status").show();
+				}
+				editForm.form('clear');
+				editForm.form('load', response);
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+	
+}
+
+function showRoleSelect(formName,value){
+	if (value == 0){
+		$("#"+formName+" .roleSelect").hide();
+	}else{
+		$("#"+formName+" .roleSelect").show();
+	}
+}
+
+
+function updateMemStatus(uid) {
+	
+	alert(uid);
+	$.ajax({
+		url : 'updateMemStatus.do',
+		data : {
+			uid : uid
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+		    var new_status = response.msg;
+			if(new_status.indexOf("锁定")>0){
+				$("#"+"m_status"+uid).html("<font color=red>锁定</font>");
+			}else{
+				$("#"+"m_status"+uid).html("正常");
+			}
+			$.messager.show({
+				title : '修改成功!',
+				msg : response.msg
+			});
+
+		}
+	});
+}
+
+function memberlink(num) {
+	var uid = $("#uid_for_link").val();
+	var login =$("#loginName_for_link").val();
+	if(num==1){
+	
+	var link1 = "member/memberrealinfoList.do?uid="+uid;
+	var node1 = {
+			"attributes":{ "url":link1}, 
+			"checked":false,
+			"iconCls":"",
+			"uid":uid,
+			"state":"closed",
+			"text":"登录名为：<font color=red>【"+login+"】</font>的用户实名认证" 
+			};
+			
+	parent.addTab(node1);
+	//$("#searchForm").submit();
+	//window.localtion.href="memberrealinfoList.do?uid="+uid;
+	}else if(num==2){
+		var link2 = "order/orderList.do?buyId="+uid;
+		var node2 = {
+				"attributes":{ "url":link2}, 
+				"checked":false,
+				"iconCls":"",
+				"uid":uid,
+				"state":"closed",
+				"text":"登录名为：<font color=red>【"+login+"】</font>的订单(买单)" 
+				};
+				
+		parent.addTab(node2);	
+	//window.open("../order/orderList.do?buyId="+uid,"_blank");	
+	}else if(num==3){
+		var link3 = "order/orderList.do?sellId="+uid;
+		var node3 = {
+				"attributes":{ "url":link3}, 
+				"checked":false,
+				"iconCls":"",
+				"uid":uid,
+				"state":"closed",
+				"text":"登录名为：<font color=red>【"+login+"】</font>的订单(卖单)" 
+				};
+				
+		parent.addTab(node3);		
+	//window.open("../order/orderList.do?sellId="+uid,"_blank");	
+	}else if(num==4){
+		var link4 = "member/accountLogList.do?uid="+uid;
+		var node4 = {
+				"attributes":{ "url":link4}, 
+				"checked":false,
+				"iconCls":"",
+				"uid":uid,
+				"state":"closed",
+				"text":"登录名为：<font color=red>【"+login+"】</font>的资金流水" 
+				};
+				
+		parent.addTab(node4);		
+	//window.open("accountLogList.do?uid="+uid,"_blank");	
+	}else if(num==5){
+		var link5 = "member/takemoneyList.do?uid="+uid;
+		var node5 = {
+				"attributes":{ "url":link5}, 
+				"checked":false,
+				"iconCls":"",
+				"uid":uid,
+				"state":"closed",
+				"text":"登录名为：<font color=red>【"+login+"】</font>的提现申请" 
+				};
+				
+		parent.addTab(node5);
+	//window.open("takemoneyList.do?uid="+uid,"_blank");	
+	}else if(num==6){
+		var link6 = "product/productList.do?userid="+uid;
+		var node6 = {
+				"attributes":{ "url":link6}, 
+				"checked":false,
+				"iconCls":"",
+				"uid":uid,
+				"state":"closed",
+				"text":"登录名为：<font color=red>【"+login+"】</font>的商品" 
+				};
+				
+		parent.addTab(node6);
+	//window.open("takemoneyList.do?uid="+uid,"_blank");	
+	}
+}
+
+//锁定 解锁账号(失效)
+function updateStatus(status){
+	
+	var uid = $("#id_for_update").val();
+	var uremark =$("#remark_for_status").val();
+	var lockday =$("#lockDay_for_update").val();
+	
+	if(uremark==""){
+		alert("请填写审核备注!");
+		return false;
+	}
+	if(status==2&&lockday==0){
+		alert("请选择临时锁定的天数");
+		return false;
+	}
+	
+	$.messager.confirm('确认框','您确认要更改该用户的状态?',function(r){  
+	    if (r){ 
+	$.ajax({  
+		url : 'updateMemStatus.do',
+		data : {
+			status2 :status,uid:uid,remark:uremark,lockday:lockday
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			if (response.success) {
+				$.messager.show({
+					title : '成功',
+					msg : response.msg
+				});
+				datagrid.datagrid('reload');
+				editDialog.dialog('close');
+				editForm.form('load', response);
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : response.msg
+				});
+			}
+		}
+	});
+	
+	    }  
+	});
+}
+//更改用户类型（停用）
+function updateUserType(uid,type){
+	
+	$.messager.confirm('确认框','您确认要更改该用户的类型?',function(r){  
+	    if (r){  
+	    	$.ajax({
+	    		url : 'memberTypeUpdate.do',
+	    		data : {
+	    			uid :uid,type:type
+	    		},
+	    		dataType : 'json',
+	    		cache : false,
+	    		success : function(response) {
+	    			if (response.success) {
+	    				$.messager.show({
+	    					title : '成功',
+	    					msg : response.msg
+	    				});
+	    				datagrid.datagrid('reload');
+	    				editDialog.dialog('close');
+	    				editForm.form('load', response);
+	    			} else {
+	    				$.messager.show({
+	    					title : '失败',
+	    					msg : response.msg
+	    				});
+	    			}
+	    		}
+	    	});
+	    }  
+	});
+	
+}
+
+
+//增加押金
+function adddeposit(){
+     var uid = $("#id_for_update").val();
+     $('#depositForm input').val("");
+     $('#depositForm textarea').val("");
+     $("#set_deposit_id").val(uid);
+	 depositDialog.dialog('open');
+	
+}
+
+//跳转到重置用户支付密码
+function toresetpaypass(uid){
+	var link = "member/resetPayPassshow.do?uid="+uid;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"重置:"+uid+"的支付密码" 
+			};
+	parent.addTab(node);	
+}
+
+//添加到黑名单
+function addtoBlack(uid,status){
+
+     $('#blackForm input').val("");
+     $('#blackForm textarea').val("");
+     $("#black_status").val(status);
+     $("#set_black_id").val(uid);
+	 blackDialog.dialog('open');
+	
+}
+
+
+//临时锁定账号
+function tempLock(uid,status){
+	$('#verifyForm #uid').val(uid);
+	$('#verifyForm #status').val(status);
+	$('#lock_type1').attr("checked",'checked');
+
+	//恢复显示
+	$("#lock_type1_name").show();
+	$("#lock_type2_name").show();
+	$("#lock_type3_name").show();
+
+	if(status==2){
+		    $("#lockDay_for_show").hide();
+		    $("#lock_type2_name").hide();
+		    
+		}else if(status==1){
+			$("#lockDay_for_show").show();
+			 $("#lock_type1_name").hide();
+			 $('#lock_type2').attr("checked",'checked');
+		}else{
+			$("#lockDay_for_show").hide();
+			 $("#lock_type3_name").hide();
+		}
+
+	$('#verifyForm select').val(0);
+	$('#verifyForm textarea').val("");
+	$('#status_for_lock').val(status);
+	$('#uid').val(uid);
+	verifyDialog.dialog('open');
+}
+
+//临时锁定和长期锁定选择
+function lockTypeSelect(){
+	var selectType = $('input[name="lock_type"]').filter(':checked').val();
+
+	$("#lock_type1").show();
+	$("#lock_type2").show();
+	$("#lock_type3").show();
+	if(selectType==2){
+		  $("#lockDay_for_show").show();
+		  
+	}else{
+		  $("#lockDay_for_show").hide();
+		  $('#lockDay_for_update').val(0);
+		  $('#remark_for_status').val("");
+	
+	}
+	
+	
+}
+
+//修改用户账号
+function updateusertype2(uid,usertype){
+	 $("input[name=u_type_update][value="+usertype+"]").attr("checked","checked");
+// 	 $('#user_type1_name').show();
+// 	 $('#user_type2_name').show();
+//      if(usertype == 1){
+//     	 $('#usertype_update').val(2);
+//     	 $('#user_type1_name').hide();
+//      }else{
+//     	 $('#usertype_update').val(1);
+//     	 $('#user_type2_name').hide();
+//      }
+     $('#userTypeForm textarea').val("");
+     //$("#usertype_for_update").val(usertype);
+     $("#uid_for_usertype").val(uid);
+	 userTypeDialog.dialog('open');
+	
+}
+function openService(uid) {
+	addOpenServiceDialog.dialog('open');
+	addOpenServiceForm.form('reset');
+	$('#addOpenServiceForm input[name="uid"]').val(uid);
+	$.ajax({
+		url : 'allService_json.do',
+		data : {
+			uid : uid
+		},
+		dataType : 'json',
+		success : function(response) {
+			var gcCount = response.total;
+			var html='';
+			for ( var i = 0; i < gcCount; i++) {
+				if(i%5==0){
+					html +="<br>";
+				}
+				html+='<span style="display:inline-block;width:15%;"><input type="checkbox" name="osIds" id="osIds'+response.rows[i].id+'" value="'+response.rows[i].id+'" "';
+				if(response.rows[i].checked == 'checked'){
+					html += ' checked="checked"';
+				}
+				html+='/><label for="osIds'+response.rows[i].id+'">'+response.rows[i].name+'</label></span>';
+			}
+			$('#allService').html(html);
+		}
+	});
+}
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 105px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>注册时间:&nbsp;&nbsp;&nbsp;&nbsp;<input name="btime" value="${btime!''}"  type="text"  class="easyui-datebox" id="b_time" style="width:90px;" /> -
+                <input name="etime" value="${etime!''}"  type="text" class="easyui-datebox" id="e_time" style="width:90px;" /></td>
+				<td>用户UID:<input name="uid" value="${uid}" style="width:50px;" id = "uid_search"/>&nbsp;</td>
+				<td>用户账号:<input name="loginname" style="width:80px;" id = "loginname_search"/>&nbsp;</td>
+				
+				
+				<td>用户类型:
+			 <select name="user_type" >
+              <option value="">未选择</option>
+              <option value="1">普通用户</option>
+              <option value="2">VIP用户</option>
+              <option value="3">高级VIP用户</option>
+              </select>
+				
+				</td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+
+				</td>
+			</tr>
+			<tr>
+			<td>最后登录时间:<input name="loginbtime" value="${loginbtime!''}"  type="text"  class="easyui-datebox" id="loginb_time" style="width:90px;" /> -
+                <input name="loginetime" value="${loginetimee!''}"  type="text" class="easyui-datebox" id="logine_time" style="width:90px;" /></td>
+			<td>用户手机:<input name="telephone" style="width:100px;" id = "telephone_search"/>&nbsp;</td>
+				<td>SN:<input name="sn" style="width:100px;" id = "sn_search"/>&nbsp;
+				<input type="hidden" name="searchFlag" value="1" id="searchFlag_search" />
+				</td>
+			
+		
+				<td>QQ用户ID:<input name="qqLogin" style="width:100px;" id = "qq_login_code"/>&nbsp;
+		         	下单平台:<input name="userTerrace" style="width:100px;" id = "user_terrace"/>&nbsp;
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+<div id="menuPanel1" fit="true" border="false" title="功能菜单" style="padding: 5px;">
+	<ul id="menu1"></ul>
+</div>
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+<!--  
+	<div onclick="add();" iconCls="icon-add">增加</div>
+	
+	<div onclick="del();" iconCls="icon-remove">bianji</div>
+	-->
+	<div onclick="edit();" iconCls="icon-edit">查看详情</div>
+</div>
+
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 600px;height: 400px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="uid"  id="id_for_update"/>
+		<input type="hidden" name ="status2" id="status_for_update" />
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" style="border:thick;" class="table_line" >
+		 
+		   <tr>
+		      <td >用户UID：</td>
+		      <td><input type="text" id="uid_for_link" name="uid" size="20" maxlength="50"   readonly="readonly" style="border:thin;"/></td>
+		   </tr>
+		    <tr> 
+		      <td class="lable">用户类型：</td>
+		      <td>
+              <select name="userType" style="border:thin;color:red" disabled="disabled">
+              <option value="0">未选择</option>
+              <option value="1">普通用户</option>
+              <option value="2">VIP用户</option>
+              <option value="3">高级VIP用户</option>
+              </select>
+             </td>
+		   </tr>
+		   <tr> 
+		      <td class="lable">账号：</td>
+		      <td><input type="text" id="loginName_for_link" name="loginName" size="20" maxlength="50" style="border:thin;"  readonly="readonly"/></td>
+		   </tr>
+		     <tr> 
+		      <td class="lable">账号情况：</td>
+		      <td>
+		         <select name="status" style="border:thin;color:red" disabled="disabled">
+		         <option value="1"><font color="red">正常</font></option>
+		         <option value="2"><font color="red">临时锁定</font></option>
+		         <option value="3"><font color="red">长期锁定</font></option>
+		       
+		         
+		         </select>
+		      </td>
+		     </tr>
+		           <tr> 
+		       <td class="lable">真实姓名：</td>
+		      <td><input type="text" name="realname" size="20" maxlength="50" style="border:thin;"  readonly="readonly"/></td>
+		      </tr> 
+		      		 
+		       <tr> 
+		       <td class="lable">登录密码情况：</td>
+		      <td><input type="text" name="loginStatus" size="20" maxlength="50" style="border:thin;"  readonly="readonly"/></td>
+		      </tr> 
+		
+		      <tr> 
+		       <td class="lable">支付密码情况：</td>
+		      <td><input type="text" name="payStatus" size="20" maxlength="50" style="border:thin;"  readonly="readonly"/></td>
+		      </tr>  
+		  
+		   <tr>
+		       <td class="lable">昵称：</td>
+		      <td><input type="text" name="nickName" size="20" maxlength="50" style="border:thin;" readonly="readonly"/></td>
+		       </tr>
+		     
+		   <tr> 
+		       <td class="lable">生日：</td>
+		      <td><input type="text" name="infoBirthday" size="20" maxlength="50" style="border:thin;" readonly="readonly"/></td>
+		    </tr>  
+		  
+		    <tr> 
+		       <td class="lable">QQ：</td>
+		      <td><input type="text" name="qq" size="20" maxlength="50" style="border:thin;" readonly="readonly" /></td>
+		        </tr>
+		          <tr> 
+		       <td class="lable">手机号码：</td>
+		      <td><input type="text" name="mobile" size="20" maxlength="50" style="border:thin;"  readonly="readonly"/></td>
+		        </tr>
+		
+		      
+		      	   <tr> 
+		       <td class="lable">电子邮箱：</td>
+		      <td><input type="text" name="email" size="20" maxlength="50" style="border:thin;"  readonly="readonly"/></td>
+		      </tr>
+		         
+		      <tr>
+		       <td class="lable">注册时间：</td>
+		      <td><input type="text" name="infoCreateTime" size="20" maxlength="50" style="border:thin;" readonly="readonly" /></td>
+		       </tr>
+		 
+		   <tr>  
+		       <td class="lable">最后登录时间：</td>
+		      <td><input type="text" name="infoLastTime" size="20" maxlength="50" style="border:thin;"  readonly="readonly" /></td>
+		      
+		    </tr>
+		     <tr>  
+		       <td class="lable">实名认证：</td>
+		      <td>
+		       <select name="statusMse" style="border:thin;color:red" disabled="disabled">
+		         <option value="0">等待审核</option>
+		         <option value="1">审核通过</option>
+		         <option value="2">银行已打款</option>
+		         <option value="5">实名认证成功</option>
+		         <option value="6">实名认证失败</option>
+		         
+		         </select>
+		      </td>
+		      
+		    </tr>
+		
+		     <tr>  
+		       <td class="lable">账户金额：</td>
+		      <td><input type="text" name="balance" size="20" maxlength="50"  style="border:thin;" readonly="readonly" /></td>
+		      
+		    </tr>
+		     <tr>  
+		       <td class="lable">可提现金额：</td>
+		      <td><input type="text" name="balance1" size="20" maxlength="50"  style="border:thin;" readonly="readonly" /></td>
+		      
+		    </tr>
+		    		     <tr>  
+		    <td class="lable">不可提现金额：</td>
+		      <td><input type="text" name="balance2" size="20" maxlength="50"  style="border:thin;" readonly="readonly" /></td>
+		      
+		    </tr>
+		     <tr>  
+		       <td class="lable">押金总额：</td>
+		      <td><input type="text" name="depositAmount"  id="deposit_for_show" size="8" maxlength="50" style="border:thin;" readonly="readonly" />
+		      <a href="javascript:void(0)" class="easyui-linkbutton" onclick="adddeposit()">增加押金</a>
+		      
+		      </td>
+		      
+		    </tr>
+		  		
+		   <!-- 
+		     <tr>
+		     <td class="lable"> 临时锁定天数</td>
+		     <td>
+		     <select name="lockDay" id="lockDay_for_update" style="border:thin;">
+		     <option value="0" >请选择 </option>
+		     <option value="7">7天 </option>
+		     <option value="14">14天 </option>
+		     <option value="21">21天 </option>
+		     <option value="28">28天 </option>
+		     <option value="35">35天 </option>
+		     
+		     </select><font color='red' >*请选择临时锁定天数(临时锁定有效)</font>
+		   
+		     
+		     </td>
+		     </tr>
+		      --> 
+		      <tr id = "unlockTime_for_status">  
+		       <td class="lable">解锁时间：</td>
+		      <td><input type="text" name="infoUnlockTime" size="20" maxlength="50" style="border:thin;" readonly="readonly" />
+		          剩余  <input type="text" name="realLockDay" size="4"  style="border:thin;" readonly="readonly" />天<font color='red' >*(临时锁定有效)</font>
+		      </td>
+		      <!--卖家信誉系统会员开通服务  -->
+		      <!--  
+		    </tr>
+		      <tr id = "memberserviceshow">
+		      <td class = "lable">会员开通服务</td>
+		      <td>
+		      <p id="service_show" style="width: 400px;"></p>
+		      </td>
+		      </tr>
+		    -->  
+		     <tr>
+		      <td class="lable" >审核备注：</td>
+		      <td>
+		      <textarea name ="remark" rows="5" cols="40"  readonly style="border:thin;" >
+		      
+		      </textarea>
+		      </td>
+		     
+		    </tr>
+	
+		  </table> 
+	</form>
+</div>
+
+	<!--临时锁定账号备注-->
+	<div id="verifyDialog"
+		style="display: none; width: 500px; height: 205px;" align="center">
+		<form id="verifyForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<input type="hidden" name="uid" id="uid" />
+				<input type="hidden" name="status2" id="status_for_lock"/>
+				<tr>
+				<td>
+				<b id="lock_type1_name">解锁<input type="radio" name ="lock_type" id="lock_type1" value="1"  onchange="lockTypeSelect();" onClick="this.blur();"/></b>
+				<b id="lock_type2_name">临时锁定<input type="radio" name ="lock_type" id="lock_type2" value="2" checked="checked" onchange="lockTypeSelect();" onClick="this.blur();"/> </b>
+				<b id="lock_type3_name">长期锁定<input type="radio" name ="lock_type" id="lock_type3" value="3" onchange="lockTypeSelect();" onClick="this.blur();"/> </b>
+				</td>
+				</tr>
+			<tr id="lockDay_for_show">
+			<td class="lable">临时锁定天数：</td>
+			 <td>
+             <select name="lockday" id="lockDay_for_update">
+		     <option value="0" >请选择 </option>
+		     <option value="3">3天 </option>
+		     <option value="7">7天 </option>
+		     <option value="21">21天 </option>
+		     <option value="28">28天 </option>
+		     <option value="35">35天 </option>
+		     
+		     </select>
+                    </td>
+				</tr>
+				<tr>
+					<td class="lable">操作备注：</td>
+					<td>
+					<textarea rows="3" cols="30" class="easyui-validatebox" name="remark"   id="remark_for_status" data-options="required:true" missingMessage="请填写审核备注" ></textarea>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	
+		<!--增加押金操作-->
+	<div id="depositDialog"
+		style="display: none; width: 500px; height: 205px;" align="center">
+		<form id="depositForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				
+			<tr id="lockDay_for_show">
+			<td class="lable">押金金额：</td>
+			 <td>
+			 <input type="hidden" name="uid"  id="set_deposit_id" />
+			 
+             <input type="text" name="deposit_add" id="deposit_add" class="easyui-validatebox" data-options="required:true" validType="currency" missingMessage="请填写押金金额" >
+             </td>
+				</tr>
+				<tr>
+					<td class="lable">操作备注：</td>
+					<td>
+					<textarea rows="3" cols="30" name="deposit_remark" id="deposit_remark" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写操作备注" ></textarea>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+
+		<!--添加到黑名单-->
+	<div id="blackDialog"
+		style="display: none; width: 500px; height: 205px;" align="center">
+		<form id="blackForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				
+			<tr >
+			<td class="lable">用户uid：</td>
+			 <td>
+			 <input type="hidden" name ="blackStatus" id="black_status"/>
+			 <input type="text" name="uid"  id="set_black_id" style="border: thin;" readonly="readonly"/>
+			 
+             </td>
+				</tr>
+				<tr>
+					<td class="lable">操作备注：</td>
+					<td>
+					<textarea rows="3" cols="30" name="blackRemark" id="black_remark" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写操作备注" ></textarea>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	
+		<!--修改用户类型-->
+	<div id="userTypeDialog"
+		style="display: none; width: 500px; height: 205px;" align="center">
+		<form id="userTypeForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<input type="hidden" name="uid" id="uid_for_usertype" />
+				<input type="hidden" name="type" id="usertype_update" />
+	          <tr> 
+		      <td class="lable">账号类型：</td>
+		      <td>
+		       <input type="radio" name="u_type_update" value="1"/>普通用户
+		       <input type="radio" name="u_type_update" value="2"/>VIP用户
+		       <input type="radio" name="u_type_update" value="3"/>超级VIP用户
+<!-- 		       <b id="user_type1_name">普通用户</b> -->
+<!-- 			   <b id="user_type2_name" style="color: red;">VIP用户 </b> -->
+		      </td>
+		     </tr>
+				<tr>
+					<td class="lable">操作备注：</td>
+					<td>
+					<textarea rows="3" cols="30" class="easyui-validatebox" name="usertyperemark"   id="userType_remark" data-options="required:true" missingMessage="请填写审核备注" ></textarea>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	
+	<!--添加开通服务表单-->
+<div id="addOpenServiceDialog" style="display: none;width: 900px;height: 'auto';" align="center">
+	<form id="addOpenServiceForm" method="post" style="padding: 5px 10px">
+		  <input type="hidden" name="uid">
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		     <tr>
+		       <td class="lable">开通服务：</td>
+		       <td colspan="3" id="allService">
+		       </td>
+		      </tr>
+		  </table> 
+	</form>
+</div>
+</body>
+</html>

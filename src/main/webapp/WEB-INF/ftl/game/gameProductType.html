@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>设置游戏商品类型自</title> <#include "../common.html"/>
+<style>
+.table_line tr td {
+	border-bottom: #999 1px dashed;
+}
+</style>
+<script type="text/javascript">
+var resetForm;
+var copyProductTypeDailog;
+var copyProductTypeForm;
+$(function() {	
+	//修改
+	resetForm = $('#resetForm').form({
+		url : 'saveproperty.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+			$.messager.show({
+					title : '修改成功',
+					msg : json.msg
+				});
+			setTimeout("reload()",1200);
+			} else {
+				$.messager.show({
+					title : '修改失败',
+					msg : json.msg
+				});
+				//resetDialog.dialog('close');
+			}
+		},
+		error:function(XMLHttpRequest, textStatus, errorThrown){
+			alert(textStatus);
+		}
+	});
+	
+    var input = document.getElementsByTagName("input");
+	        for (var i = 0; i < input.length; i++)
+	        {
+	            if (input[i].type == "checkbox"){
+                    if(input[i].checked==false){
+                    	input[i].parentNode.parentNode.style.display = "none";
+                    }
+	                }
+	        } 
+	$("#hide_button").hide();
+	
+
+	copyProductTypeDialog = $('#copyProductTypeDialog').show().dialog({
+		title : '复制商品类型',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '保存',
+			handler : function() {
+				//closeDialog('您确定要复制商品类型吗?', 'copyProductTypeForm', 'copyProductTypeDialog');
+				$.messager.confirm('确认框','您确定要复制商品类型吗?',function(r){  
+					   if (r){ 
+							$.ajax({
+								url : 'copyProductType.do',
+								data : $("#copyProductTypeForm").serialize(),
+								dataType : 'json',
+								success : function(json) {
+									//console.log(json.msg);
+									//var json = $.parseJSON(data);
+									if (json && json.success) {
+										$.messager.show({
+											title : '成功',
+											msg : json.msg
+										});
+										//showPropertyWindow($('#copyProductTypeForm input[name="gameId"]').val());
+										copyProductTypeDialog.dialog('close');
+										window.setTimeout("window.location.reload();", 1000);
+									} else {
+										$.messager.show({
+											title : '失败',
+											msg : json.msg
+										});
+									}
+								}
+							});
+							   }
+							});
+			}
+		} ]
+	}); 
+	
+
+
+});
+
+
+
+
+
+//全选/全不选
+function CheckAll(){
+	var checkb = $("#checkAll").attr("checked");
+	     var input = document.getElementsByTagName("input");
+	        for (var i = 0; i < input.length; i++)
+	        {
+	            if (input[i].type == "checkbox")
+	                if((checkb=="checked")){
+		            input[i].checked = true;
+	                }else{
+	                input[i].checked = false;
+	                }
+	        } 
+}
+
+//全选/全不选
+function CheckAll2(){
+	var checkb = $("#checkAll2").attr("checked");
+	     var input = document.getElementsByTagName("input");
+	        for (var i = 0; i < input.length; i++)
+	        {
+	            if (input[i].type == "checkbox")
+	                if((checkb=="checked")){
+		            input[i].checked = true;
+	                }else{
+	                input[i].checked = false;
+	                }
+	        } 
+}
+//商品自定义
+function add() {
+	var len = $("#table_show_1 > tbody > tr").length;
+	//alert(len);
+	if(len>52){
+		$.messager.alert("提示","只能添加50个自定义商品信息");
+		return false;
+	}
+	var html = $("#resetForm > table > tbody > tr:first").html();
+	var temphtml=$(html);
+	temphtml.find("#model_id").val("");
+	temphtml.find("#model_property_type").val("1");
+	$("<tr></tr>").html(temphtml).appendTo($("#resetForm > table"));
+	//setheight();
+
+}
+//卖家
+function add2() {
+	var len = $("#sell_info >table > tbody > tr").length;
+	//alert(len);
+	if(len>51){
+		$.messager.alert("提示","只能添加50个自定义卖家信息");
+		return false;
+	}
+	var html = $("#resetForm > table > tbody > tr:first").html();
+	var temphtml=$(html);
+	temphtml.find("#model_id").val("");
+	temphtml.find("#model_property_type").val("2");
+	$("<tr></tr>").html(temphtml).appendTo($("#sell_info > table"));
+}
+//购买
+function add3() {
+	var len = $("#buy_info >table > tbody > tr").length;
+	//alert(len);
+	if(len>51){
+		$.messager.alert("提示","只能添加50个自定义购买信息");
+		return false;
+	}
+	var html = $("#resetForm > table > tbody > tr:first").html();
+	var temphtml=$(html);
+	temphtml.find("#model_id").val("");
+	temphtml.find("#model_property_type").val("3");
+	$("<tr></tr>").html(temphtml).appendTo($("#buy_info > table"));
+}
+
+function add4() {
+	var len = $("#define_info >table > tbody > tr").length;
+	//alert(len);
+	if(len>51){
+		$.messager.alert("提示","只能添加50个自定义退游信息");
+		return false;
+	}
+	var html = $("#resetForm > table > tbody > tr:first").html();
+	var temphtml=$(html);
+	temphtml.find("#model_id").val("");
+	temphtml.find("#model_property_type").val("4");
+	$("<tr></tr>").html(temphtml).appendTo($("#define_info > table"));
+}
+
+//删除
+function doDelete(){
+	//判断是否选中
+	 var obj = document.getElementsByName("itemOffset");
+	 //alert(obj.length);
+	 var objYN = false;
+	 for (var i = 0;i< obj.length;i++){
+	 if (obj[i].checked==true) {
+	 objYN= true;
+	 break;
+	 }}
+	 if (objYN==false) {
+		 $.messager.confirm('提示框','请至少选择一项?');
+		 return false; 
+	 }
+	 //删除页面数据
+	 //var str ="";
+	 //for (var j = 0;j< obj.length;j++){
+	 //if (obj[j].checked==true) {
+	 //alert(j);
+	 //flag = true;
+	 //obj[j].parentElement.parentElement.remove();
+	 //alert(obj[j].parentElement.parentElement.name);
+	 //}
+	 //}
+	
+	   
+	
+$.messager.confirm('确认框','您确认要删除数据?',function(r){  
+   if (r){ 
+
+		$.ajax({
+			url : 'propertyDel.do',
+			data : $("#resetForm").serialize(),
+			dataType : 'json',
+			success : function(response) {
+			   //删除页面数据
+			   var num = 0;
+				$(':checkbox[name=itemOffset]').each(function(){
+					if($(this).attr('checked')){
+						$(this).closest('tr').remove();
+						num++;
+					}
+				})
+				//alert('共删除了【'+num+'】行');
+				$.messager.show({
+					title : '提示',
+					msg : response.msg
+				});
+				//location.reload();
+			}
+		});
+		   }
+		});
+}
+
+function save(){
+	 resetForm.submit();
+}
+
+function reload(){
+	location.reload();
+}
+
+//自定义显示字段内容
+function showDisplay(gameId,gptId,checked) { 
+	window.open('gameProductTypeDisplay.do?gameId='+gameId+'&gptId='+gptId,
+					'','width=1000,height=600,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+}
+
+//自定义属性
+function showProperty(gameId,gptId,checked) { 
+	window.open('gameProductTypeProperty.do?gameId='+gameId+'&gptId='+gptId,
+					'','width=1000,height=600,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+}
+//自定义消息
+function showRemind(gameId,gptId) { 
+	window.open('gameProductTypeRemind.do?gameId='+gameId+'&gptId='+gptId,
+					'','width=1000,height=600,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+}
+
+//商品类型跳转
+function linktoproducttype(){
+	var link = "product//productTypeList";
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"商品类型编辑" 
+			};
+	parent.addTab(node);
+}
+
+//复制游戏商品类型属性
+function showCopyProductTypeWindow(){
+	copyProductTypeDialog.dialog('open');
+	copyProductTypeForm.form('reset');
+	//console.log("-------------" + gameId);
+	//$('#copyProductTypeForm input[name="gameId"]').val(gameId);
+}
+
+//添加/更改
+function addAndModify(){
+	//判断是否选中
+	 var obj = document.getElementsByName("gpcIds");
+	 var commonCurrencyTypeId = $('#commonCurrencyTypeId').val();
+
+	 
+	 
+	 var objYN = false;
+	 var objflag = false;
+	 for (var i = 0;i< obj.length;i++){
+	 if (obj[i].checked==true) {
+	 var tname = $('#typeName'+(i+1)).val();
+	 var unitName = $('#unitName'+(i+1)).val();
+	 var idDisplay = $('#idDisplay'+(i+1)).val();
+	 var roleDisplay = $('#roleDisplay'+(i+1)).val();
+	 var minPrice = $('#minPrice'+(i+1)).val();
+	 var maxPrice = $('#maxPrice'+(i+1)).val();
+     console.log(commonCurrencyTypeId +"==== " + obj[i].value + "===>>" + isNaN(minPrice));
+    
+	 if(obj[i].value == commonCurrencyTypeId || commonCurrencyTypeId =="0"){
+		 objflag = true;
+	 }
+	 
+     if(tname ==""){
+    	 $.messager.alert("提示","请填写第" + (i+1) + "行的名称");
+    	 return;
+     }
+     if(unitName ==""){
+    	 $.messager.alert("提示","请填写第" + (i+1) + "行的单位");
+    	 return;
+     }
+//      if(idDisplay ==""){
+//     	 $.messager.alert("提示","请填写第" + (i+1) + "行的ID展现名称");
+//     	 return;
+//      }
+//      if(roleDisplay ==""){
+//     	 $.messager.alert("提示","请填写第" + (i+1) + "行的角色展现名称");
+//     	 return;
+//      }
+     if(minPrice ==""){
+    	 $.messager.alert("提示","请填写第" + (i+1) + "行的最低价格");
+    	 return;
+     }
+     if(maxPrice ==""){
+    	 $.messager.alert("提示","请填写第" + (i+1) + "行的最高价格");
+    	 return;
+     }
+     
+     if(isNaN(minPrice)){
+    	 $.messager.alert("提示","请填写第" + (i+1) + "行的最低价格请填写数字");
+    	 return; 
+     }
+     if(isNaN(maxPrice)){
+    	 $.messager.alert("提示","请填写第" + (i+1) + "行的最高价格请填写数字");
+    	 return; 
+     }
+	 }}
+// 	    console.log("== comoncurrency == " + commonCurrencyTypeId);
+// 	    console.log("== objflag == " + objflag);
+	 if(!objflag&& commonCurrencyTypeId!="0"){
+		 
+		 if(obj[commonCurrencyTypeId].checked==true){
+			 console.log("选择了");
+		 }else{
+			 $.messager.alert("提示","请选择已经为通用货币的项,项号为:" + commonCurrencyTypeId);
+	    	 return;
+		 }
+
+// 		 $.messager.alert("提示","不能删除已经选择为通用货币的项");
+//     	 return;
+	 }
+
+	
+$.messager.confirm('确认框','您确认要提交更新?',function(r){  
+   if (r){ 
+
+	  $("#dataForm").submit();
+	 // window.reload();
+		  }
+		});
+}
+
+function showbutton(){
+	    $("#hide_button").show();
+	    $("#show_button").hide();
+	    var input = document.getElementsByTagName("input");
+        for (var i = 0; i < input.length; i++)
+        {
+            if (input[i].type == "checkbox"){
+				  if(input[i].checked==false){
+			      	input[i].parentNode.parentNode.style.display = "";
+			      }
+	            	 
+                }
+        } 
+}
+
+function hidebutton(){
+    $("#hide_button").hide();
+    $("#show_button").show();
+    var input = document.getElementsByTagName("input");
+        for (var i = 0; i < input.length; i++)
+        {
+            if (input[i].type == "checkbox"){
+			  if(input[i].checked==false){
+		      	input[i].parentNode.parentNode.style.display = "none";
+		      }
+            	 
+            }
+        } 
+}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="center" border="false" title="商品自定义属性 [${gameName!''}]"
+		style="height: 600px;" align="left" id="maincontent">
+		<form id="dataForm" method="post" action="setGameProductCatalogpage"
+			style="padding: 5px 10px;">
+
+
+			<input type="hidden" name="gameId" value="${gameid!'0'}" /> <input
+				type="hidden" name="gptid" value="${gptid!'0'}" /> <input
+				type="hidden" name="commonCurrencyTypeId" id="commonCurrencyTypeId"
+				value="${commonCurrencyTypeId!'0'}">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<tr>
+				    <td>
+					<b style="color: red">${gameName!''}</b>拥有商品类型：
+					</td>
+				</tr>
+				<tr>
+				    <td>
+					<a href="javascript:showCopyProductTypeWindow();"
+						class="easyui-linkbutton">复制商品属性</a> &nbsp;&nbsp;
+					<a href="javascript:linktoproducttype();" class="easyui-linkbutton">商品类型编辑</a>
+					&nbsp;
+					
+					<font color="red">说明:新增商品属性请先勾选且每项都是必填;删除请去掉勾选</font>
+					&nbsp;
+						<a href="javascript:showbutton();" id="show_button" class="easyui-linkbutton">展开商品类型</a>
+				        <a href="javascript:hidebutton();" id="hide_button" class="easyui-linkbutton"><font color="red">收缩</font>商品类型</a>
+					</td>
+				</tr>
+				<tr>
+				<td>
+			     &nbsp;
+				</td>
+				</tr>
+				<tbody id="allProductCatalog">
+				</tbody>
+			</table>
+			<table class="table_line" id="table_show_1">
+
+
+
+
+				<!-- 标题 start -->
+				<tr>
+
+					<td><b>商品类型</b></td>
+					<td><b>首充白名单</b></td>
+					<td><b>代充白名单</b></td>
+					<td><b>名称</b></td>
+					<td><b>单位</b></td>
+				
+<!-- 					<td><b>ID展现名称</b></td> -->
+<!-- 					<td><b>角色展现名称</b></td> -->
+
+					<td><b>最低价格</b></td>
+					<td><b>最高价格</b></td>
+					<td><b>是否审核</b></td>
+					<td><b>分派订单</b></td>
+<!-- 					<td><b>购买填写</b></td> -->
+					<td><b>支持发布</b></td>
+					<td><b>关联渠道</b></td>
+					<td><b>权重</b></td>
+                    <td><b>限购件数</b></td>
+					<td><b>自定义属性</b></td>
+
+				</tr>
+				<!-- 标题 end -->
+
+				<#if gameProductTypeList??> <#list gameProductTypeList as list>
+				<tr>
+					<td><input type="hidden" name="gameid" value="${gameid!'0'}" />
+						<#if ('checked'==list.checked!'')> 
+						<input type="checkbox" name="gpcIds" checked="checked" id="gpcIds${list.id}" value="${list.id}" /> 
+						<#else> 
+						<input type="checkbox" name="gpcIds" id="gpcIds${list.id}" value="${list.id}" /> </#if> <b>${list_index+1}</b>&nbsp;
+						<!-- 		   <b>(${list.id!'0'})</b> --> <!-- 			<input type="text" name="productTypeName${list.id}"checked="checked" value="${list.productTypeName!''}"/> -->
+						<b style="width: 100px;">${list.productTypeName!''}(${list.id!'0'})</b>
+					</td>
+
+					<td>
+					
+					<#if list.gpt_group_type?index_of("首充")!=-1>
+					<select name="scWhiteListAddFlag${list.id}">
+							<option value="0"<#if (0 ==list.scWhiteListAddFlag!'0')>selected="selected"</#if>>不添加</option>
+							<option value="1"<#if (1 ==list.scWhiteListAddFlag!'0')>selected="selected"</#if>>添加</option>
+
+					</select>
+			
+					<#else>
+					--
+					<input type="hidden" name="scWhiteListAddFlag${list.id}" value="0">
+					</#if>
+					</td>
+					
+					<td>
+					<#if list.gpt_group_type?index_of("代充")!=-1>
+					<select name="dcWhiteListCheckFlag${list.id}">
+							<option value="0"<#if (0 ==list.dcWhiteListCheckFlag!'0')>selected="selected"</#if>>不查验</option>
+							<option style="color:red"  value="1"<#if (1 ==list.dcWhiteListCheckFlag!'0')>selected="selected" </#if>>查验</option>
+
+					</select>
+					<#else>
+					--
+					<input type="hidden" name="dcWhiteListCheckFlag${list.id}" value="0">
+					</#if>
+					</td>
+					
+					
+					<td><input type="text" size="4" id="typeName${list_index+1}"
+						name="typeName${list.id}" value="${list.typeName!''}" /></td>
+
+					<td><input type="text" size="4" id="unitName${list_index+1}"
+						name="unitName${list.id}" value="${list.unitName!''}" /></td>
+
+
+
+					<td><input type="text" size="4" id="minPrice${list_index+1}"
+						maxlength="9" name="minPrice${list.id}"
+						value="${list.minPrice!''}" /></td>
+
+					<td><input type="text" size="4" id="maxPrice${list_index+1}"
+						maxlength="9" name="maxPrice${list.id}"
+						value="${list.maxPrice!''}" /></td>
+
+					<td><select name="isAudit${list.id}"
+						onchange="typeUnitshow(this);">
+							<option value="0"<#if (0 ==
+								list.isAudit!'0')>selected="selected"</#if>>是</option>
+							<option value="1"<#if (1 ==
+								list.isAudit!'0')>selected="selected"</#if>>否</option>
+
+					</select></td>
+
+					<td><select name="autoAssign${list.id}">
+							<option value="0"<#if (0 == list.autoAssign!'0')>
+								selected="selected" </#if>>自动</option>
+							<option value="1"<#if (1 == list.autoAssign!'0')>
+								selected="selected" </#if>>手动</option>
+					</select></td>
+
+
+
+					<td><select name="isPublish${list.id}">
+							<option value="0"<#if (0 ==
+								list.isPublish!'0')>selected="selected"</#if>>支持</option>
+							<option value="1"<#if (1 ==
+								list.isPublish!'0')>selected="selected"</#if>>不支持</option>
+
+					</select></td>
+
+					<td><#if channelList??> <select
+						name="gamechannelId${list.id}">
+							<option value="0">请选择</option> <#list channelList as c>
+							<option value="${c.id}"<#if (c.id ==
+								list.gamechannelId!'0')>selected="selected"</#if>>${c.channelName!''}</option>
+							</#list>
+					</select> </#if>
+					</td>
+
+					<td><input type="text" size="4" id="weight${list_index+1}"
+						maxlength="9" name="weight${list.id}" value="${list.weight!'0'}" />
+					</td>
+					
+					<td><input type="text" size="4" id="quota${list_index+1}" maxlength="9" name="quota${list.id}" value="${list.quota!'0'}" />
+					</td>
+					
+					<td><#if ('checked'==list.checked!'')> <input type="button"
+						value="更多信息"
+						onclick="showDisplay(${gameid!'0'},${list.id!'0'},${list.checked})" />
+						</#if>
+					</td>
+
+					<td><#if ('checked'==list.checked!'')> <input type="button"
+						value="属性信息"
+						onclick="showProperty(${gameid!'0'},${list.id!'0'},${list.checked})" />
+						</#if>
+					</td>
+
+					<td><#if ('checked'==list.checked!'')> <input type="button"
+						value="提示信息" onclick="showRemind(${gameid!'0'},${list.id!'0'})" />
+						</#if>
+					</td>
+
+				</tr>
+				</#list> </#if>
+			</table>
+
+			<p style="padding-top: 30px; padding-right: 150px;" align="right">
+				<a href="javascript:void(0);" class="easyui-linkbutton"
+					onclick="addAndModify();">保存</a>
+			</p>
+		</form>
+	</div>
+
+
+	<!--拷贝属性表单-->
+	<div id="copyProductTypeDialog"
+		style="display: none; width: 900px; height: 'auto';" align="center">
+		<form id="copyProductTypeForm" method="post" style="padding: 5px 10px">
+			<input type="hidden" name="togameId" value="${gameid!'0'}">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<tr>
+					<td class="lable">请选择游戏：</td>
+					<td><input id="selectGame" class="easyui-combobox"
+						name="fromGameId"
+						data-options="
+					url: 'queryAllGame_json.do',
+					valueField: 'gameId',
+					textField: 'gameName',
+					panelWidth: 430,
+					panelHeight: 'auto'" />
+					</td>
+				</tr>
+				<tr>
+					<td class="lable">请选择商品类型：</td>
+					<td><input id="selectProductType" class="easyui-combobox"
+						name="productType"
+						data-options="
+					url: 'queryAllProductType_json.do',
+					valueField: 'productId',
+					textField: 'productName',
+					panelWidth: 430,
+					panelHeight: 'auto'" />
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+</body>
+</html>

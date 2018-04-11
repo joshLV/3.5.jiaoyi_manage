@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<title>店铺缴费查询</title> <#include "../common.html"/>
+<script type="text/javascript">
+	var datagrid;
+	var searchForm;
+	$(function() {
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid').datagrid({
+			url : 'memberPayCostList_json',
+			title : '店铺缴费查询',
+			pagination : true,
+			queryParams:{
+				uid:"${uid!''}"
+			},
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'paycost_time',
+			sortOrder : 'desc',
+			columns : [ [ {
+				field : 'id',
+				title : 'ID',
+				align : 'center',
+			}, {
+				field : 'payType',
+				title : '缴费类型',
+				align : 'center',
+				width : 20
+			}, {
+				field : 'uid',
+				title : '用户账户',
+				align : 'center',
+				width : 20
+			}, {
+				field : 'amount',
+				title : '支付金额',
+				align : 'center',
+				width : 20
+			}, {
+				field : 'openingTime',
+				title : '开通时长',
+				align : 'left',
+				width : 20
+			}, {
+				field : 'paycostTime',
+				title : '支付时间',
+				align : 'center',
+				width : 20,
+				sortable : true
+			}, ] ]
+		});
+	});
+
+	function _search() {
+		datagrid.datagrid("unselectAll");
+		var uid = $('#uid').val();
+		var payType = $('#payType').val();
+		datagrid.datagrid({
+			queryParams : {
+				uid : uid,
+				payType : payType,
+			}
+		});
+		datagrid.datagrid('reload');
+
+	}
+
+	function cleanSearch() {
+		datagrid.datagrid('reload');
+		$('#searchForm').form('clear');
+		searchForm.find('#payType').val('-1');
+		datagrid.datagrid({
+			queryParams : {}
+		});
+		datagrid.datagrid('reload');
+	}
+</script>
+</head>
+<body class="easyui-layout">
+	<div
+		region="north"
+		border="false"
+		title="搜索条件"
+		style="padding: 10px; height: 75px; overflow: hidden;"
+		align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+					<td>支付人:<input
+						type="text"
+						id="uid"
+						name="uid"
+						size="20"
+						maxlength="50"
+						class="easyui-numberbox"
+						value="${uid!' '}" 
+						missingMessage="请填写支付人(用户ID),只能是数字" />&nbsp;
+					</td>
+					<td>缴费类型:<select
+						style="width: 155px"
+						name="payType"
+						id="payType">
+							<option value="-1">请选择</option>
+							<option value="1">开通店铺</option>
+							<option value="5">正常续费</option>
+							<option value="7">过期续费</option>
+					</select>&nbsp;
+					</td>
+					<td><a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="_search();">搜索</a> <a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="cleanSearch();">取消</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<div
+		region="center"
+		border="false">
+		<table id="datagrid"></table>
+	</div>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>商品购买规则</title> <#include "../common.html"/>
+<style>
+body,div,ul,li {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font: 12px "宋体";
+	text-align: left;
+}
+
+a:link {
+	color: #00F;
+	text-decoration: none;
+}
+
+a:visited {
+	color: #00F;
+	text-decoration: none;
+}
+
+a:hover {
+	color: #c00;
+	text-decoration: underline;
+}
+
+ul {
+	list-style: none;
+}
+
+.main {
+	clear: both;
+	padding: 8px;
+	text-align: left;
+}
+/*第二种形式*/
+#tabs1 {
+	text-align: left;
+	width: 680px;
+}
+
+.menu1box {
+	position: relative;
+	overflow: hidden;
+	height: 26px;
+	width: 680px;
+	text-align: left;
+	margin-top: 5px;
+	margin-left: 5px;
+}
+
+#menu1 {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1;
+}
+
+#menu1 li {
+	float: left;
+	display: block;
+	cursor: pointer;
+	width: 72px;
+	text-align: center;
+	line-height: 25px;
+	height: 25px;
+}
+
+#menu1 li.hover {
+	background: #fff;
+	border-left: 1px solid #999;
+	border-top: 1px solid #999;
+	border-right: 1px solid #999;
+}
+
+.main1box {
+	clear: both;
+	margin-top: -1px;
+	border: 1px solid #999;
+	width: 800px;
+	overflow: auto;
+}
+
+.Tab{ border-collapse:collapse; width:auto;}
+.Tab td{ border:solid 1px #708090;width:100px}
+.Tab th{ border:solid 1px #708090}
+</style>
+<script type="text/javascript">
+
+
+	function removetr(t, id) {
+		$.messager.confirm('确认框', '您确认要删除?', function(r) {
+			if (r) {
+
+				$.ajax({
+					url : 'productBuyFilterConfigDel',
+					data : {
+						id : id
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(response) {
+						if (response.success) {
+							$.messager.show({
+								title : '成功',
+								msg : response.msg
+							});
+							$(t).parent().parent().remove();
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : response.msg
+							});
+						}
+					}
+				});
+
+			}
+		});
+		
+	}
+
+	function add() {
+		var name = $('#name_input').val();
+		var weight = $('#weight_input').val();
+		var className = $('#className_input').val();
+		var paramDesc = $('#paramDesc_input').val();
+		var remark = $('#remark_input').val();
+		
+
+		$.ajax({
+			url : 'productBuyFilterConfigAdd',
+			data :  $('#config_for_add').serialize(),
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '成功',
+						msg : "添加成功"
+					});
+					window.setTimeout("window.location.reload();",1000);
+					
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : response.msg
+					});
+				}
+			}
+		});
+
+	}
+	
+	//编辑
+	function edit(id){
+		console.log("edit ''' " + id);
+		$.ajax({
+			type : "POST",
+	        url : 'productBuyFilterConfigEdit',
+	        data : {
+	        	id : id
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				console.log(response.data.name);
+				$('#id_edit').val(response.data.id);
+				$('#name_edit').val(response.data.name);
+				$('#weight_edit').val(response.data.weight);
+				$('#className_edit').val(response.data.className);
+				$('#paramDesc_edit').val(response.data.paramDesc);
+				$('#remark_edit').val(response.data.remark);
+				$('#type_edit').val(response.data.type);
+				$('#status_edit').val(response.data.status);
+				
+				$('#editForm').show();
+		        $('#editForm').window({
+				    width:900,
+				    height:400,
+				    title:'编辑',
+				    modal:true
+				});
+			}
+		});	
+	}
+	
+	
+	//编辑
+	function doedit(){
+		var id = $('#id_edit').val();
+		var name = $('#name_edit').val();
+		var weight = $('#weight_edit').val();
+		var className = $('#className_edit').val();
+		var paramDesc = $('#paramDesc_edit').val();
+		var remark = $('#remark_edit').val();
+		$.ajax({
+			type : "POST",
+	        url : 'productBuyFilterConfigDoEdit',
+	        data :$('#filter_doedit').serialize(),
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '成功',
+						msg : "操作成功"
+					});
+					$('#editForm').window('close', true); 
+					window.setTimeout("window.location.reload();",1000);
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : response.msg
+					});
+				}
+			}
+		});	
+	}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="center" border="false" title="系统商品购买规则管理"
+		style="height: 65px; overflow: hidden;" align="left">
+		<!-- 规则管理 -->
+		<div style="padding-bottom: 25px;">
+			<div class="menu1box">
+				<ul id="menu1">
+					<li class="hover" ><font color="red">规则管理</font></li>
+				</ul>
+			</div>
+
+			<div class="main1box" style="height: 240px;width: 100%">
+				<div class="main" id="main1">
+					<table id="data_table" class="Tab">
+						<tr>
+							<th width="2%">ID</th>
+							<th width="13%">规则名称</th>
+							<th width="15%">类名</th>
+							<th>参数说明</th>
+							<th width="2%">排序</th>
+							<th>备注</th>
+							<th width="6%">操作</th>
+						</tr>
+						<#if pconfigList??>
+						<#list pconfigList as c>
+						<tr>
+							<td>${c.id!'0'}</td>
+							<td>${c.name!''}</td>
+							<td>${c.className!''}</td>
+							<td>${c.paramDesc!''}</td>
+							<td>${c.weight!'0'}</td>
+							<td>${c.remark!''}</td>
+							<td><a href="javascript:void(0);" onclick="edit(${c.id!'0'})">编辑</a>| 
+							<a href="javascript:void(0);" onclick="removetr(this,${c.id!'0'});">删除</a></td>
+						</tr>
+                       </#list>
+                       </#if>
+					</table>
+
+				</div>
+			</div>
+		</div>
+
+
+		<!-- 添加新规则 -->
+		<div>
+			<div class="menu1box">
+				<ul id="menu1">
+					<li class="hover" ><font color="red">添加新规则</font></li>
+				</ul>
+			</div>
+
+			<div class="main1box" style="height: 240px;;width: 100%">
+				<div class="main" id="main1">
+				<form action="" id="config_for_add">
+					<table>
+						<tr>
+							<td>规则名称:</td>
+							<td><input name="name" id="name_input" size="60px"/></td>
+						</tr>
+						<tr>
+							<td>类名:</td>
+							<td><input name="className" id="className_input" size="60px"/></td>
+						</tr>
+						<tr>
+							<td>参数说明:</td>
+							<td><input name="paramDesc" id="paramDesc_input" size="60px"/><font color="black">**用于指导运营对规则进行配置</font></td>
+						</tr>
+						<tr>
+							<td>状态:</td>
+							<td><select name="status">
+									<option value="0">正常</option>
+									<option value="1">隐藏</option>
+							</select></td>
+						</tr>
+						<tr>
+							<td>权重:</td>
+							<td><input name="weight" id="weight_input"/></td>
+						</tr>
+						<tr>
+							<td>类型:</td>
+							<td><select name="type" id="type_input">
+									<option value="0">购买资格验证(下单前执行)</option>
+									<option value="1">购买成功(购买后执行)</option>
+									<option value="2">限时打折</option>
+							</select></td>
+						</tr>
+						<tr>
+							<td>备注:</td>
+							<td><textarea name="remark" id="remark_input" cols="55"></textarea></td>
+						</tr>
+		
+
+						<tr>
+							<td colspan="2" style="text-align: center;"><a href="javascript:void(0);" class="easyui-linkbutton" onclick="add();">添加规则</a></td>
+						</tr>
+
+					</table>
+                   </form>
+				</div>
+			</div>
+		</div>
+
+		<!-- 说明 -->
+		<div>
+			<p>
+				<font color="red">说明 ：该功能主要面向研发人员；由研发人员配置系统所支持规则；运营在配置商品购买规则时才可选择</font>
+			</p>
+		</div>
+	</div>
+	
+	
+	<!-- 编辑 -->
+	<div id="editForm" style="display: none;">
+		<div class="menu1box">
+				<ul id="menu1">
+					<li class="hover" ><font color="red">编辑新规则</font></li>
+				</ul>
+			</div>
+
+			<div class="main1box">
+				<div class="main" id="main2">
+				<form action="" id ="filter_doedit">
+					<table>
+						<tr>
+							<td>规则名称:</td>
+							<td>
+							<input type="hidden" name="id" id="id_edit" />
+							<input name="name" id="name_edit"  />
+							</td>
+						</tr>
+						<tr>
+							<td>类名:</td>
+							<td><input name="className" id="className_edit" /></td>
+						</tr>
+						<tr>
+							<td>参数说明:</td>
+							<td><input name="paramDesc" id="paramDesc_edit" /><font color="black">**用于指导运营对规则进行配置</font></td>
+						</tr>
+						<tr>
+							<td>状态:</td>
+							<td><select name="status" id="status_edit">
+									<option value="0">正常</option>
+									<option value="1">隐藏</option>
+							</select></td>
+						</tr>
+						<tr>
+							<td>权重:</td>
+							<td><input name="weight" id="weight_edit"/></td>
+						</tr>
+								<tr>
+							<td>类型:</td>
+							<td><select name="type" id="type_edit">
+									<option value="0">购买资格验证(下单前执行)</option>
+									<option value="1">购买成功(购买后执行)</option>
+									<option value="2">限时打折</option>
+							</select></td>
+						</tr>
+						<tr>
+							<td>备注:</td>
+							<td><textarea name="remark" id="remark_edit"></textarea></td>
+						</tr>
+		
+
+						<tr>
+							<td colspan="2" style="text-align: center;"><a href="javascript:void(0);" class="easyui-linkbutton" onclick="doedit();">保存规则</a></td>
+						</tr>
+
+					</table>
+                 </form>
+				</div>
+			</div>
+	
+	</div>
+</body>
+</html>

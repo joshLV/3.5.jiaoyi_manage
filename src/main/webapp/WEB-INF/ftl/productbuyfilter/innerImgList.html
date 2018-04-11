@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>内页图片列表</title> <#include "../common.html"/>
+<style>
+.table_line tr td {
+	border-bottom: #999 1px dashed;
+}
+</style>
+<script type="text/javascript">
+	var verifyDialog;
+	var editForm;
+
+	//提交数据
+	function toSaveAndEdit() {
+
+		$.messager
+				.confirm(
+						'确认框',
+						'您确认要提交数据?',
+						function(r) {
+							if (r) {
+								$
+										.ajax({
+											url : 'innerimgAddAndEdit.do',
+											data : $("#editForm").serialize(),
+											dataType : 'json',
+											contentType : "application/x-www-form-urlencoded; charset=utf-8",
+											success : function(response) {
+
+												$.messager.show({
+													title : '提示',
+													msg : response.msg
+												});
+												if (response.success == true) {
+													//var numid = response.msg.split("!!")[1];
+													location.reload();
+													//reloadBannerImg(numid);
+												}
+
+											}
+										});
+							}
+						});
+		//editForm.submit();
+	}
+
+	//上传图片回调函数
+	function setImageurl(f, t, picshowurl) {
+		//所在图片浏览id
+		var temstr = "i" + t;
+		//图片名称
+		$('#' + t).val(picshowurl);
+		//设置图片路径
+		$('#' + temstr).attr('src', picshowurl);
+	}
+	
+	function addtr(){
+		
+		var demotr = "<tr>" ;
+		demotr+=$("#demo_tr_add").html();
+		demotr +="</tr>";
+		//console.log(demotr);
+		$("#demo_table").append(demotr);
+	}
+	
+	function removetr(t, id) {
+		console.log("-888888-" + id);
+		if(id==0){
+			$(t).parent().parent().remove();
+			return;
+		}
+		
+		$.messager.confirm('确认框', '您确认要删除?', function(r) {
+			if (r) {
+
+				$.ajax({
+					url : 'singleDel',
+					data : {
+						id : id
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(response) {
+						if (response.success) {
+							$.messager.show({
+								title : '成功',
+								msg : response.msg
+							});
+							$(t).parent().parent().remove();
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : response.msg
+							});
+						}
+					}
+				});
+
+			}
+		});
+	}
+	
+// 	//所有游戏
+// 	$(function() {
+// 		var url = "../product/allgameList_json";
+// 		var gid = ${gameId!'0'}
+// 		$.getJSON(url, function(result) {
+// 			var categoryCount = result.total;
+// 			$("select[name='gameId'] option").remove();
+// 			var def =  "<option value='0'>请选择</option>";
+// 			$("select[name='gameId']").append(def);
+// 			for ( var i = 0; i < categoryCount; i++) {
+// 				var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+// 				if(gid ==result.rows[i].id){
+// 					options = "<option selected=selected  value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+// 				}
+// 				$("select[name='gameId']").append(options);
+// 			}
+
+// 		});
+		
+		
+// 	});
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="center" border="false"
+		title="活动内页图片：<font color=red>${name!''}</font>内页所属图片"
+		style="height: 65px;" align="left" id="maincontent">
+		<form id="editForm" action="imgAddAndEdit.do" id="editForm">
+		
+			<table>
+				<tr>
+
+					<td>活动编号：${aid!''} <input name="aid" type="hidden"
+						value="${aid!''}" />
+					</td>
+
+				</tr>
+				<tr>
+					<td>活动名称:${name!''}</td>
+				</tr>
+				<tr>
+				<td>
+<!-- 				关联游戏:<select id="g_id_receiver" name="gameId"  style="width: 96px"></select> -->
+                                                    关联游戏:${gameName!''}
+				</td>
+				</tr>
+			</table>
+				<table width="99%" border="0" align="center"  cellspacing="0">
+					<tr>
+						<td align="center"><input name="button" type="button"
+							class="btn05" value="保  存" onclick="toSaveAndEdit();" />&nbsp; <s:hidden
+								key="flag" value="1" /></td>
+					</tr>
+
+				</table>
+
+			<table width="100%" border="0" align="center" cellpadding="5"
+				cellspacing="0" class="table_line">
+				<tr>
+					<td class="td05" style="padding: 5px;"></td>
+				</tr>
+			</table>
+
+			<div id="luckOption" style="height: 400px">
+				<table border="0" align="left" cellpadding="5" cellspacing="0"
+					class="table_line">
+					<!-- 有图片开始 -->
+					<tr>
+
+						<th style="text-align: left"><b>图片</b><font color=red>*说明:格式【jpeg/png/bmp/gif/jpg】</font></th>
+						<th><b>预览</b></th>
+					</tr>
+
+					<#if imagesList??> <#list imagesList as item> <#if item.type==3>
+					<tr>
+						<td colspan="2">wap内页banner图片</td>
+					</tr>
+					<#elseif item.type ==4>
+					<tr>
+						<td colspan="2">pc内页banner图片</td>
+					</tr>
+					<#else> </#if>
+
+					<tr>
+
+						<td class="field required"><input type="text"
+							name="imageUrl${item_index+1}" size="35" maxlength="200"
+							value="${item.imageUrl!''}" id="image${item_index+1}"
+							readonly="readonly" /> <iframe
+								src="../file/toupload?imgnumid=image${item_index+1}"
+								width="100%" height="60" frameborder="0"></iframe></td>
+						<td><img id="iimage${item_index+1}" src="${item.imageUrl!''}"
+							alt="" width="400" height="60" /></td>
+
+					</tr>
+					</#list>
+
+
+					<!-- 没图片开始 -->
+					<#else>
+					<tr>
+						<td colspan="2">wap内页banner图片</td>
+					</tr>
+					<tr>
+						<td align="left" class="td05 field required"><input
+							name="imageUrl1" size="35" onchange="viewImage();" id="image1"
+							maxlength="200" readonly="readonly" /> <iframe
+								src="../file/toupload.do?imgnumid=image1" width="100%"
+								height="60" frameborder="0"></iframe></td>
+						<td align="left" class="td05 field required"><img
+							id="iimage1" src="" alt="" width="400" height="60" /></a></td>
+					</tr>
+					<tr>
+						<td colspan="2">pc内页banner图片</td>
+					</tr>
+					<tr>
+						<td align="left" class="td05 field required"><input
+							name="imageUrl2" size="35" onchange="viewImage();" id="image2"
+							maxlength="200" readonly="readonly" /> <iframe
+								src="../file/toupload.do?imgnumid=image2" width="100%"
+								height="60" frameborder="0"></iframe></td>
+						<td align="left" class="td05 field required"><img
+							id="iimage2" src="" alt="" width="400" height="60" /></a></td>
+					</tr>
+					</#if>
+				</table>
+				<table width="99%" border="0" align="center" cellpadding="5" cellspacing="0">
+					<tr>
+					<th style="text-align: left">活动购买须知</th>
+					</tr>
+					<tr>
+						<td width="550px"><input type="hidden" name="noteid1" value="${noteid1!'0'}"> 
+						问1：<input type="text" name="question_one" value="${question1!''}" size="50px;" ></td>
+						<td>答1:<input type="text" name="answer_one" value="${answer1!''}" size="50px;"></td>
+					</tr>
+					<tr>
+						<td><input type="hidden" name="noteid2" value="${noteid2!'0'}"> 
+						问2：<input type="text" name="question_two" value="${question2!''}" size="50px;"></td>
+						<td>答2:<input type="text" name="answer_two" value="${answer2!''}" size="50px;">
+						</td>
+					</tr>
+					<tr>
+						<td><input type="hidden" name="noteid3" value="${noteid3!'0'}"> 
+						问3：<input type="text" name="question_three" value="${question3!''}" size="50px;"></td>
+						<td>答3:<input type="text" name="answer_three" value="${answer3!''}" size="50px;">
+						</td>
+					</tr>
+
+				</table>
+
+				<table class="table_line">
+				<tr>
+				<td>
+				<b>&nbsp;活动游戏下载</b>
+				</td>
+				</tr>
+					<tr>
+						<td align="left" class="td05 field required"><input
+							name="imageUrl3" size="35" onchange="viewImage();" id="image3"
+							maxlength="200" readonly="readonly" value="${imageUrl3!''}" /> <iframe
+								src="../file/toupload.do?imgnumid=image3" width="100%"
+								height="60" frameborder="0"></iframe></td>
+						<td align="left" class="td05 field required"><img
+							id="iimage3" src="${imageUrl3!''}" alt="" width="400" height="60" /></td>
+					</tr>
+
+
+				</table>
+				
+                
+                <table id="demo_table">
+				<tr>
+				<td colspan="3">
+				<input type="button" value="增加游戏下载+" onclick="addtr()">
+				</td>
+				</tr>
+				<tr>
+				<th>按钮名称</th>
+				<th>下载地址</th>
+				<th>操作</th>
+				</tr>
+				
+
+				
+				<#if downList??>
+				<#list downList as d>
+	
+				<tr id="demo_tr_edit">
+				<td>
+				<input type="hidden" name="downid" value="${d.id!'0'}">
+				<input type="text" name="button_name" id="botton_name" value="${d.buttonName!''}">
+				</td>
+				<td>
+				<input type="text" name="download_url" id="download_url" value="${d.downloadUrl!''}">
+				</td>
+				<td>
+				<a href="#" onclick="removetr(this,${d.id!'0'})">删除</a>
+				</td>
+				
+				</tr>
+				</#list>
+			
+				
+				<#else>
+
+
+				<tr  >
+				<td>
+				<input type="hidden" name="downid" id="downid" value="0">
+				<input type="text" name="button_name" id="botton_name">
+				</td>
+				<td>
+				<input type="text" name="download_url" id="download_url">
+				</td>
+				<td>
+				<a href="#" onclick="removetr(this,0)">删除</a>
+				</td>
+				</tr>
+
+				</#if>
+			</table>
+			</div>
+
+
+		
+
+		</form>
+			<table style="display: none;">
+				<tr id="demo_tr_add" >
+				<td>
+				<input type="hidden" name="downid" id="downid" value="0">
+				<input type="text" name="button_name" id="botton_name">
+				</td>
+				<td>
+				<input type="text" name="download_url" id="download_url">
+				</td>
+				<td>
+				<a href="#" onclick="removetr(this,0)">删除</a>
+				</td>
+				</tr>
+				</table>
+	</div>
+
+
+
+
+</body>
+</html>

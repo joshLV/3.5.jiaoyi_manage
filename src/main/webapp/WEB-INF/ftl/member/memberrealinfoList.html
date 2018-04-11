@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>会员实名认证列表</title>
+<#include "../common.html"/>
+<style>
+
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript" src="${request.contextPath}/js/city.js"></script>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'member_realinfoList_json.do',
+			title : '实名认证列表',
+			//iconCls : 'icon-save',
+			queryParams:{
+			uid:${uuuuid}
+					},
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ ${pageList!'100'}, 120, 140, 160 ],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : 'uid',
+			sortName : 'modify_time',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'uid',title:'用户UID',align:'center',sortable:true},	
+			
+			  //{field:'loginName',title:'用户账号',align:'center',width:100},
+			
+			   {field:'realName',title:'真实姓名',align:'left',width:80},
+			   {field:'bankId',title:'银行',align:'left',width:150},
+			   {field:'bankAddr',title:'开户地',align:'left',width:80},	
+			   {field:'idNum',title:'身份证',align:'left',width:150},
+			   {field:'createTime',title:'创建时间',align:'center',width:250},
+			   {field:'modifyTime',title:'修改时间',align:'center',width:250},
+			   {field:'status',title:'状态',align:'left',width:100,
+				   formatter:function(value,row,index){
+					  
+					   if (row.status==0){
+						   return "未通过认证";
+					   }else if(row.status==1){
+						   return "<font color='red' >等待审核</font>";
+					   }else if(row.status==5){
+						   return "实名认证通过";
+					   }else if(row.status==7){
+						   return "实名认证失败";
+					   }else{
+						   return "未选择";
+					   }
+					}  
+				   
+				   },	
+			 
+			 ] ],
+
+			  //双击事件
+			   onDblClickRow:function (rowIndex,rowData){
+				   edit(rowData.uid);
+			   }
+		});
+		editForm = $('#editForm').form({
+			url : 'updateRealInfo.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '会员实名认证详情',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ 
+			            
+			            {
+				text : '修改实名信息',
+				handler : function() {
+				var real_name = $("#real_name_update").val();
+				var bankName = $('#bankName').val();
+				var provid = $('#provid').val();
+				var cityid =$('#cityid').val();
+				var bankCardNum =$('#bankCardNum').val();
+				var bank_address =$('#bank_address').val();
+				var idNumber = $('#id_number_card').val();
+				var remark_update = $('#remark_for_status').val();
+				if(bankName == "0"){
+					$.messager.alert("提示框","请选择开户行");
+					return false;
+				}
+				if(provid == "0"){
+					$.messager.alert("提示框","请选择开户地省份");
+					return false;
+				}
+				if(cityid == "0"){
+					$.messager.alert("提示框","请选择开户地市");
+					return false;
+				}
+				if(bankCardNum == ""){
+					$.messager.alert("提示框","请填写银行卡号");
+					return false;
+				}
+		
+				if(idNumber ==""){
+					$.messager.alert("提示框","请填写身份证号码");
+					return false;
+				}
+				if(remark_update == ""){
+					$.messager.alert("提示框","请填写更改备注");
+					return false;
+				}
+				$.messager.confirm("确认框","您确认要更改该用户实名信息!", function(r) {
+		          if (r) {
+					editForm.submit();
+		          }
+				});
+					//updateStatus(0);
+				}
+			},
+			//{
+			//	text : '审核通过',
+			//	handler : function() {
+					//$("#status_for_link").attr("value",0);
+					//editForm.submit();
+			//		updateStatus(1);
+			//	}
+			//},
+			//{
+			//	text : '银行已打款',
+			//	handler : function() {
+					//$("#status_for_link").attr("value",0);
+					//editForm.submit();
+			//		updateStatus(2);
+			//	}
+			//},
+			{
+				text : '实名认证通过',
+				handler : function() {
+					//$("#status_for_link").attr("value",0);
+					//editForm.submit();
+					updateStatus(5);
+				}
+			},
+			{
+				text : '实名认证不通过',
+				handler : function() {
+					//$("#status_for_link").attr("value",0);
+					//editForm.submit();
+					updateStatus(7);
+				}
+			}
+			
+			]
+		}); 
+
+
+
+});
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+function add() {
+	addDialog.dialog('open');
+	addForm.find("input[type='text']").val("");
+}
+
+function edit(uid) {
+
+		$.ajax({
+			url : 'memberreal_json.do',
+			data : {
+				uid : uid
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				//var uurl = window.location.pathname;
+				var realStatus = response.status;
+				var updateflag = response.modifyFlag;
+				
+				var ShowBK = response.authorityShowBK;
+				var authBankinfo = response.authBankinfo;
+				//alert(!authBankinfo);
+				var ctime = response.createTimeShow;
+				
+				$("#showbk").show();
+				$("#info_show").hide();
+				if(ShowBK == false){
+					$("#showbk").hide();
+				}else{
+					$("#showbk").show();
+				}
+				
+				//alert(ctime ==null);
+				//不是待审核状态隐藏审核按钮
+				editDialog.find("div[class='dialog-button']>a").next().show();
+				if((ctime ==null)||(realStatus == 1|| realStatus == 7) && !authBankinfo){
+					//if(realStatus == 1 || realStatus == 7 ){
+					//alert("show");
+					editDialog.find("div[class='dialog-button']>a").next().show();
+				}else{
+					$("#info_show").show();
+					editDialog.find("div[class='dialog-button']>a").next().hide();
+				}
+				
+				//更新按钮控制
+				editDialog.find("div[class='dialog-button']>a").prev().prev().show();
+				if(!updateflag){
+				editDialog.find("div[class='dialog-button']>a").prev().prev().hide();
+				}
+				
+				editForm.form('clear');
+				editForm.form('load', response);
+				//alert(response.idImgUrl);
+				//alert(response.idImgUrl2);
+				$('div.validatebox-tip').remove();
+				$("#imgurl_font_show").show();
+				$("#imgurl_back_show").show();
+			
+				if(response.idImgUrl!=null&&response.idImgUrl!=""){
+				
+				$("#imgurl_for_show1").attr("src",response.idImgUrl);
+				}else{
+				
+				//$("#imgurl_for_show1").attr("src","../images/idcard_sample1.jpg");	
+				$("#imgurl_font_show").hide();
+				}
+				if(response.idImgUrl2!=null&&response.idImgUrl2!=""){
+				$("#imgurl_for_show2").attr("src",response.idImgUrl2);
+				}else{
+				//$("#imgurl_for_show2").attr("src","../images/idcard_sample1.jpg");
+				$("#imgurl_back_show").hide();
+				}
+				
+				//alert(editDialog.find("div[class='dialog-button']>a").next().html());
+				//editDialog.find("div[class='dialog-button']>a").next().hide();
+				
+				var provid = response.provid;
+				var cityid = response.cityid;
+				var bankprov = "";
+				var bankcity = "";
+				if(provid > 0){
+					chsel(provid);
+					$('#provid').val(provid);
+					var selectIndex = document.getElementById("provid").selectedIndex;
+					var provText = document.getElementById("provid").options[selectIndex].text;
+					bankprov = provText;
+				}
+			
+				if(cityid > 0){
+					$('#cityid').val(cityid);
+					var selectIndex1 = document.getElementById("cityid").selectedIndex;
+					var cityText = document.getElementById("cityid").options[selectIndex1].text;
+					bankcity=cityText;
+				}
+		      if(provid >0 && cityid > 0){
+		    	   $('#bank_address').val(bankprov+","+bankcity);
+		       }else  if(provid >0 ){
+		    	   $('#bank_address').val(bankprov);
+		       }else if(cityid > 0){
+		    	   $('#bank_address').val(cityText);
+		       }
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+
+		
+}
+
+function showRoleSelect(formName,value){
+	if (value == 0){
+		$("#"+formName+" .roleSelect").hide();
+	}else{
+		$("#"+formName+" .roleSelect").show();
+	}
+}
+
+
+
+
+//实名认证审核
+function updateStatus(status){
+	var uid = $("#id_for_update").val();
+	var uremark =$("#remark_for_status").val();
+	
+	if(uremark==""){
+		$.messager.alert("提示","请填写审核备注!");
+		return false;
+	}
+	
+	$.messager.confirm("确认框","您确认要更改该用户实名状态!", function(r) {
+		if (r) {	
+			
+	$.ajax({
+		url : 'updateStatus.do',
+		data : {
+			status2 :status,uid:uid,remark:uremark
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			if (response.success) {
+				$.messager.show({
+					title : '成功',
+					msg : response.msg
+				});
+				datagrid.datagrid('reload');
+				editDialog.dialog('close');
+				editForm.form('load', response);
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : response.msg
+				});
+			}
+		}
+	});
+	
+		}
+	});
+}
+
+function setBankaddr(){
+		var selectIndex = document.getElementById("provid").selectedIndex;
+		var provText = document.getElementById("provid").options[selectIndex].text;
+		bankprov = provText;
+		var selectIndex1 = document.getElementById("cityid").selectedIndex;
+		var cityText = document.getElementById("cityid").options[selectIndex1].text;
+		bankcity=cityText;
+	   $('#bank_address').val(bankprov+","+bankcity);
+  
+}
+
+//查看用户完整银行卡号
+function showbankcardnum(){
+	var uid = $('#id_for_update').val();
+	$.ajax({
+		url : 'showbankcard.do',
+		data : {
+			uid :uid
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+		    //alert("===" + response.showbanknum);
+		    $('#bankCardNum').val(response.showbanknum);
+		}
+	});
+}
+
+</script>
+
+
+<script>
+	var lo2 = function(){};
+	var lo3 = function(){};
+	window.onload = function(){lo2(), lo3(),chsel();};
+</script>
+
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>用户UID:<input name="uid" value="${uuuuid}" style="width:100px;" />&nbsp;</td>
+				<td>身份证号码:<input name="id_num" style="width:100px;" />&nbsp;</td>
+				<td>真实姓名:<input name="realname" style="width:100px;" />&nbsp;</td>
+				<td>审核状态：
+				 <select name="status_search" >
+	            <option value="-1">请选择</option>
+	            <option value="0">未通过实名认证</option>
+	            <option value="1">等待审核</option>
+	            <option value="5">实名认证通过</option>
+	            <option value="7">实名认证失败</option>
+	            
+              </select>
+              </td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+	<div onclick="edit();" iconCls="icon-edit">实名认证详情</div>
+</div>
+
+
+
+
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 600px;height: 400px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="uid" id="id_for_update"/>
+		<input type="hidden" name="status2" id="status_for_link"/>
+		<input type="hidden" name="bankAddr" id="bank_address"  />
+				<table width="100%" border="0" cellspacing="1" cellpadding="1" class="table_line" >
+		 
+		  <tr id="info_show"  >
+		       <td class="lable">说明：</td>
+		      <td>
+		      
+		      <b style="color: red">用户信息支持快速实名认证，如创建30分钟还未认证,请手工审核</b>
+		      </td>
+		    </tr>
+		   <tr>
+		      <td class="lable">用户UID：</td>
+		      <td><input type="text" name="uid" size="20" maxlength="50" readonly="readonly" style="border:thin;" />
+		      &nbsp;
+		      </td>
+		           </tr>
+		   <tr>
+		      <td class="lable">真实姓名：</td>
+		      <td><input type="text" name="realName" size="20" maxlength="20" id="real_name_update"  /></td>
+		        </tr>
+		          <tr>
+		       <td class="lable">身份证号：</td>
+		      <td><input type="text" name="idNum" size="20" maxlength="50" id="id_number_card" />   </td>
+		      </tr>  
+		          <tr>
+		      <td class="lable">登录账号：</td>
+		      <td><input type="text" name="infoLoginid" size="20" maxlength="50" readonly="readonly" style="border:thin;" /></td>
+		        </tr>
+		   <tr>
+		       <td class="lable">证件类型：</td>
+		      <td>
+		      <select name="idType"  style="color: red;border: thin;" disabled="disabled">
+		      <option value="1">2代身份证 </option>
+		      <option value="0">待定</option>
+		      </select>
+		      </td>
+		   </tr>
+		   <tr>
+		        <td class="lable"  >认证状态：</td>
+		      <td>
+		     <select name="status" id="allowUpdate"  style="color: red;border: thin;" disabled="disabled">
+	            <option value="0">未通过实名认证</option>
+	            <option value="1">等待审核</option>
+	            <option value="5">实名认证通过</option>
+	            <option value="7">实名认证失败</option>
+	            
+              </select>
+		      
+		      </td>
+		      
+		    </tr>  
+		    <!-- 
+		    <tr> 
+		       <td class="lable">银行名称：</td>
+		      <td><input type="text" name="bankName" size="20" maxlength="50" readonly="readonly" style="border:thin;" />  </td>
+		       
+		   </tr>
+		    -->
+		   <tr>
+		   <td class="lable"> 开户行 </td>
+		   <td>
+		   <select name="bankId" id="bankName" >
+	         <#include "../public/bank.html">
+	      </select>
+		   </td>
+		   </tr>
+		   
+		    <tr>
+		   <td class="lable"> 账户开户地 </td>
+		   <td>
+		  <table>
+        <tr>
+        	<td>
+        		<div class="select-area">
+        			<select name="provid" id="provid" onchange="chsel(this),setBankaddr();">
+      					<#include "../public/province.html">
+     				 </select>省
+        		</div>
+        	</td>
+	        <td>
+	        <div class="select-area" >
+		        <select name="cityid" id="cityid" onchange="chsel(this),setBankaddr();">
+   	  			</select>市
+		    </div>
+		    </td>
+	    </tr>
+      </table>
+		   </td>
+		   </tr>
+		   
+		   <tr>
+		   <td class="lable"> 支行 </td>
+		   <td>
+		  <input type="text" name="branchInfo" size="40" maxlength="50" readonly="readonly" style="border:thin;" />
+		   </td>
+		   </tr>
+		   
+		   
+		   <tr>
+		       <td class="lable">银行卡号：</td>
+		      <td><input type="text" name="bankCardNum" id="bankCardNum" size="20" maxlength="50"  /> 
+		        <a href="javascript:void(0);" class="easyui-linkbutton" onclick="showbankcardnum();" id="showbk">查看银行卡号</a>
+		        </td>
+		     
+		      </tr>
+		      
+		       <tr>
+		    
+		       <td class="lable">创建时间：</td>
+		      <td><input type="text" name="createTimeShow" size="20" maxlength="50" style="border:thin;" disabled="disabled"/></td>
+		      
+		    </tr>
+		       
+
+             <!--  
+		      <tr>
+		       <td class="lable">开户地址：</td>
+		      <td><input type="text" name="bankAddr" id="bank_address" size="20" maxlength="50" style="border: thin;"  />  </td>
+		   </tr>
+		     -->
+		   <!--
+		   <tr>
+		    
+		       <td class="lable">付款时间：</td>
+		      <td><input type="text" name="infoPayMoneyTime" size="20" maxlength="50" readonly="readonly" style="border:thin;" /></td>
+		      
+		    </tr>
+		    <tr>
+		       <td class="lable">打款金额：</td>
+		      <td><input type="text" name="payMoneyNum" size="20" maxlength="50" readonly="readonly" style="border:thin;" />   </td>
+		     
+		    </tr>
+	  -->
+		  
+		    
+		
+		       <tr id = "imgurl_font_show">
+		       <td class="lable">证件图片正面：</td>
+		      <td >
+		    
+		     <img alt="证件图片" id="imgurl_for_show1" src="" width="390" height="200"  name="idImgUrl"/>
+		     <!--  
+		      <input type="text" name="idImgUrl" size="20" maxlength="50"  />
+		      -->
+		      </td>
+		    </tr>
+		    
+		      <tr id = "imgurl_back_show">
+		       <td class="lable">证件图片反面：</td>
+		      <td >
+		    
+		     <img alt="证件图片" id="imgurl_for_show2" src="" width="390px" height="200px"  name="idImgUrl2"/>
+		        <!-- 
+		      <input type="text" name="idImgUrl2" size="20" maxlength="50"  />
+		        -->
+		      </td>
+		    </tr>
+
+	
+	
+		     <tr>
+		       <td class="lable">操作备注：</td>
+		      <td>
+		      <textarea rows="3" cols="40" name="remark" id="remark_for_status" class="easyui-validatebox" data-options="required:true" missingMessage="请填写审核备注"></textarea>
+		      
+		      </td>
+		    </tr>
+		     
+		  <!-- 
+		 <tr id="realverify_status">
+		  <td colspan="2" style="text-align: right;">
+		 <a href="javascript:void(0);" class="easyui-linkbutton" onclick="updateStatus(5);" id = "realverify_status5">实名认证通过1</a>
+		 <a href="javascript:void(0);" class="easyui-linkbutton" onclick="updateStatus(7);" id = "realverify_status7">实名认证不通过1</a>
+		  </td>
+		  </tr>
+		   --> 
+		  </table> 
+	</form>
+</div>
+</body>
+</html>

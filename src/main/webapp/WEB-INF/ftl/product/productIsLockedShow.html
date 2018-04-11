@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>商品是否被锁定</title><#include "../common.html"/>
+<style>
+#content {
+	font-size: 14px;
+}
+.table_line tr td {
+	border-bottom: #999 1px dashed;
+	padding: 5px;
+}
+</style>
+<script type="text/javascript">
+	var searchForm;
+	$(function() {
+		searchForm = $('#searchForm').form();//条件搜索框
+		$('#gameList').remove();
+		var url = "queryAllGameJson.do";
+		$.getJSON(url, function(result) {
+			var gameCount = result.total;
+			searchForm.find("select[name='gameSelect'] option").remove();
+			for ( var i = 0; i < gameCount; i++) {
+				var options = "<option value='"+result.rows[i].gameId+"'>"
+						+ result.rows[i].gameName + "</option>";
+				searchForm.find("select[name='gameSelect']").append(options);
+			}
+			var gameId = ${gameId};
+			if(!(!gameId && typeof(gameId)!="undefined" && gameId!=0)){
+				searchForm.find("select[name='gameSelect'] option[value='"+gameId+"']").attr("selected","selected")
+			}
+			var productId= "${productId}";
+			if(!(!productId && typeof(productId)!="undefined" && productId!=0)){
+				if (productId != "null") {
+					$('#productId').val(productId);
+				} 
+			}
+			var area= ${areaId};
+			if(!(!area&& typeof(area)!="undefined" && area!=0)){
+				if (area!= "null") {
+					$('#gameArea').val(area);
+				} 
+			}
+			var server= ${serverId};
+			if(!(!server && typeof(server)!="undefined" && server!=0)){
+				if (server != "null") {
+					$('#gameServer').val(server);
+				} 
+			}
+		});
+	});
+	function _search() {
+		var gameId = searchForm.find('#gameId').val();
+		var productId = searchForm.find('#productId').val();
+		var gameArea = $('#gameArea').val();
+		var gameServer = $('#gameServer').val();
+		$.ajax({
+			url : 'productIsLocked',
+			data : {
+				gameId : gameId,
+				productId : productId,
+				areaId:gameArea,
+				serverId:gameServer
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+				console.dirxml(data);
+				var serverId = data.serverId;
+				if(typeof(serverId)=='undefinded'){
+					serverId = "--";
+				}
+				if (data != null) {
+					$('#content').html(
+							"您所查询的商品上架号为<span style='color:red'>[" + productId + "]</span>的商品信息如下:<br>" 
+							+ "<table id='orderDetail' class='table_line' width='50%'>"
+							+"<tr><td width='120px' colspan='2'><span style='color:red'>[游戏接口返回数据]</span></td></tr>"
+							+ "<tr><td width='120px'>角色ID:</td><td>" + data.roleId +"</td>"
+							+ "<tr><td width='120px'>区ID:</td><td>" + data.areaId +"</td>"
+							+ "<tr><td width='120px'>区名称:</td><td>" + data.areaName +"</td>"
+							+ "<tr><td width='120px'>服ID:</td><td>" + data.serverId +"</td>"
+							+ "<tr><td width='120px'>服名称:</td><td>" + data.serverName +"</td>"
+							+ "<tr><td width='120px'>原因:</td><td>" + data.reason +"</td>"
+							+ "<tr><td width='120px'>数量:</td><td><input type=text name=amount id=unlockedAmount value=" + data.amount +"></td>"
+							+ "<tr><td width='120px'>状态:</td><td>" + (data.status==0?"正常":(data.status==1?"取消":(data.status==2?"交易中":(data.status==3?"已完成":"未知状态")))) +"</td></table>"
+							+ "<span><table id='ProductDetail' class='table_line'>"
+							+"<tr><td width='120px'  colspan='2'><span style='color:red'>[8868平台商品数据]</span></td></tr>"
+							+"<tr><td width='120px'>当前上架号：</td><td>"+data.sellPid+"</td></tr>"
+							+"<tr><td width='120px'>当前单件数：</td><td>"+data.singleNumber+"</td></tr>"
+							+"<tr><td width='120px'>当前库存：</td><td>"+data.stock+"</td></tr>"
+							+"<tr><td width='120px'>当前数量：</td><td>"+data.productTotal+"</td></tr>"
+							+"<tr><td width='120px'>当前状态：</td><td>"+(data.productStatus==-1?"删除":(data.productStatus==1?"暂存中":(data.productStatus==3?"审核中":(data.productStatus==5?"审核失败":(data.productStatus==7?"<font color='red'>出售中</font>":(data.productStatus==8?"用户下架":(data.productStatus==9?"已售完":(data.productStatus==10?"游戏下架":(data.productStatus==11?"已过期（下架）":(data.productStatus==12?"后台管理员（下架）":(data.productStatus==13?"下架失败":"未知状态")))))))))))+"</td></tr>"
+							+"</table></span>"
+							+ "<br><input type=button value=解冻商品 onclick=unlockedAmount();>"		
+					);
+				} else {
+					$('#content').html("您所查询的商品上架号为[" + productId + "]的商品没有相关信息");
+				}
+			}
+		});
+	}
+
+	function unlockedAmount(){
+		var gameId = $('#gameId').val();
+		var pid = $('#productId').val();
+		var gameArea = $('#gameArea').val();
+		var gameServer = $('#gameServer').val();
+		var amount = $('#unlockedAmount').val();
+		$.messager.confirm('请确认', "是否解冻商品ID为["+pid+"]解冻数量:"+amount, function(flag) {
+			if(flag){
+				$.ajax({
+					type: "post",
+					url: 'unlockedProductAmount.do',
+					data: {gameId: gameId ,pid: pid ,amount: amount,areaId:gameArea,serverId:gameServer},
+					success: function(response){
+						var json = $.parseJSON(response);
+						if (json && json.success) {
+							$.messager.show({
+								title : '成功',
+								msg : json.msg
+							});
+							$('#searchForm').form('reset');
+							$('#content').html('');
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : json.msg
+							});
+						}
+					}
+				});
+			}
+		});
+	}
+	
+	function cleanSearch() {
+		searchForm.find('#productId').val('');
+		searchForm.find('#gameId').val('');
+		searchForm.find('#gameServer').val('');
+		searchForm.find('#gameArea').val('');
+	}
+	
+	
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="north" border="false" title="搜索条件"
+		style="height: 'auto';min-height:77px; overflow: hidden; padding: 10px" align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+					<td>游戏:<select style="width: 155px" name="gameSelect"
+						id="gameId"></select>&nbsp;
+						游戏区ID:<input type="text"  name="areaId" id="gameArea" size="3">&nbsp;
+						游戏服ID:<input type="text"  name="serverId" id="gameServer" size="3">&nbsp;
+						上架号:<input id="productId" type="text" name="pid" value="" size="35">&nbsp;
+						<a href="javascript:void(0);" class="easyui-linkbutton"
+						onclick="_search();">查询</a> <a href="javascript:void(0);"
+						class="easyui-linkbutton" onclick="cleanSearch();">取消</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<div region="center" border="false">
+		<div id="content" style="padding: 15px;padding-top:77px;"></div>
+	</div>
+</body>
+</html>

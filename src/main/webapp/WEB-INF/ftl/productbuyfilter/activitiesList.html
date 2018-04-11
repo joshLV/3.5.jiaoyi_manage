@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>商品列表</title>
+<#include "../common.html"/>
+
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+var weightForm;
+var weightDialog;
+
+var showCustomAttributesWindow;
+
+$(function() {
+	showCustomAttributesWindow = $('#showCustomAttributesWindow');
+	showCustomAttributesWindow.dialog('close');
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'activitiesList_json.do',
+			title : '活动列表',
+			//iconCls : 'icon-save',
+				queryParams:{
+				//productno:"${productno!''}",userid:${userid!'0'}
+			},
+			pagination : true,
+			loadMsg:null,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 25,
+			pageList : [ ${pageList!'25'}, 30, 40, 100 ],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : 'productId',
+			sortName : 'create_time',
+			sortOrder : 'desc',
+			columns : [ [ 
+			             
+              {field:'ck',checkbox:true,
+					formatter:function(value,row,index){
+						return row.productId;
+					}
+				},
+			             
+			   {field:'id',title:'活动编号',align:'center'},	
+			 
+			   {field:'name',title:'活动名称',align:'center'},	
+			   {field:'gameName',title:'关联的游戏',align:'center'},	
+			   {field:'beginTime',title:'开始时间',align:'left',width:150},
+			   {field:'endTime',title:'结束时间',align:'center',width:150},	
+			   {field:'createTime',title:'创建时间',align:'center',width:150},
+			   {field:'weight',title:'权重',align:'center',width:150},		
+			   {field:'status',title:'状态',align:'left',width:80,
+				   formatter:function(value,row,index){
+						if(row.status==0){
+							return "下线";
+						}else if(row.status==1){
+							return "<font color='red'>上线</font>";
+						}else{
+							   return "未知";
+						   }
+						}  
+			   },
+			   {field:'tag',title:'标签',align:'left'},	
+			   {field:'operate',title:'操作',align:'left',width:250,
+				   formatter:function(value,row,index){
+					   var a='<a href="javascript:void(0)" onclick="modifyStatus(\''+row.id+'\')">上线</a>';
+                       var b = '<a href="javascript:void(0)" onclick="edit(\''+row.id+'\')">编辑</a>';
+                       var c='<a href="javascript:void(0)" onclick="modifyStatus(\''+row.id+'\')">下线</a>';
+                       var d='<a href="javascript:void(0)" onclick="indexPage(\''+row.id+'\')">首页入口</a>';
+                       var e ='<a href="javascript:void(0)" onclick="innerPage(\''+row.id+'\')">内页</a>';
+                       var h ='<a href="javascript:void(0)" onclick="openmodifyWeight(\''+row.id+'\',\''+row.weight+'\')">修改权重</a>';
+					    if(row.status==0){
+							return d+"||"+e+"||"+a+" || "+b +"||"+h;
+					    }else if(row.status==1){
+					    	return d+"||"+e+"||"+c+" || "+b +"||"+h;
+					    }else{
+					    	return "--";
+					    }
+					}
+			   	}
+				  
+			   
+			 ] ],
+			 toolbar : [ {
+					text : '增加',
+					iconCls : 'icon-add',
+					handler : function() {
+						add();
+					}
+				} ],
+
+
+			
+			  //双击事件
+			   onDblClickRow:function (rowIndex,rowData){
+				   edit(rowData.id);
+			   }
+			
+
+			
+		});
+	
+	
+	   //图片显示页面
+	weightForm = $('#weightForm').form({
+		url : 'updateMemStatus',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				datagrid.datagrid('reload');
+				verifyDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+				verifyDialog.dialog('close');
+			}
+		},
+		error:function(XMLHttpRequest, textStatus, errorThrown){
+			alert(textStatus);
+		}
+	});
+    
+
+	//修改权重的页面
+    weightDialog = $('#weightDialog').show().dialog({
+		title : '修改权重',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '提交',
+			handler : function() {
+				modifyWeight();
+			}
+		} ]
+	});	
+
+
+});
+function _search() {
+	var  btime = searchForm.find("table >tbody> tr input[name='btime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='etime']").val();
+	  var  r= btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})\s([0-1][0-9]|[2][0-3])(:)([0-5][0-9])(:)([0-5][0-9])?$/);
+		var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})\s([0-1][0-9]|[2][0-3])(:)([0-5][0-9])(:)([0-5][0-9])?$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+	
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {searchFlag:1});
+	searchForm.find('input').val('');
+	 jQuery("#g_id_area_receiver").empty();
+	 jQuery("#g_id_serverid_receiver").empty();
+	 //$("#a_status").attr("value",'-1');
+	 searchForm.find('select').val('-1');
+	 //$("#a_status").prepend("<option value='-1'>请选择</option>"); 
+}
+
+
+function edit(id) {
+	var link = "productbuyfilter/productActivities.do?activitiesId="+id;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"编辑活动"+id 
+			};
+	parent.addTab(node);
+}
+
+
+
+//调整到添加活动页面
+function add(){
+	var link = "productbuyfilter/toactivitiesAdd.do";
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"添加活动" 
+			};
+	parent.addTab(node);	
+}
+
+//活动上下线modifyactivitiesWeight
+function modifyStatus(id) {
+	
+		$.ajax({
+			type : "POST",
+			url : 'modifyactivitiesStatus',
+			data : {id:id},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '成功',
+						msg : response.msg
+					});
+					datagrid.datagrid('reload');
+					datagrid.datagrid("unselectAll");
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : response.msg
+					});
+				}
+			}
+		});
+
+	}
+
+//活动首页入口
+function indexPage(id){
+	var link = "ProductActivitiesImg/indexImgList?aid="+id;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"活动:"+id+"首页图片" 
+			};
+	parent.addTab(node);
+}
+
+//活动内页入口
+function innerPage(id){
+	var link = "ProductActivitiesImg/innerImgList?aid="+id;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"活动:"+id+"内页" 
+			};
+	parent.addTab(node);	
+}
+
+
+//修改权重
+function modifyWeight() {
+	 var id = $("#modify_id").val();
+	 var weight = $("#modify_weight").val();
+	 if(id ==""){
+		 $.messager.alert("提示","活动id为空");
+		 return;
+	 }
+	 if(weight ==""){
+		 $.messager.alert("提示","权重不能为空");
+		 return;
+	 }
+		$.ajax({
+			type : "POST",
+			url : 'modifyactivitiesWeight',
+			data : {id:id,weight:weight},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '成功',
+						msg : response.msg
+					});
+					 weightDialog.dialog('close');
+					datagrid.datagrid('reload');
+					datagrid.datagrid("unselectAll");
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : response.msg
+					});
+				}
+			}
+		});
+	}
+	
+ function openmodifyWeight(id,weight){
+	 $("#modify_id").val(id);
+	 $("#modify_weight").val(weight);
+	 weightDialog.dialog('open');
+ }
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 85px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+
+				<td>活动编号:<input name="id" value="${id!''}" style="width:80px;" />&nbsp;</td>
+				<td>活动名称:<input name="name" value="${name!''}"  style="width:80px;" />&nbsp;</td>
+				<td>状态:
+				<select id="aa_status"  name="status" style="width:100px;">
+					<option value="-1">所有状态</option>
+				    <option value="0">下线</option>  
+				    <option value="1">上线</option>  
+				  
+				</select>
+				</td>
+				<td>标签:
+					<input type="text" name="tag" style="width:80px;">
+				
+				</td>
+				<td>创建时间:<input name="btime" value="${btime!''}"  type="text"  class="easyui-datetimebox" style="width:120px;"/> -
+                <input name="etime"  value="${etime!''}"  type="text" class="easyui-datetimebox" style="width:120px;"/>
+                </td>
+                
+              
+			<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a> 
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a> 
+			</td>
+			</tr>
+		
+	
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+	<!--修改权重框-->
+	<div id="weightDialog" style="display: none; width: 500px; height: 205px;"
+		align="center">
+		<form id="weightForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1"class="table_line">
+			<tr>
+			<td>
+			<input type="hidden" name="id" id="modify_id">
+			权重：<input name="weight" value="0" id="modify_weight">
+			</td>
+			</tr>
+			</table>
+		</form>
+	</div>
+
+</body>
+</html>

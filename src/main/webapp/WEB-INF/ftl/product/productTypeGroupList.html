@@ -1,0 +1,327 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>商品类型一级类目列表</title> <#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+		url : 'proTypeGroupList_json',
+		title : '商品类型一级分类列表',
+		//iconCls : 'icon-save',
+		pagination : true, 
+		pagePosition : 'bottom',
+		rownumbers : true,
+		pageSize : 100,
+		pageList : [ 100, 120, 140, 160 ],
+		fit : true,
+		fitColumns : true,
+		nowrap : true,
+		border : false,
+		idField : 'id',
+		sortName : 'weight',
+		sortOrder : 'desc',
+		columns : [ [ 
+	       {field:'ck',checkbox:true,
+				formatter:function(value,row,index){
+					return row.obid;
+				}
+			},
+		   {field:'id',title:'一级分类ID',align:'center'},				
+		   {field:'name',title:'一级分类名称',align:'center',width:100},				
+		   {field:'status',title:'状态',align:'center',width:120,
+			   formatter:function(value,row,index){
+					if(value == 1){
+						return "显示";
+					}
+					if(value == 2){
+						return "隐藏";
+					}
+			   } 
+		   },
+		   {field:'weight',title:'权重',align:'center',width:100,sortable:true}				
+		] ],
+		
+		toolbar : [ {
+			text : '增加',
+			iconCls : 'icon-add',
+			handler : function() {
+				add();
+			}
+		}, '-', {
+			text : '删除',
+			iconCls : 'icon-remove',
+			handler : function() {
+				del();
+			}
+		}, '-', {
+			text : '修改',
+			iconCls : 'icon-edit',
+			handler : function() {
+				edit();
+			}
+		}, '-', {
+			text : '取消选中',
+			iconCls : 'icon-undo',
+			handler : function() {
+				datagrid.datagrid('unselectAll');
+			}
+		}, '-' ],
+		
+		//右键菜单 
+		onRowContextMenu : function(e, rowIndex, rowData) {
+			e.preventDefault();
+			$(this).datagrid('unselectAll');
+			$(this).datagrid('selectRow', rowIndex);
+			$('#menu').menu('show', {
+				left : e.pageX,
+				top : e.pageY
+			});
+		}
+	});
+	
+	 addForm = $('#addForm').form({
+			url : 'proTypeGroup_add',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加一级分类',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					closeDialog('您确定要添加该一级分类吗?','addForm', 'addDialog');
+				}
+			} ]
+		});
+		
+		editDialog = $('#editDialog').show().dialog({
+			title : '编辑一级分类信息',
+			modal : true,
+			closed : true,              
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					closeDialog('您确定要编辑该一级类吗?','editForm', 'editDialog');
+				}
+			} ]
+		});
+		editForm = $('#editForm').form({
+			url : 'productTypeGroup_update',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+});
+
+function add(){
+	addForm.form('reset');
+	addDialog.dialog('open');
+}
+
+function edit(){
+	var rows = datagrid.datagrid('getSelections');
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		editForm.form('clear');
+		$('#editForm input[name="id"]').val(rows[0].id);
+		$('#editForm input[name="name"]').val(rows[0].name);
+		$('#editForm select[name="status"]').val(rows[0].status);
+		$('#editForm input[name="weight"]').val(rows[0].weight);
+		$('div.validatebox-tip').remove();
+		editDialog.dialog('open');
+		$.messager.progress('close');
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+function del(){
+	var rows = datagrid.datagrid('getSelections');
+	var ids =[];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].id);
+				}
+				$.ajax({
+					url : 'proTypeGroup_del',
+					data : {
+						ids : ids.join(','),
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	}
+}
+
+function _search(){
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch(){
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+//判断该游戏名称是否存在
+function isExist(name){
+	$.ajax({
+		url : 'isGameTypeGroupNameExist',
+		data : {
+			gameName : name,
+		},
+		dataType : 'json',
+		success : function(response) {
+			if (!response.success) {
+				$.messager.show({
+					title : '失败',
+					msg : response.msg
+				});
+			} else {
+			}
+		}
+	});
+}
+</script>
+</head>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height:70px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>一级分类名称：<input name="name" style="width:140px;" />&nbsp;</td>
+				<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a> 
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+<div id="menu" class="easyui-menu" style="width: 120px; display: none;">
+		<div onclick="add();" iconCls="icon-add">增加</div>
+		<div
+			onclick="del();"
+			iconCls="icon-remove">删除</div>
+		<div
+			onclick="edit();"
+			iconCls="icon-edit">编辑</div>
+	</div> 
+	
+	<!--添加表单-->
+ 	 <div
+		id="addDialog"
+		style="display: none; width: 500px; height: auto;"
+		align="center">
+		<form id="addForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="5" cellpadding="5">
+				<tr>
+					<td class="label">一级分类名称：</td>
+					<td><input type="text" name="name" size="20" maxlength="50" class="easyui-validatebox" data-options="required:true" 
+						missingMessage="请填一级分类名称" onblur="isExist($(this).val());"/>
+					</td>
+				</tr>
+				<tr>
+					<td class="label">状态：</td>
+					<td><select name="status" >
+							<option value="1">显示</option>
+							<option value="2">隐藏</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td class="label">权重：</td>
+					<td><input name="weight" size="20" maxlength="50" class="easyui-validatebox" data-options="required:true" missingMessage="请填权重"/></td>
+				</tr>
+				</table>
+		</form>
+	</div>  
+	<!--编辑表单-->
+ 	 <div
+		id="editDialog"
+		style="display: none; width: 500px; height: auto;"
+		align="center">
+		<form id="editForm" method="post" style="padding: 5px 10px">
+			<input type="hidden" name="id" /> 
+			<table width="100%" border="0" cellspacing="5" cellpadding="5">
+				<tr>
+					<td class="label">一级分类名称：</td>
+					<td><input type="text" name="name" size="20" maxlength="50" class="easyui-validatebox" data-options="required:true" 
+						missingMessage="请填一级分类名称" onchange="isExist($(this).val());"/>
+					</td>
+				</tr>
+				<tr>
+					<td class="label">状态：</td>
+					<td><select name="status" >
+							<option value="1">显示</option>
+							<option value="2">隐藏</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td class="label">权重：</td>
+					<td><input name="weight" size="20" maxlength="50" class="easyui-validatebox" data-options="required:true" missingMessage="请填权重"/></td>
+				</tr>
+				</table>
+		</form>
+	</div>  
+</body>
+</html>

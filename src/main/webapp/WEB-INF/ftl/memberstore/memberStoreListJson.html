@@ -1,0 +1,33 @@
+<#if pageInfo.items??>
+{"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+
+{
+"uid":${item.uid},
+"verifyStatus":${item.verifyStatus!'1'},
+"storeStatus":${item.storeStatus!'1'},
+"userLogin":"${item.userLogin!''}",
+"realName":"${item.realName!''}",
+<#if item.createTime??>
+"createTime":"${item.createTime?string('yyyy-MM-dd HH:mm:ss')}",
+<#else>
+"createTime":"",
+</#if>
+<#if item.beginTime??>
+"beginTime":"${item.beginTime?string('yyyy-MM-dd HH:mm:ss')}",
+<#else>
+"beginTime":"",
+</#if>
+<#if item.endTime??>
+"endTime":"${item.endTime?string('yyyy-MM-dd HH:mm:ss')}"
+<#else>
+"endTime":""
+</#if>
+}
+<#t>
+<#if item_has_next>,</#if>
+</#list>
+]}
+  <#else>
+  {"total":0,"rows":[]}
+</#if>

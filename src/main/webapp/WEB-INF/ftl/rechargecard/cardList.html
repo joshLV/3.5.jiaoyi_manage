@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>充值卡列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+var showDialog;
+var modifyTypeDialog;
+var inputPassDialog;
+var showCardPassDialog;
+
+var usrCardDialog;
+var usrCardForm;
+
+var inputXlsDialog;
+
+var modifyDialog;
+var modifyForm;
+
+var batchStatusDialog;
+var batchStatusForm;
+
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'cardList_json',
+			title : '充值卡列表',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'id',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.id;
+						}
+					},
+			   {field:'id',title:'编号',align:'left'},
+			   {field:'number',title:'卡号',align:'left',width:100},				
+			   //{field:'password',title:'卡密',align:'center',width:100,sortable:true},				
+			   {field:'denomination',title:'面值',align:'',width:30},
+			   {field:'balance',title:'余额',align:'',width:30},
+			   {field:'create_time',title:'创建时间',align:'left',width:80	},				
+			   {field:'recharge_time',title:'使用时间',align:'left',width:80},
+			   {field:'orderId',title:'订单号',align:'left',width:80},
+			   {field:'gameAccount',title:'绑定的帐号',align:'left',width:80},
+			   {field:'customer_service_name',title:'领卡人',align:'left',width:30},
+			   {field:'status',title:'状态',align:'center',
+				   formatter:function(value,row,index){
+					   if (row.status==0){
+						   return "未使用";
+					   }else if(row.status==1){
+						   return "已派出";
+					   }else if(row.status==2){
+						   return "已充值";
+					   }else if(row.status==3){
+						   return "无法充值";
+					   }else if(row.status==4){
+						   return "<font color='red'>待回收</font>";
+					   }else if(row.status==5){
+						   return "<font color='red'>已充帐号</font>";
+					   }else{
+						   return "--"
+					   }
+					}   
+			   },
+			   {field:'operationType',title:'使用余额卡',align:'center',
+				   formatter:function(value,row,index){
+					   if (row.operationType==1){
+						   return "<font color=red>适用余额卡</font>";
+					   }else if(row.operationType == 0){
+						   return "匹配面值"
+					   }else if(row.operationType == 2){
+						   return "b2c虚拟币专用卡"
+					   }else{
+						   return "--"
+					   }
+					}   
+			   },
+			   {field:'type',title:'卡类型',align:'center',
+				   formatter:function(value,row,index){
+					   if (row.type==11){
+						   return "骏网卡";
+					   }else if(row.type==12){
+						   return "天下卡";
+					   }else if(row.type==13){
+						   return "360骏网卡";
+					   }else{
+						   return "未知类别"
+					   }
+					}   
+			   },
+			   {field:'operate',title:'操作',align:'center',width:120,sortable:true,
+				   formatter:function(value,row,index){
+					    if(row.operate==null || row.operate==''){
+					    	var a ='<a href="javascript:void(0)" onclick="edit(\''+row.id+'\')" >修改状态</a>';
+					    	var b ='<a href="javascript:void(0)" onclick="passwordshow(\''+row.id+'\')" >查看卡密</a>';
+					    	var c ='<a href="javascript:void(0)" onclick="modifybalance(\''+row.id+'\')" >更改余额</a>';
+							return a +"||"+ b+"||"+c;
+					    }
+					}
+			   	},
+			 ] ],
+			 toolbar : [ {
+					text : '删除',
+					iconCls : 'icon-remove',
+					handler : function() {
+						del();
+					}
+				}, '-',
+				 {
+					text : '批量修改状态',
+					iconCls : 'icon-remove',
+					handler : function() {
+						batchshow();
+						
+					}
+				}, '-', 
+				
+				{
+					text : '取消选中',
+					iconCls : 'icon-undo',
+					handler : function() {
+						datagrid.datagrid('unselectAll');
+					}
+				}, '-' ],
+
+			  //双击事件
+			   onDblClickRow:function (rowIndex,rowData){
+				   $(this).datagrid('unselectAll');
+				   $(this).datagrid('selectRow', rowIndex);	
+				   edit(rowData.id);
+			   }
+		});
+		editForm = $('#editForm').form({
+			url : 'card_edit.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '卡详情',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '改成 卡无法充值',
+				handler : function() {
+					var modifyid =$("#id_edit").val();
+					modifyStatus(modifyid,3);
+				}
+			}, {
+				text : '改成 卡未使用',
+				handler : function() {
+					var modifyid =$("#id_edit").val();
+					modifyStatus(modifyid,0);
+				}
+			} , {
+				text : '改成 卡已使用',
+				handler : function() {
+					var modifyid =$("#id_edit").val();
+					$("#usr_card_id").val(modifyid);
+					$('#usr_card_order_id').val('');
+					usrCardDialog.dialog('open');
+				}
+			} 
+			
+			]
+		});
+		
+		modifyForm = $('#modifyForm').form({
+			url : 'modify_balance_info.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					modifyDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		
+		batchStatusDialog = $('#batchStatusDialog').show().dialog({
+			title : '卡详情',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '改成 卡无法充值',
+				handler : function() {
+					var modifyid =$("#id_edit").val();
+					modifyStatusbatch(3);
+				}
+			}, {
+				text : '改成 卡未使用',
+				handler : function() {
+					var modifyid =$("#id_edit").val();
+					modifyStatusbatch(0);
+				}
+			}
+			
+			]
+		});
+		
+		batchStatusForm = $('#batchStatusForm').form({
+			url : 'statusModifyBatch.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					modifyDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		
+		
+
+		modifyDialog = $('#modifyDialog').show().dialog({
+			title : '卡详情',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '确认修改',
+				handler : function() {
+					modifyForm.submit();
+				}
+			}
+			
+			]
+		});
+		
+		
+		showDialog = $('#showDialog').show().dialog({
+			title : '卡使用详情',
+			modal : true,
+			closed : true,
+			top : 80,
+			maximizable : true
+
+		});
+		
+		inputPassDialog= $('#inputPassDialog').show().dialog({
+			title : '查看密码验证',
+			modal : true,
+			closed : true,
+			maximizable : true
+
+		});
+		
+		inputXlsDialog= $('#inputXlsDialog').show().dialog({
+			title : '导出验证',
+			modal : true,
+			closed : true,
+			maximizable : true
+
+		});
+		
+		usrCardDialog = $('#usrCardDialog').show().dialog({
+			title : '修改卡为已使用',
+			modal : true,
+			closed : true,
+			maximizable : true
+		});
+		
+		addForm = $('#addForm').form({
+			url : 'card_add.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加新管理员',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					addForm.submit();
+				}
+			} ]
+		});
+		
+		modifyTypeDialog = $('#modifyTypeDialog').show().dialog({
+			title : '修改订单充值方式',
+			modal : true,
+			closed : true,
+			maximizable : true
+		});
+		
+
+
+});
+function _search() {
+	
+	var  btime = searchForm.find("table >tbody> tr input[name='btime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='etime']").val();
+	var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+	
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+function add() {
+	addDialog.dialog('open');
+	addForm.form('reset');
+	addForm.find("input[type='text']").val("");
+}
+function del() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].id);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'del.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						//var d = JSON.parse(response);
+						
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	} 
+}
+function edit(cid) {
+		$.ajax({
+			url : 'card_json.do',
+			data : {
+				id : cid
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				var status = response.status;
+				var status_name = "--";
+				var logsize = 0;
+				if(response.loglist != null){
+					logsize = response.loglist.length;
+				}
+				
+				if(status =="0"){
+					status_name = "未使用";
+				}else if(status =="1"){
+					status_name = "已派出";
+				}else if(status =="2"){
+					status_name = "已充值";
+				}else if(status =="3"){
+					status_name = "无法充值";
+				}else if(status =="4"){
+					status_name = "卡密待回收";
+				}
+				$("#id_edit").val(response.id);
+				$("#card_num").html(response.card_num);
+				$("#status_name").html(status_name);
+				$("#order_id").html(response.order_id);
+				$("#customer_servce_name").html(response.customer_servce_name);
+				var html ="";
+				if(logsize >0){
+		           for(var i=0;i <logsize;i++){
+		        	   html +="<tr>";
+		        	   html +="<td>" + response.loglist[i].createTime + "</td>";
+		        	   html +="<td>" + response.loglist[i].remark + "</td>";
+		        	   html +="</tr>";
+		           }
+				}
+				$('#log_list').html(html);
+				editForm.form('clear');
+				editForm.form('load', response);
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+
+}
+
+function show() {
+	
+	var rows = datagrid.datagrid('getSelections');
+
+		$.ajax({
+			
+			url : 'card_used0.do',
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				var size = 0;
+				if(response.showlist != null){
+					size = response.showlist.length;
+				}
+	
+				var html ="";
+				var html2 = "";
+				var html3 = "";
+				if(size >0){
+					console.dirxml(response);
+					html +='<tr><th width="100px">卡类使用信息</th><th width="150px">面额</th><th width="150px">未使用</th><th width="150px">已充值</th></tr>';
+					html +="<tr><th></th><td></td><td></td></tr>";
+		           	for(var i=0;i <size;i++){
+		        		if(response.showlist[i].TYPE == 11) {		        	   	
+		        	  		html +="<tr><th>骏网卡</th>";
+		        	   		html +="<td>" + response.showlist[i].denomination + "</td>";
+		        	   		html +="<td>" + response.showlist[i].unused + "</td>";
+		        	   		html +="<td>" + response.showlist[i].charger + "</td>";
+		        	   		html +="</tr>";
+		           		}
+		           	}
+		           	for(var i=0;i <size;i++){
+		        		if(response.showlist[i].TYPE == 12) {		        	   	
+		        	  		html2 +='<tr><th width="100px">天下卡</th>';
+		        	   		html2 +='<td width="150px">' + response.showlist[i].denomination + '</td>';
+		        	   		html2 +='<td width="150px">' + response.showlist[i].unused + '</td>';
+		        	   		html2 +='<td width="150px">' + response.showlist[i].charger + '</td>';
+		        	   		html2 +="</tr>";
+		           		}
+		           	}
+		           	for(var i=0;i <size;i++){
+		        		if(response.showlist[i].TYPE == 13) {		        	   	
+		        	  		html3 +='<tr><th width="100px">360骏网卡</th>';
+		        	   		html3 +='<td width="150px">' + response.showlist[i].denomination + '</td>';
+		        	   		html3 +='<td width="150px">' + response.showlist[i].unused + '</td>';
+		        	   		html3 +='<td width="150px">' + response.showlist[i].charger + '</td>';
+		        	   		html3 +="</tr>";
+		           		}
+		            }
+				}
+				console.log(html);
+			//	$("#show_list").html(html);
+				$("#a").html(html);
+			 	$("#b").html(html2);
+				$("#c").html(html3); 
+				$('div.validatebox-tip').remove();
+				showDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+}
+
+function show2(v) {
+	$(v).addClass("active").siblings().removeClass("active");
+	$(".card:eq(" + $(v).index() + ")").css("display", "block").siblings(".card").css("display", "none");
+	
+	var rows = datagrid.datagrid('getSelections');
+
+	$.ajax({
+		
+		url : 'card_used0.do',
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			var size = 0;
+			if(response.showlist != null){
+				size = response.showlist.length;
+			}
+			var html ="";
+			var html2 ="";
+			var html3 ="";
+			if(size >0){
+				console.dirxml(response);
+				html +='<tr><th width="100px">卡类使用信息</th><th width="150px">面额</th><th width="150px">未使用</th><th width="150px">已充值</th></tr>';
+				html +="<tr><th></th><td></td><td></td></tr>";
+				for(var i=0;i <size;i++){
+	        		if(response.showlist[i].TYPE == 11) {		        	   	
+	        	  		html +="<tr><th>骏网卡</th>";
+	        	   		html +="<td>" + response.showlist[i].denomination + "</td>";
+	        	   		html +="<td>" + response.showlist[i].unused + "</td>";
+	        	   		html +="<td>" + response.showlist[i].charger + "</td>";
+	        	   		html +="</tr>";
+	           		}else if(response.showlist[i].TYPE == 12) {		        	   	
+	           			html2 +='<tr><th width="100px">天下卡</th>';
+	        	   		html2 +='<td width="150px">' + response.showlist[i].denomination + '</td>';
+	        	   		html2 +='<td width="150px">' + response.showlist[i].unused + '</td>';
+	        	   		html2 +='<td width="150px">' + response.showlist[i].charger + '</td>';
+	        	   		html2 +="</tr>";
+	           		}else if(response.showlist[i].TYPE == 13) {		        	   	
+	           			html3 +='<tr><th width="100px">360骏网卡</th>';
+	        	   		html3 +='<td width="150px">' + response.showlist[i].denomination + '</td>';
+	        	   		html3 +='<td width="150px">' + response.showlist[i].unused + '</td>';
+	        	   		html3 +='<td width="150px">' + response.showlist[i].charger + '</td>';
+	        	   		html3 +="</tr>";
+	           		}
+	            }
+			}
+			console.log(html);
+			$("#a").html(html);
+			$("#b").html(html2);
+			$("#c").html(html3);
+		}
+	});
+}
+
+function show3(v) {
+	$(v).addClass("active").siblings().removeClass("active");
+	$(".card:eq(" + $(v).index() + ")").css("display", "block").siblings(".card").css("display", "none");
+	var rows = datagrid.datagrid('getSelections');
+
+	$.ajax({
+		
+		url : 'card_used1.do',
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			var size = 0;
+			if(response.showlist != null){
+				size = response.showlist.length;
+			}
+			var html ="";
+			var html2 ="";
+			var html3 ="";
+			if(size >0){
+				console.dirxml(response);
+				html +='<tr><th width="100px">卡类使用信息</th><th width="150px">面额</th><th width="150px">未使用</th><th width="150px">已充值</th></tr>';
+				html +="<tr><th></th><td></td><td></td></tr>";
+				for(var i=0;i <size;i++){
+	        		if(response.showlist[i].TYPE == 11) {		        	   	
+	        	  		html +="<tr><th>骏网卡</th>";
+	        	   		html +="<td>" + response.showlist[i].denomination + "</td>";
+	        	   		html +="<td>" + response.showlist[i].unused + "</td>";
+	        	   		html +="<td>" + response.showlist[i].charger + "</td>";
+	        	   		html +="</tr>";
+	           		}else if(response.showlist[i].TYPE == 12) {		        	   	
+	           			html2 +='<tr><th width="100px">天下卡</th>';
+	        	   		html2 +='<td width="150px">' + response.showlist[i].denomination + '</td>';
+	        	   		html2 +='<td width="150px">' + response.showlist[i].unused + '</td>';
+	        	   		html2 +='<td width="150px">' + response.showlist[i].charger + '</td>';
+	        	   		html2 +="</tr>";
+	           		}else if(response.showlist[i].TYPE == 13) {		        	   	
+	           			html3 +='<tr><th width="100px">360骏网卡</th>';
+	        	   		html3 +='<td width="150px">' + response.showlist[i].denomination + '</td>';
+	        	   		html3 +='<td width="150px">' + response.showlist[i].unused + '</td>';
+	        	   		html3 +='<td width="150px">' + response.showlist[i].charger + '</td>';
+	        	   		html3 +="</tr>";
+	           		}
+	            }
+			}
+			console.log(html);
+			$("#a2").html(html);
+			$("#b2").html(html2);
+			$("#c2").html(html3);
+		}
+	});
+}
+
+function show4(v) {
+	$(v).addClass("active").siblings().removeClass("active");
+	$(".card:eq(" + $(v).index() + ")").css("display", "block").siblings(".card").css("display", "none");
+	
+	var rows = datagrid.datagrid('getSelections');
+
+	$.ajax({
+		
+		url : 'card_used2.do',
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			var size = 0;
+			if(response.showlist != null){
+				size = response.showlist.length;
+			}
+			var html ="";
+			var html2 ="";
+			var html3 ="";
+			if(size >0){
+				console.dirxml(response);
+				html +='<tr><th width="100px">卡类使用信息</th><th width="150px">面额</th><th width="150px">未使用</th><th width="150px">已充值</th></tr>';
+				html +="<tr><th></th><td></td><td></td></tr>";
+				for(var i=0;i <size;i++){
+	        		if(response.showlist[i].TYPE == 11) {		        	   	
+	        	  		html +="<tr><th>骏网卡</th>";
+	        	   		html +="<td>" + response.showlist[i].denomination + "</td>";
+	        	   		html +="<td>" + response.showlist[i].unused + "</td>";
+	        	   		html +="<td>" + response.showlist[i].charger + "</td>";
+	        	   		html +="</tr>";
+	           		} else if(response.showlist[i].TYPE == 12) {		        	   	
+	           			html2 +='<tr><th width="100px">天下卡</th>';
+	        	   		html2 +='<td width="150px">' + response.showlist[i].denomination + '</td>';
+	        	   		html2 +='<td width="150px">' + response.showlist[i].unused + '</td>';
+	        	   		html2 +='<td width="150px">' + response.showlist[i].charger + '</td>';
+	        	   		html2 +="</tr>";
+	           		}else if(response.showlist[i].TYPE == 13) {		        	   	
+	           			html3 +='<tr><th width="100px">360骏网卡</th>';
+	        	   		html3 +='<td width="150px">' + response.showlist[i].denomination + '</td>';
+	        	   		html3 +='<td width="150px">' + response.showlist[i].unused + '</td>';
+	        	   		html3 +='<td width="150px">' + response.showlist[i].charger + '</td>';
+	        	   		html3 +="</tr>";
+	           		}
+	            }
+			}
+			console.log(html);
+			$("#a3").html(html);
+			$("#b3").html(html2);
+			$("#c3").html(html3);
+		}
+	});
+}
+
+function showRoleSelect(formName,value){
+	if (value == 0){
+		$("#"+formName+" .roleSelect").hide();
+	}else{
+		$("#"+formName+" .roleSelect").show();
+	}
+}
+
+function modifyStatus(id,status){
+	$.ajax({
+		url : 'status_modify.do',
+		data : {
+			id : id,status:status
+		},
+		dataType : 'json',
+		success : function(response) {
+			datagrid.datagrid('load');
+			datagrid.datagrid('unselectAll');
+			//var d = JSON.parse(response);
+			editDialog.dialog('close');
+			$.messager.show({
+				title : '提示',
+				msg : response.msg
+			});
+			
+		}
+	});
+}
+
+//打开窗口
+function tomodifyOrderrechargeType(){
+	//$("#modifyTypeForm").find("<input>").val("");
+	modifyTypeDialog.dialog('open');
+}
+
+//查询订单信息
+function searchOrder(){
+	$.ajax({
+		url : 'searchOrder.do',
+		data :  $("#modifyTypeForm").serialize(),
+		dataType : 'json',
+		success : function(data) {
+			if(data.c2c==null){
+				$.messager.alert('提示', '该订单不存在');
+				return;
+			}
+			var type =  data.c2c.rechargeType;
+			var typename = "--";
+			if(type == 0){
+				typename = "暂未保存充值方式";
+			}else if(type ==1){
+				typename = "骏网卡";
+			}else if(type ==2){
+				typename = "支付宝自充";
+			}else if(type ==3){
+				typename = "支付宝白名单";
+			}else if(type ==12){
+				typename = "天下卡";
+			}else if(type ==13){
+				typename = "360骏网卡";
+			}else if(type ==14){
+				typename = "渠道币充值";
+			}else if(type ==15){
+				typename = "b2c虚拟币充值";
+			}else if(type == 11){
+				typename = "骏网卡";
+			}
+			
+			$("#change_type_show").html(typename);
+		}
+	});
+}
+
+//更新订单充值方式
+function domodifyOrderrechargeType(){
+	$.ajax({
+		url : 'modifyOrderrechargeType.do',
+		data :  $("#modifyTypeForm").serialize(),
+		dataType : 'json',
+		success : function(json) {
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				searchOrder();
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+	});
+}
+
+//查看密码验证
+function verify(){
+	$.ajax({
+		url : 'verify.do',
+		data :  $("#inputPassForm").serialize(),
+		dataType : 'json',
+		success : function(data) {
+             if(data.success){
+         		$.messager.show({
+					title : '成功',
+					msg : data.msg
+				});
+         		
+         		$("#modify_card_info").show();
+         		$("#modify_card_no").val(data.map.number);
+         		$("#modify_card_pwd").val(data.map.password);
+         		//$("#password_show").html("卡号：" + data.map.number +",卡密："+data.map.password );
+             }else{
+            	 $.messager.show({
+ 					title : '提示',
+ 					msg : data.msg
+ 				});
+             }
+		}
+	});
+}
+
+//查看密码验证
+function passwordshow(id){
+	$("#password_show_pass").val('');
+	$("#password_show").html('');
+	$("#card_id_for_pass_show").val(id);
+	$("#modify_card_no").val('');
+	$("#modify_card_pwd").val('');
+	$("#modify_card_info").hide();
+	inputPassDialog.dialog('open');
+}
+
+//导出数据
+function outXlsFile(){
+ 
+	//先判断是否能导数据
+	if(confirm("确定导出数据?")){
+		var param= $("#searchForm").serialize();
+		$.ajax({
+			type:'POST',
+			url:'validateDownXls.do',
+			data:param,//序列化表单里所有的内容
+			success: function(data){
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					window.open(
+							'${request.contextPath}/rechargecard/listXls.do?'+param,
+							'',
+							'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+	}
+}
+
+//公共导出
+function publicOutXlsFile(){
+ 
+	//先判断是否能导数据
+	if(confirm("确定导出数据?")){
+		var param= $("#searchForm").serialize();
+		$.ajax({
+			type:'POST',
+			url:'validateDownXls.do',
+			data:param,//序列化表单里所有的内容
+			success: function(data){
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					window.open(
+							'${request.contextPath}/rechargecard/publicListXls.do?'+param,
+							'',
+							'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+	}
+}
+
+//修改卡位充值状态
+function usrCard(){
+	var oid = $("#usr_card_order_id").val();
+	if(oid==""){
+		$.messager.alert("提示","请填写订单编号");
+		return;
+	}
+	$.ajax({
+		url : 'usrCard.do',
+		data :  $("#usrCardForm").serialize(),
+		dataType : 'json',
+		success : function(data) {
+             if(data.success){
+            	$.messager.show({
+    					title : '成功',
+    					msg : data.msg
+    			});
+            	usrCardDialog.dialog('close');
+            	editDialog.dialog('close');
+             	datagrid.datagrid('load');
+      			datagrid.datagrid('unselectAll');
+         	
+             }else{
+            	 $.messager.show({
+ 					title : '提示',
+ 					msg : data.msg
+ 				});
+             }
+		}
+	});
+}
+
+function modifyCard(){
+	if(confirm("确定要更新卡密信息?")){
+	var no = $("#modify_card_no").val();
+	var pwd = $("#modify_card_pwd").val();
+	if(no==""){
+		$.messager.alert("提示","请填写卡号");
+		return;
+	}
+	if(pwd ==""){
+		$.messager.alert("提示","请填写卡密");
+		return;
+	}
+	$.ajax({
+		url : 'modifyCard.do',
+		data :  $("#inputPassForm").serialize(),
+		dataType : 'json',
+		success : function(data) {
+             if(data.success){
+            	inputPassDialog.dialog('close');
+            	datagrid.datagrid('load');
+     			datagrid.datagrid('unselectAll');
+         		$.messager.show({
+					title : '成功',
+					msg : data.msg
+				});
+             }else{
+            	 $.messager.show({
+ 					title : '提示',
+ 					msg : data.msg
+ 				});
+             }
+		}
+	});
+	}
+}
+
+//打开验证窗口
+function xlsverifyOpen(){
+	$('#password_show_pass_xls').val("");
+	inputXlsDialog.dialog('open');
+}
+
+//验证
+function outxlsverify(){
+	//验证主管密码
+	$.ajax({
+		url : 'verifyXls.do',
+		data :  $("#inputXlsForm").serialize(),
+		dataType : 'json',
+		success : function(data) {
+             if(data.success){
+            	 outXlsFile();
+            	 inputXlsDialog.dialog('close');
+             }else{
+            	 $.messager.show({
+ 					title : '提示',
+ 					msg : data.msg
+ 				});
+             }
+		}
+	});
+}
+
+function modifybalance(cid){
+	$.ajax({
+		url : 'card_json.do',
+		data : {
+			id : cid
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			modifyForm.form('clear');
+			var status = response.status;
+			var status_name = "--";
+	
+			console.dirxml(response);
+			if(status =="0"){
+				status_name = "未使用";
+			}else if(status =="1"){
+				status_name = "已派出";
+			}else if(status =="2"){
+				status_name = "已充值";
+			}else if(status =="3"){
+				status_name = "无法充值";
+			}else if(status =="4"){
+				status_name = "卡密待回收";
+			}
+			$("#card_id_modify").val(response.id);
+			$("#card_num_modify").html(response.card_num);
+// 			$("#status_name").html(status_name);
+// 			$("#order_id").html(response.order_id);
+// 			$("#customer_servce_name").html(response.customer_servce_name);
+			$("#card_denomination_modify").val(response.denomination);
+			$("#balance_modify").val(response.balance);
+			$("#operator_type_modify").val(response.operation_type);
+			$('div.validatebox-tip').remove();
+			modifyDialog.dialog('open');
+			$.messager.progress('close');
+		}
+	});
+}
+
+
+function batchshow() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要更改当前所选项目的状态？', function(r) {
+			if (r) {
+				var html="";
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].id);
+					html+='<tr><td width=200>'+rows[i].number+'</td><td>'+rows[i].denomination+'</td><td>'+rows[i].balance+'</td></tr>';
+				}
+				console.log(ids.join(','));
+				$("#ids_modify_status").val(ids);
+				$('#batch_modify_status_area').html(html);
+				batchStatusDialog.dialog('open');
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要更新状态的的记录！', 'error');
+	} 
+}
+
+function modifyStatusbatch(status){
+	var ids  = $('#ids_modify_status').val();
+	$.ajax({
+		url : 'status_modify_batch.do',
+		data : {
+			ids : ids,status:status
+		},
+		dataType : 'json',
+		success : function(response) {
+			datagrid.datagrid('load');
+			datagrid.datagrid('unselectAll');
+			//var d = JSON.parse(response);
+			editDialog.dialog('close');
+			$.messager.show({
+				title : '提示',
+				msg : response.msg
+			});
+			
+		}
+	});
+}
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 185px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>卡号:<input name="number" style="width:100px;" />&nbsp;</td>
+				<td> 状态:<select name="status" >
+                    <option value="">请选择</option>
+				    <option value="0">未使用</option>
+				    <option value="1">已派出</option>
+				    <option value="2">已充值</option>
+				    <option value="3">无法充值</option>
+				    <option value="4">卡密待回收</option>
+				</select>
+				 卡类型:<select name="type" >
+                    <option value="">请选择</option>
+				    <option value="11">骏网卡</option>
+				    <option value="12">天下卡</option>
+				    <option value="13">360骏网卡</option>
+				</select>
+				
+				 卡操作类型:<select name="operation_type" >
+                    <option value="">请选择</option>
+				    <option value="0">面额卡</option>
+				    <option value="1">余额卡</option>
+				    <option value="2">b2c虚拟币专用卡</option>
+				</select>
+				 充值方式:<select name="user_type" >
+                    <option value="">请选择</option>
+				    <option value="0">领卡</option>
+				    <option value="1">领号</option>
+				</select>
+				</td>
+			    <td>使用日期:<input name="btime"  type="text"class="easyui-datebox" style="width: 90px;" /> - 
+			     <input name="etime"  type="text" class="easyui-datebox" style="width: 90px;" /> 
+				</td>
+				<td>创建日期:<input name="btime2"  type="text"class="easyui-datebox" style="width: 90px;" /> - 
+			     <input name="etime2"  type="text" class="easyui-datebox" style="width: 90px;" /> 
+				</td>
+				<td>
+			<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+			<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+			
+		
+
+			</td>
+			</tr>
+			<tr>
+			<td>订单:<input name="order_id" style="width:100px;" />&nbsp;</td>
+			<td>帐号：<input type="text" name="game_account" style="width:100px;" />
+			面额:<input name="denomination" style="width:100px;" />&nbsp;</td>
+			<td>领卡人:
+			<!-- <select class="easyui-combobox" name="customer_service_id" style="width:120px;">
+							<option value="">--选择客服--</option>
+						  	<#list csList as item>
+							<option value="${item['USER_ID']!''}">${item['FULLNAME']!''}</option>
+							</#list>
+						</select>&nbsp; -->
+				<input type="text" name="customer_service_name" style="width:100px;" />
+			</td>
+	    	<td style="width: 500px;">
+					<div>
+						<iframe src="toupload.do" width="100%" height="60" frameborder="0"></iframe>
+						
+					</div>
+
+			</td>
+			</tr>
+			<tr>
+			<td colspan="5"> 
+ 	<a href="javascript:void(0);" class="easyui-linkbutton" onclick="tomodifyOrderrechargeType();">修改订单充值方式</a>
+	<a href="javascript:void(0);" class="easyui-linkbutton" onclick="xlsverifyOpen();">导出数据</a>
+ 	<a href="javascript:void(0);" class="easyui-linkbutton" onclick="show();">查询卡使用情况</a>
+ 	<a href="${basePath}data/rechargeCard_demo.xls"	class="easyui-linkbutton" style="text-align: right">下载导入模板文件</a>
+ 	<a href="javascript:void(0);" class="easyui-linkbutton" onclick="publicOutXlsFile()">公共导出</a>
+			
+			</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+
+
+<div region="center" border="false">
+
+		
+	<table id="datagrid"></table>
+</div>
+
+
+<!--详情表单-->
+<div id="editDialog" style="display: none;width: 720px;height: 'auto';" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="id" id="id_edit" />
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		<tr>
+		<th>卡类信息</th>
+		<tr>
+		    <tr>
+		      <td class="lable">卡号：<font id="card_num" ></font></td>
+		      <td class="lable">状态：<font id="status_name" ></font></td>
+		    </tr>
+		     <tr>
+		      <td class="lable">订单号：<font id="order_id" ></font></td>
+		      <td class="lable">领卡人：<font id="customer_servce_name" ></font></td>
+		    </tr>
+		<tr>
+		<th>历史记录</th>
+	    </tr>
+	    <tbody id ="log_list">
+	    
+	    </tbody>
+		  </table> 
+	</form>
+</div>
+
+
+<!--使用情况-->
+<div id="showDialog" style="display: none;width: 820px;height: 'auto';" align="center">
+		<!-- <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		<tr>
+		<th>卡类使用信息</th>
+		</tr>
+		<tr>
+		    <th>面额</th>
+		    <th>未使用</th>
+		    <th>已充值</th>
+		<tr>
+		<tbody id="show_list">
+		</tbody> 
+		</table> -->
+		<div id="navcontainer">
+		<ul class="nav nav-tabs" id="navlist">
+			<li role="presentation" class="active" onclick="show2(this)"><a href="javascript:">面额卡</a></li>
+	  		<li role="presentation" onclick="show3(this)"><a href="javascript:">余额卡</a></li>
+	 		<li role="presentation" onclick="show4(this)"><a href="javascript:">b2c虚拟币专用卡</a></li>
+		</ul>
+		
+		<div class="card">
+			<h2>面额卡</h2>
+			<table>
+				<tbody id="a">
+				</tbody>
+			</table>
+			<hr>
+			<table>
+				<tbody id="b">
+				</tbody>
+			</table>
+			<hr>
+			<table>
+				<tbody id="c">
+				</tbody>
+			</table>
+		</div>
+		<div class="card" style="display: none;">
+			<h2>余额卡</h2>
+			<table>
+				<tbody id="a2">			
+				</tbody>
+			</table>
+			<hr>
+			<table>
+				<tbody id="b2">
+				</tbody>
+			</table>
+			<hr>
+			<table>
+				<tbody id="c2">
+				</tbody>
+			</table>
+		</div>
+		<div class="card" style="display: none;">
+			<h2>b2c虚拟币专用卡</h2>
+			<table>
+				<tbody id="a3">			
+				</tbody>
+			</table>
+			<hr>
+			<table>
+				<tbody id="b3">
+				</tbody>
+			</table>
+			<hr>
+			<table>
+				<tbody id="c3">
+				</tbody>
+			</table>
+		</div>
+		</div>
+</div>
+
+
+<style>
+#navlist
+{
+border-bottom: 1px solid #ccc;
+margin: 0;
+padding-bottom: 19px;
+padding-left: 10px;
+}
+
+#navlist ul, #navlist li
+{
+display: inline;
+list-style-type: none;
+margin: 0;
+padding: 0;
+}
+
+#navlist a:link, #navlist a:visited
+{
+background: #E8EBF0;
+border: 1px solid #ccc;
+color: #666;
+float: left;
+font-size: small;
+font-weight: normal;
+line-height: 14px;
+margin-right: 8px;
+padding: 2px 10px 2px 10px;
+text-decoration: none;
+}
+
+#navlist a:link#current, #navlist a:visited#current
+{
+background: #fff;
+border-bottom: 1px solid #fff;
+color: #000;
+}
+
+#navlist a:hover { color: #f00; }
+
+body.section-1 #navlist li#nav-1 a, 
+body.section-2 #navlist li#nav-2 a,
+body.section-3 #navlist li#nav-3 a,
+body.section-4 #navlist li#nav-4 a
+{
+background: #fff;
+border-bottom: 1px solid #fff;
+color: #000;
+}
+
+#navlist #subnav-1,
+#navlist #subnav-2,
+#navlist #subnav-3,
+#navlist #subnav-4
+{
+display: none;
+width: 90%;
+}
+
+body.section-1 #navlist ul#subnav-1, 
+body.section-2 #navlist ul#subnav-2,
+body.section-3 #navlist ul#subnav-3,
+body.section-4 #navlist ul#subnav-4
+{
+display: inline;
+left: 10px;
+position: absolute;
+top: 95px;
+}
+
+body.section-1 #navlist ul#subnav-1 a, 
+body.section-2 #navlist ul#subnav-2 a,
+body.section-3 #navlist ul#subnav-3 a,
+body.section-4 #navlist ul#subnav-4 a
+{
+background: #fff;
+border: none;
+border-left: 1px solid #ccc;
+color: #999;
+font-size: smaller;
+font-weight: bold;
+line-height: 10px;
+margin-right: 4px;
+padding: 2px 10px 2px 10px;
+text-decoration: none;
+}
+
+#navlist ul a:hover { color: #f00 !important; }
+
+#contents
+{
+background: #fff;
+border: 1px solid #ccc;
+border-top: none;
+clear: both;
+margin: 0px;
+padding: 15px;
+} 
+</style>
+
+<!--修改订单c2c充值方式-->
+<div id="modifyTypeDialog" style="display: none;width: 720px;height: 150px;" align="center">
+<form id="modifyTypeForm">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		<tr>
+		<td>
+		订单编号：<input type="text" name="orderId" size="30px;" /> 
+		<input type="button" name="sub" value="查询" onclick="searchOrder()"/>原充值方式：<font color="red" id="change_type_show"></font>
+		</td>
+		</tr>
+		<tr>
+		<td>&nbsp;</td>
+		<tr>
+		
+		<tr>
+		<td>充值类型:
+		<select name="type" >
+		<option value="0">请选择</option>
+		<option value="1">骏网卡</option>
+		<option value="2">支付宝自充</option>
+		<option value="3">支付宝白名单</option>
+		<option value="12">天下卡</option>
+		<option value="13">360骏网卡</option>
+		<option value="14">渠道币充值</option>
+		<option value="15">b2c虚拟币充值</option>
+		</select>
+		<input type="button" name="sub" value="提交更新" onclick="domodifyOrderrechargeType()"/>
+		</td>
+		</tr>
+		
+		</table> 
+</form>
+</div>
+
+<!--查看卡密密码输入框-->
+<div id="inputPassDialog" style="display: none;width: 720px;height: 150px;" align="center">
+<form id="inputPassForm">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		<tr>
+		<td>
+		请输入密码：<input type="text" name="pass" size="30px;" id="password_show_pass" /> 
+		<input type="hidden" name="id" id="card_id_for_pass_show" />
+		<input type="button" name="sub" value="确认" onclick="verify()"/>
+		</td>
+		</tr>
+		<tr>
+		<td id="password_show"></td>
+		<tr>
+		<tbody style="display: none;" id = "modify_card_info">
+		<tr>
+		<td>
+		卡号：<input type="text" name="cardno" size="30px;" id="modify_card_no" /> 
+		</td>
+		</tr>
+		
+		<tr>
+		<td>
+		卡密：<input type="text" name="cardpwd" size="30px;" id="modify_card_pwd" /> 
+		<input type="button" name="sub" value="修改卡密信息" onclick="modifyCard()"/>
+		</td>
+		</tr>
+		</tbody>
+		
+		</table> 
+</form>
+</div>
+
+<!--修改成未使用-->
+<div id="usrCardDialog" style="display: none;width: 720px;height: 150px;" align="center">
+<form id="usrCardForm">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		<tr>
+		<td>
+		使用该卡的订单号：
+		<input type="text" name="orderId" size="30px;" id="usr_card_order_id" /> 
+		<input type="hidden" name="id" id="usr_card_id" />
+		<input type="button" name="sub" value="确认保存" onclick="usrCard()"/>
+		</td>
+		</tr>
+		</table> 
+</form>
+</div>
+
+<!--导出卡密权限-->
+<div id="inputXlsDialog" style="display: none;width: 720px;height: 150px;" align="center">
+<form id="inputXlsForm">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		<tr>
+		<td>
+		请输入密码：<input type="text" name="pass" size="30px;" id="password_show_pass_xls" /> 
+		<input type="hidden" name="id" id="card_id_for_pass_show" />
+		<input type="button" name="sub" value="确认" onclick="outxlsverify()"/>
+		</td>
+		</tr>
+		
+		</table> 
+</form>
+</div>
+
+
+<!--详情表单-->
+<div id="modifyDialog" style="display: none;width: 720px;height: 'auto';" align="center">
+	<form id="modifyForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="id" id="id_edit" />
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		<tr>
+		<th>卡号:<font id ="card_num_modify"></font></th>
+		<tr>
+		    <tr>
+		      <td class="lable">面额：</td>
+		      <td class="lable">
+		      <input type="hidden" name="card_id_modify" id="card_id_modify" />
+		      <input type="text" name="card_denomination_modify" id="card_denomination_modify"/>
+		      </td>
+		    </tr>
+		     <tr>
+		      <td class="lable">余额：</td>
+		      <td class="lable"><input type="text" name="balance_modify" id="balance_modify"/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">是否是余额卡：</td>
+		      <td class="lable">
+		      <select name="operator_type_modify" id="operator_type_modify">
+		      <option value="1">是</option>
+		      <option value="0" >不是</option>
+		   
+		      </select>
+		      </td>
+		    </tr>
+		<tr>
+		  </table> 
+	</form>
+</div>
+
+
+<!--批量修改状态情况-->
+<div id="batchStatusDialog" style="display: none;width: 720px;height: 'auto';" align="center">
+	<form id="batchStatusForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="ids" id="ids_modify_status" />
+		<table width="100%" border="0"  cellspacing="1" cellpadding="1" >
+		<tr><th>所选更新的卡号</th><th style="text-align: left">面额</th><th style="text-align: left">余额</th></tr>
+		<tr>
+		   <tbody id="batch_modify_status_area">
+		   
+		   </tbody>
+		<tr>
+		  </table> 
+	</form>
+</div>
+
+</body>
+</html>

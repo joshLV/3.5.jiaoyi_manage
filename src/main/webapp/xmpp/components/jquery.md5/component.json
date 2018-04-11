@@ -1,0 +1,13 @@
+{
+  "name": "jquery.md5",
+  "version": "1.0.0",
+  "description": "jQuery component",
+  "keywords": [
+    "jquery",
+    "component"
+  ],
+  "scripts": [
+    "jquery.md5.js"
+  ],
+  "license": "MIT"
+}

@@ -1,0 +1,83 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>短信群发</title> 
+<#include "../common.html"/>
+<script type="text/javascript">
+	var checkSubmitFlag = true;
+	function checkSubmit() {
+		if (true == checkSubmitFlag) {
+			$.ajax({
+				type : "POST",
+				url : "sMSInGroups.do",
+				data : {
+					phoneNumbers :  $("#phoneNumbersID").val(),
+					smsContent:$("#smsContentID").val()
+				},
+				success : function(msg) {
+					var json = $.parseJSON(msg);
+					if (json && json.success) {
+						$.messager.show({
+							title : '温馨提示',
+							msg : json.msg
+						});
+						$("#phoneNumbersID").val('');
+						$("#smsContentID").val('');
+					} else {
+						$.messager.show({
+							title : '温馨提示',
+							msg : json.msg
+						});
+						$("#phoneNumbersID").val('');
+						$("#smsContentID").val('');
+					}
+					checkSubmitFlag = true;
+				}
+			});
+			checkSubmitFlag = false;
+		}
+	}
+	function modChar(field, countfield, maxlimit) {    
+		if (field.value.length > maxlimit){    
+			field.value = field.value.substring(0, maxlimit);  
+			countfield.html(0);   
+		}else{    
+			countfield.html(maxlimit - field.value.length);    
+		}  
+	}
+	function modPhoneNumber(field, countfield, maxlimit) {
+		if (field.value.length > 1199){
+			field.value = field.value.substring(0,maxlimit);  
+		}
+		if (field.value.split("\n").length > 100){    
+			field.value = field.value.substring(0,maxlimit);  
+			countfield.html(100-field.value.split("\n").length); 
+		}else{    
+			countfield.html(field.value.split("\n").length);    
+		}  
+	}
+</script>
+</head>
+<body>
+	<form id="addForm">
+		短信群发手机号列表:<br>
+		<textarea id="phoneNumbersID"  name="phoneNumbers" rows="20" cols="100"
+		onKeyDown="modPhoneNumber(this.form.phoneNumbers,$('#result'),1199);"
+		onKeyUp="modPhoneNumber(this.form.phoneNumbers,$('#result'),1199);"></textarea>
+		<font color="red">*(群发格式：一行一个手机号,共计100个) 您已输入<span id="result">0</span>个手机号码
+		</font>
+		<br>
+		短信群发内容:<br>
+		<textarea id="smsContentID" name="smsContent" rows="8" cols="100" 
+		onKeyDown="modChar(this.form.smsContent,$('#result_content'),100);"
+		onKeyUp="modChar(this.form.smsContent,$('#result_content'),64);"></textarea>
+		<font color="red">*(短信内容长度不超过64个字) 您还可以输入<span id="result_content">64</span>个字符
+		</font>
+		<br>
+		<input
+			type="button" value="提交发送"
+			onclick="checkSubmit();">
+	</form>
+</body>
+</html>

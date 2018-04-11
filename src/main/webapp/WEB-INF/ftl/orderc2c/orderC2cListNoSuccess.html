@@ -1,0 +1,1665 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>c2c待处理订单列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var specifySeller;
+Array.prototype.contains = function(item){
+    return RegExp(item).test(this);
+};
+var datagrid;
+var searchForm;
+var viewDialog;
+var editForm;
+var returnMoneyDialog;
+var changeSellDialog;
+var changeSellForm;
+var showCustomAttributesWindow;
+var customerCancelDialog;
+$(function() {
+	showCustomAttributesWindow = $('#showCustomAttributesWindow');
+	showCustomAttributesWindow.dialog('close');
+	$.ajax({
+		url : 'getSpecifySeller',
+		async: false,
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+				specifySeller = data.specifySeller;
+				
+		}
+	});
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url :'orderC2cListJson',
+			title : '待处理寄售交易单',
+			queryParams:{
+	            uid:'${uid!''}',
+	            status : 1
+			},
+			singleSelect:true,
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ ${pageList!'100'}, 150, 200],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'orderId',
+			sortName : '',
+			sortOrder : 'desc',
+			columns : [ [
+			   {field:'orderId',title:'订单号',align:'center',width:120,sortable:false,
+				   formatter:function(value,rowsendOrder,index){
+					   return '<a href="javascript:void(0)" onclick="showOrderInfo(\''+value+'\')">'+value+'</a>';
+				   } 
+			   },				
+			   {field:'goodsName',title:'订单商品',align:'center',width:100,sortable:false,
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="viewGoods(\''+row.goodsId+'\')">'+value+'</a>';
+				   }   
+			   },
+			   {field:'orderAmount',title:'订单金额',align:'center',sortable:false},		
+			   {field:'orderBuyUid',title:'买家',align:'center',width:40,sortable:false,
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="viewUser('+value+')">'+value+'</a>';
+				   }
+			   },
+			   {field:'orderSellUid',title:'卖家',align:'center',width:40,sortable:false,
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="viewUser('+value+')">'+value+'</a>';
+				   }   
+			   },
+			   {field:'orderSellName',title:'卖家名称',align:'center',width:50,sortable:false},
+				//{field:'orderSellUserType',title:'卖家等级',align:'center',sortable:false,
+				//  formatter:function(value,row,index){
+				//  		if(value==1){
+				//  			return "普通";
+				//  		}else if(value==2){
+				//  			return "VIP";
+				//  		}
+				//  } 				   
+			  //},
+			   {field:'gameName',title:'游戏',align:'center',width:80,sortable:false},
+			   {field:'quickDeliverFlag',title:'快速发货',align:'center',width:50,
+					formatter:function(value,row,index){
+						return value==0?"不支持":"<font color='red'>支持</font>"
+					}
+			   },
+			   {field:'qufu',title:'区/服',align:'center',width:80,
+					formatter:function(value,row,index){
+// 						if(row.gameAreaName!=""&&row.gameServerName!=""){
+// 							return row.gameAreaName+"/"+row.gameServerName
+// 						}
+// 						if(row.gameServerName!=""){
+// 							return row.gameServerName;
+// 						}
+						if(row.gameAreaName!=""){
+							return row.gameAreaName;
+						}
+					}
+			   },
+			   {field:'orderIsPay',title:'是否支付',align:'center',width:50,
+					formatter:function(value,row,index){
+						return row.orderIspay==0?"未支付":"<font color='red'>己支付</font>"
+					}   
+			   },
+			   {field:'orderStatus',title:'订单状态',align:'center',width:50,sortable:false,
+				   formatter:function(value,row,index){
+					   if (row.orderStatus==0){
+						   return "等待付款";
+					   }else if(row.orderStatus==2){
+						   return "等待发货";
+					   }else if(row.orderStatus==4){
+						   return "待确认收货";
+					   }else if(row.orderStatus==6){
+						   return "交易成功";
+					   }else if(row.orderStatus==7){
+						   return "待转账";
+					   }else if(row.orderStatus==8){
+						   return "交易取消";
+					   }else if(row.orderStatus==10){
+						   return "己退费";
+					   }else if(row.orderStatus==-1){
+						   return "己删除";
+					   }
+					}   
+			   },
+			   {field:'orderC2cStatus',title:'流程状态',align:'center',width:50,sortable:false,
+					formatter:function(value,row,index){
+						if(value==1){
+							return "主管/系统分单";
+						}else if(value==2){
+							return "客服派单";
+						}else if(value==3){
+							return "物服发货";
+						}else if(value==4){
+							return "完成";
+						}else if(value==5){
+							return "撤销";
+						}else if(value==6){
+							return "客服审撤";
+						}else if(value==7){
+							return "物服重发货";
+						}else if(value==8){
+							return "待转账";
+						}else if(value==9){
+							return "转单卖家";
+						}
+					}
+			   },
+			   {field:'customerServiceName',title:'接手客服',align:'center',width:50,sortable:false},	
+			   {field:'physicServiceName',title:'接手物服',align:'center',width:50,sortable:false},	
+			   {field:'orderTime',title:'创建时间',align:'center',width:120,sortable:false},				
+			   {field:'getGoodsTime',title:'完成时间',align:'center',width:120,sortable:false},
+			   {field:'orderFr',title:'渠道',align:'center',width:30,sortable:false},
+			   {field:'sonChannelId',title:'子渠道',align:'center',width:30,sortable:false},
+			   {field:'operate',title:'操作',align:'center',sortable:false,
+				   formatter:function(value,row,index){
+					   
+						var isSpecifySeller = false;
+						if(typeof specifySeller !="undefined"){
+							isSpecifySeller = specifySeller.contains(row.orderSellUid);
+						}
+						
+					    if(row.operate==null || row.operate==''){
+					    	var k ='';
+					    	if(row.orderFr != null && row.orderFr == 'weixin'){
+					    		k = '<a href="javascript:void(0)" onclick="parent.contactBuyer(\''+row.orderBuyUid+'\',\''+row.orderId+'\')" ><font color="red">(微信)</font></a>';
+					    	}
+					    	if(row.orderIspay == 1){
+
+						    	var userType = ${userType};
+						    	var i = row.contactFlag==1 ? "" : "<font color='red'>(联系)</font>";
+						    	var j = '<a href="javascript:void(0)" onclick="cancel(\''+row.orderId+'\')" >撤单</a>';
+						    	var a='<a href="javascript:void(0)" onclick="sendOrder(\''+row.orderId+'\')" >派单</a>';
+						    	var b='<a href="javascript:void(0)" onclick="cancelOrder(\''+row.orderId+'\')" >审撤</a>';
+						    	var c='<a href="javascript:void(0)" onclick="toSendGoods(\''+row.orderId+'\')" >发货</a>';
+						    	var d='<a href="javascript:void(0)" onclick="changeUser(\''+row.orderId+'\')" >转单</a>';
+						    	var f='<a href="javascript:void(0)" onclick="adminSendOrder(\''+row.orderId+'\')" >手动派单</a>';
+						    	var g= '<a href="javascript:void(0)" onclick="transferAccount(\''+row.orderId+'\',\''+row.quickDeliverFlag+'\')" >转账</a>';
+						    	var h='<a href="javascript:void(0)" onclick="changeSell(\''+row.orderId+'\',0)" >转单卖家</a>';
+						    	var e='|';
+						    	var k="";
+						    	if(userType == -1 || userType == 2){
+						    		if(row.orderC2cStatus==1){
+						    			if(row.orderStatus == 2){
+							    			return f;
+						    			}
+						    		}else if(row.orderC2cStatus ==2){
+							      		if(row.productType>199 && row.productType<299){
+							    			k+='<a href="javascript:void(0)" onclick="sendGoodsSuccess(\''+row.orderId+'\')" >发货成功</a>｜';
+							    		}
+						    			var result =a+e+d+e+j+e+k;
+						    			if(isSpecifySeller){
+						    				return  result+h;
+						    			}
+							    		return result;
+						    		}else if(row.orderC2cStatus==3 ){
+						    			return c+e+d+e+k+e+h;
+						    		}else if(row.orderC2cStatus==6){
+						    			return i+b+e+k;
+						    		}else if(row.orderC2cStatus==7){
+						    			return c+e+k+e+h;
+						    		}else if(row.orderC2cStatus==8){
+						    			return g+e+k;
+						    		}else if(row.orderC2cStatus==9){
+						    			h='<a href="javascript:void(0)" onclick="changeSell(\''+row.orderId+'\',1)" >转单卖家</a>';
+						    			return h+e+k;
+						    		}
+						    	}else if(userType == 0){
+									if(row.orderC2cStatus ==2){
+							      		if(row.productType>199 && row.productType<299){
+							    			k+='<a href="javascript:void(0)" onclick="sendGoodsSuccess(\''+row.orderId+'\')" >发货成功</a>｜';
+							    		}
+						    			var result =a+e+j+e+k;
+							    		return isSpecifySeller?result+h:result;
+						    		}else if(row.orderC2cStatus==6){
+						    			return i+b+e+k;
+						    		}else if(row.orderC2cStatus==8){
+						    			return g+e+k;
+						    		}else if(row.orderC2cStatus==9){
+						    			h='<a href="javascript:void(0)" onclick="changeSell(\''+row.orderId+'\',1)" >转单卖家</a>';
+						    			return h+e+k;
+						    		}
+						    	}else if(userType == 1){
+									if(row.orderC2cStatus==3){
+						    			return c+e+h;
+						    		}else if(row.orderC2cStatus==7){
+						    			return c+e+h;
+						    		}
+						    	}
+					    	}else if(row.orderIspay == 0){
+					    		return k;
+					    	}
+					    }
+					}
+			   	},
+			 ] ],
+				//右键菜单 
+				onRowContextMenu : function(e, rowIndex, rowData) {
+					e.preventDefault();
+					$(this).datagrid('unselectAll');
+					$(this).datagrid('selectRow', rowIndex);
+					$('#menu').menu('show', {
+						left : e.pageX,
+						top : e.pageY
+					});
+				},
+				 //双击事件
+				 onDblClickRow:function (rowIndex,rowData){
+						$(this).datagrid('unselectAll');
+						$(this).datagrid('selectRow', rowIndex);	
+						view();
+				 }
+			});
+
+			editForm = $('#editForm').form({
+				url : '',
+				success : function(data) {
+					var json = $.parseJSON(data);
+					if (json && json.success) {
+						$.messager.show({
+							title : '成功',
+							msg : json.msg
+						});
+						editDialog.dialog('close');
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : json.msg
+						});
+					}
+				}
+			});
+			viewDialog = $('#viewDialog').show().dialog({
+				title : '订单详情',
+				modal : true,
+				closed : true,
+				maximizable : true,
+			}); 
+			returnMoneyDialog = $('#returnMoneyDialog').show().dialog({
+				title : '选择赔付超时原因',
+				modal : true,
+				closed : true,
+				maximizable : true,
+			}); 
+			changeSellDialog = $('#changeSellDialog').show().dialog({
+				title : '转单卖家',
+				modal : true,
+				closed : true,
+				maximizable : true,
+			}); 
+			customerCancelDialog = $('#customerCancelDialog').show().dialog({
+				title : '客服撤单',
+				modal : true,
+				closed : true,
+				maximizable : true,
+			}); 
+});
+function _search() {
+	var  btime = searchForm.find("table >tbody> tr input[name='beginTime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='endTime']").val();
+	var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cancleOperate(){
+	viewDialog.dialog('close');
+}
+function cleanSearch() {
+	searchForm.find('input').val('');
+	searchForm.find('select').val('');
+	$("#uid").attr("value",'${uid!''}');
+	$("#status").attr("value",'1');
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+	
+}
+
+function sendgoodsTimeoutReasonSubmit(){
+	var id = $("#sendgoodsTimeoutReason").val();
+	var orderId=$("#returnMoneyOrderId").val();
+	if(id == null || id == ''){
+		alert('请选择发货超时原因');
+	}else if(orderId == null || orderId == ''){
+		alert('订单号为空');
+	}else{
+		transfer(id,orderId);
+	}
+}
+
+//转账
+function transferAccount(id,quickDeliverFlag){
+	if(confirm('确定给卖家转账?')){
+		if(quickDeliverFlag == 1){
+			$.ajax({
+				url : 'checkSendGoodsTimeOut',
+				type : 'POST',
+				data : {
+					orderId : id,
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(data) {
+					if(data != null){
+						if(data.isOut == 1){
+							$("#returnMoneyOrderId").attr("value",id);
+							returnMoneyDialog.dialog('open');
+						}else{
+							transfer("",id);
+						}
+					}
+				}
+			});
+		}else if(quickDeliverFlag == 0){
+			transfer("",id);
+		}
+	}
+}
+
+//转账
+function transfer(outId,orderId){
+	$.ajax({
+		url : 'transferAccount',
+		type : 'POST',
+		data : {
+			orderId : orderId,
+			outId : outId
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+			if (data.success) {
+				$.messager.show({
+					title : '成功',
+					msg : data.msg
+				});
+				returnMoneyDialog.dialog('close');
+				datagrid.datagrid('reload');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : data.msg
+				});
+			}
+		}
+	});
+}
+function cancel(orderId){
+	$("#customerCancelOrderId").attr("value",orderId);
+	$("#customerCancelReason").attr("value","");
+	$("#customerCancelReasonRemark").attr("value","");
+	customerCancelDialog.dialog('open');
+}
+
+//撤单
+function customerCancel(){
+	var orderId = $("#customerCancelOrderId").val();
+	var reason  = $("#customerCancelReason").val();
+	var remark = $("#customerCancelReasonRemark").val();
+	if(confirm('确定撤单?')){
+		$.ajax({
+			url : 'cancel',
+			type : 'POST',
+			data : {
+				orderId : orderId,
+				reason : reason,
+				remark : remark
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+				if (data.success) {
+					$.messager.show({
+						title : '成功',
+						msg : data.msg
+					});
+					customerCancelDialog.dialog('close');
+					datagrid.datagrid('reload');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : data.msg
+					});
+				}
+			}
+		});
+	}
+}
+//发货成功
+function sendGoodsSuccess(orderIdV){
+	
+	var orderId=$("#orderIdForm").val();
+	orderId=orderIdV;
+	if(confirm('是否确认发货成功?')){
+		$.ajax({
+			url : 'sendGoodsSuccess',
+			type : 'POST',
+			data : {
+				orderId : orderId,
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+				if (data.success) {
+					$.messager.show({
+						title : '成功',
+						msg : data.msg
+					});
+					viewDialog.dialog('close');
+					datagrid.datagrid('reload');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : data.msg
+					});
+				}
+			}
+		});
+	}
+}
+//申请撤单
+function cancelOrderRequest(){
+	var cancelReason=$("#cancelReason").val();
+	var cancelReasonRemark=$("#cancelReasonRemark").val();
+	var orderId=$("#orderIdForm").val();
+	if(cancelReason == null || cancelReason ==''){
+		alert("请选择撤单原因");
+	}else{
+		if(confirm('是否确认申请撤单?')){
+			$.ajax({
+				url : 'cancelOrderRequest',
+				type : 'POST',
+				data : {
+					orderId : orderId,
+					reasonId : cancelReason,
+					reasonRemark : cancelReasonRemark
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(data) {
+					if (data.success) {
+						$.messager.show({
+							title : '成功',
+							msg : data.msg
+						});
+						viewDialog.dialog('close');
+						datagrid.datagrid('reload');
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : data.msg
+						});
+					}
+				}
+			});
+		}
+	}
+}
+//管理员转单
+function changeUserCommit(){
+	var orderId=$("#orderIdForm").val();
+	var changeUserId = $("#changeUserIdForm").val();
+	var changeUserRemark = $("#changeUserRemark").val();
+	var changeUserType = $("#changeUserType").val();
+	var isPhysicAccept = $("#isPhysicAcceptForm").val();
+	var isCustomerAccept = $("#isCustomerAcceptForm").val();
+	var changeUserType = $("#changeUserType").val();
+	if(changeUserId == null ||changeUserId == ''){
+		alert("请择择转单客服/物服");
+	}else{
+		var msg="是否确定转单?";
+		if(changeUserType == 1){
+			if(isCustomerAccept == 1){
+				msg="当前客服己受理此单，是否仍继续转单?";
+			}
+		}else if(changeUserType ==2){
+			if(isPhysicAccept == 1){
+				msg="当前物服己受理此单，是否仍继续转单?";
+			}
+		}
+		if(confirm(msg)){
+			$.ajax({
+				url : 'changeUserAjax',
+				type : 'POST',
+				data : {
+					orderId : orderId,
+					changeUserId : changeUserId,
+					remark : changeUserRemark,
+					changeUserType : changeUserType 
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(data) {
+					if (data.success) {
+						$.messager.show({
+							title : '成功',
+							msg : data.msg
+						});
+						viewDialog.dialog('close');
+						datagrid.datagrid('reload');
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : data.msg
+						});
+					}
+				}
+			});
+		}
+	}
+}
+
+
+//客服审撤
+function checkCancelOrder(type){
+	var checkCancelOrderRemark=$("#checkCancelOrderRemark").val();
+	var orderId=$("#orderIdForm").val();
+	var reason =$("#cancelOrderReasonForm").val();
+	var msg="";
+	if(type == 0){
+		msg="是否确定撤单?";
+	}else if(type == 1){
+		msg="是否确定重新发货?";
+	}
+	if(confirm(msg)){
+		var needAddStock = 1;
+		$.ajax({
+			url : 'checkCancelOrder',
+			type : 'POST',
+			data : {
+				orderId : orderId,
+				type : type,
+				reason:reason,
+				remark : checkCancelOrderRemark,
+				needAddStock:needAddStock
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+				if (data.success) {
+					$.messager.show({
+						title : '成功',
+						msg : data.msg
+					});
+					viewDialog.dialog('close');
+					datagrid.datagrid('reload');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : data.msg
+					});
+				}
+			}
+		});
+	}
+}
+
+//查看用户账号信息
+function showUserAccountInfo(){
+	var orderId=$("#orderIdForm").val();
+	if(confirm('是否查看用户账户信息?')){
+		$.ajax({
+			url : 'showUserAccountInfo',
+			type : 'POST',
+			data : {
+				orderId : orderId,
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+			   if(data != null){
+				   if(data.status == 0){
+						var html="游戏账号："+data.sellUserGameAccount+"<br/>";
+						html+= "游戏密码："+data.sellUserGameAccountPwd+"<br/>";
+						html+= "角色名称："+data.orderSellGameRoleName+"<br/>";
+						html+= "角色ID："+data.sellUserGameRoleId+"<br/>";
+						html+= "角色等级："+data.orderSellGameRoleLevel+"级<br/>";
+						if(data.sellUserGameSafekey != null){
+							html+= "安全锁："+data.sellUserGameSafekey+"<br/>";
+						}else{
+							html+= "安全锁：无<br/>";
+						}
+						$("#userAccountInfo").html(html);
+				   }else{
+					   alert(data.msg);
+				   }
+			   }else{
+				   alert("查看账户信息出错，请联系管理员");
+			   }
+			}
+		});
+	}
+}
+
+function showOrderInfo(orderId){
+	var link = "${request.contextPath}/order/orderList.do?orderId="+orderId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"订单"+orderId+"详情" 
+			};
+	parent.addTab(node);	
+}
+
+function toSendGoods(orderId){
+	var link = "${request.contextPath}/orderC2c/toSendGoods.do?orderId="+orderId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"name":orderId,
+			"text":"订单"+orderId+"发货页面" 
+			};
+	parent.addTab(node);	
+}
+
+function viewUser(uid){
+	var link = "${request.contextPath}/member/memberList.do?uid="+uid;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"用户"+uid+"详情" 
+			};
+	parent.addTab(node);	
+}
+
+function viewGoods(goodsId){
+	var link = "${request.contextPath}/product/productList.do?productno="+goodsId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"商品ID"+ goodsId+"详细信息"
+			};
+	parent.addTab(node);
+}
+function view() {
+	var rows = datagrid.datagrid('getSelections');
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'showOrderC2cInfo',
+			type : 'POST',
+			data : {
+				orderId : rows[0].orderId,
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				viewDialogShow(response);
+				showDiv(true,"cancelOrder","sendOrder","sendGoods","changeUser","adminSendOrder");
+				editForm.form('clear');
+				editForm.form('load', response);
+				$.messager.progress('close');
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+
+}
+
+function areachange(){
+	
+	
+	
+	var gameId = $("#g_id_receiver").val();
+	var checkValue=$("#g_id_area_receiver").val(); 
+	var server_select =  $("#g_id_serverid_receiver");
+
+
+	$.ajax({
+		url : '../game/selectGameAreaDetail',
+		data : {
+			gameId:gameId,partitionId:checkValue
+		},
+		dataType : 'json',
+		
+		cache : false,
+		success : function(data) {
+			if(typeof data.total!="undefined"){
+			//先清理上次服务器残留选项
+			var maxindex2=$("select[name='serverId']").find("option:last").index();
+			if(maxindex2>=1){
+				for(var j =1;j<=maxindex2;j++){
+					 $("#g_id_serverid_receiver option:last").remove(); 
+				}
+			}
+			for(var i = 0 ;i<data.total;i++){
+			
+				$("#server_sel").show();
+				server_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+				}
+			}else{
+				
+				$("#server_sel").hide();
+			}
+		}
+	});
+}
+//选择游戏
+function game_select() { 
+	window.open(
+					'../game/gameList_select',
+					'',
+					'width=1200,height=500,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+}
+
+//游戏选择回调游戏id和名称
+function selectGameCallBack(gameId,gameName){
+	$("#g_id_receiver").attr("value",gameId);
+	$("#g_name_receiver").html(gameName);
+    selectsub(gameId);
+}
+
+function selectsub(gameId){
+	$("#server_sel").show();
+	$("#area_sel").show();
+	$.ajax({
+		url : '../game/selectGameAreaDetail',
+		data : {
+			gameId : gameId
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+		var area_select =  $("#g_id_area_receiver");
+		var server_select =  $("#g_id_serverid_receiver");
+		
+		var checkIndex=area_select.get(0).selectedIndex;
+		var checkIndex2=server_select.get(0).selectedIndex;
+		
+		//先清理上次分区残留选项
+		var maxindex=$("select[name='partitionId']").find("option:last").index();
+		if(maxindex>=1){
+			for(var j =1;j<=maxindex;j++){
+				 $("#g_id_area_receiver option:last").remove(); 
+			}
+		}
+		
+		//先清理上次服务器残留选项
+		var maxindex2=$("select[name='serverId']").find("option:last").index();
+		if(maxindex2>=1){
+			for(var j =1;j<=maxindex2;j++){
+				 $("#g_id_serverid_receiver option:last").remove(); 
+			}
+		}
+			//添加选项
+			if(typeof data.total!="undefined"){
+				
+				for(var i = 0 ;i<data.total;i++){
+				
+					var patition_id = data.rows[i].partitionId;
+					if((typeof patition_id=="undefined")){
+						//有分区 
+						$("#area_sel").show();
+						 area_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+					}else{
+						//没分区 隐藏分区
+						$("#area_sel").hide();
+						server_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+					}
+					
+					 
+				}
+				
+			}		
+		}
+	});
+}
+function autoSendGoods(){
+	var orderId=$("#orderIdForm").val();
+	if(confirm("确定生成发货链接？")){
+		if(orderId == null || orderId == ''){
+			alert('发货订单ID为空');
+		}else{
+			$.ajax({
+				url : 'getAutoSendGoodsDate',
+				data : {
+					orderId : orderId,
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(response) {
+					if(response != null){
+						window.open(encodeURI("c2cclient://"+response.date+"/"));
+					}else{
+						alert("获取发货token失败,请联系管理员");
+					}
+				}
+			});	
+		}
+	}
+}
+function sendOrder(orderId){
+	$.ajax({
+		url : 'showOrderC2cInfo',
+		data : {
+			orderId : orderId,
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			viewDialogShow(response);
+			showDiv(false,"sendOrder","cancelOrder","sendGoods","changeUser","adminSendOrder");
+			editForm.form('clear');
+			editForm.form('load', response);
+			var uid = response.sendUserId;
+			var autoAssign = response.autoAssign;
+			var data = response.sendOrderPhysicList;
+			$("#sendOrderInfo").html("");
+			var html= '';
+			if(uid <= 0){
+				html = '<font color="red" >当前无可派单物服，请联系管理员，谢谢！</font>';
+			}else{
+				if(autoAssign == 1){
+					html+="请选择派单物服:";
+					$.each(data,function(i,item)
+					{
+						html+='<input type="radio" name="sendOrderPhysicId" id="sendOrderPhysicId" value='+item.userId+' onclick="getSendOrderPhysicIdValue(this.value)" />'+item.fullname;
+					});
+				}
+				html += '<br />备注：<textarea rows="" cols="50" id="sendOrderRemark"></textarea><input type="button" value="派单" onclick="sendOrderCommit();"/><input type="reset" value="取消" onclick="cancleOperate();"/>';
+			}
+			$("#sendOrderInfo").html(html);
+			$.messager.progress('close');
+		}
+	});	
+}
+
+function changeSell(orderId,needUpdate){
+	$("#changeSellOrderId").attr("value",orderId);
+	$("#needUpdate").attr("value",needUpdate);
+	$("#changeSellRemark").attr("value","");
+	$("#changeSellUid").attr("value","");
+	$.ajax({
+		url : 'getChangeSellUserList',
+		data : {
+			orderId : orderId,
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+			changeSellDialog.dialog('open');
+			if(data != null){
+				var html = "";
+				if(data.code == 1){
+					html+="转单卖家：";
+					html+="<select id='changeSellUid' name='changeSellUid'>"
+					$.each(data.list,function(i,item)
+					{
+						html+="<option value='"+item.id+"'>"+item.showUID+"</option>"
+					});
+					html+="</select>"
+				}else{
+					html = "<font color='red'>"+data.msg+"</font>";
+				}
+				$("#changeSellTD").html(html);
+			}
+		}
+	});	
+}
+function doChangeSell(){
+	var orderId = $("#changeSellOrderId").val();
+	var remark = $("#changeSellRemark").val();
+	var sellId = $("#changeSellUid").val();
+	var update = $("#needUpdate").val();
+	
+	console.log("ordrerid= "+ orderId +"sellId ==>" + "update = > " + update);
+	if(confirm("确定转单？")){
+		if(orderId == null || orderId == ''){
+			alert('转单订单ID为空');
+		}else if(sellId == null || sellId == ''){
+			alert("转单卖家ID为空");
+		}else{
+			$.ajax({
+				url : 'doChangeSell',
+				type : 'POST',
+				data : {
+					orderId : orderId,
+					sellId : sellId,
+					update : update,
+					remark : remark
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(data) {
+					if (data.success) {
+						$.messager.show({
+							title : '成功',
+							msg : data.msg
+						});
+						changeSellDialog.dialog('close');
+						datagrid.datagrid('reload');
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : data.msg
+						});
+					}
+				}
+			});	
+		}
+	}	
+}
+
+function toChangeSell(){
+	var orderId=$("#orderIdForm").val();
+	if(confirm("是否进行转单？")){
+		if(orderId == null || orderId == ''){
+			alert('转单订单ID为空');
+		}else{
+			$.ajax({
+				url : 'toChangeSell',
+				data : {
+					orderId : orderId,
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(data) {
+					if (data.success) {
+						$.messager.show({
+							title : '成功',
+							msg : data.msg
+						});
+						viewDialog.dialog('close');
+						datagrid.datagrid('reload');
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : data.msg
+						});
+					}
+				}
+			});	
+		}
+	}	
+}
+function showDiv(isShow,div1,div2,div3,div4,div5){
+	$("#userAccountInfo").html('');
+	if(isShow){
+		$("#"+div1).css("display","none");
+		$("#"+div2).css("display","none");
+		$("#"+div3).css("display","none");
+		$("#"+div4).css("display","none");
+		$("#"+div5).css("display","none");
+	}else{
+		$("#"+div1).css("display","");
+		$("#"+div2).css("display","none");
+		$("#"+div3).css("display","none");
+		$("#"+div4).css("display","none");
+		$("#"+div5).css("display","none");
+	}
+}
+
+function cancelOrder(orderId){
+	$.ajax({
+		url : 'showOrderC2cInfo',
+		data : {
+			orderId : orderId,
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			viewDialogShow(response);
+			showDiv(false,"cancelOrder","sendOrder","sendGoods","changeUser","adminSendOrder");
+			editForm.form('clear');
+			editForm.form('load', response);
+			$.messager.progress('close');
+		}
+	});	
+}
+//打开显示界面
+function viewDialogShow(response){
+	if(response.goodsType > 100){
+		$("#goodsSingleDiv").css("display","none");
+	}else{
+		$("#goodsSingleDiv").css("display","block");
+	}
+	viewDialog.dialog('open');
+}
+function adminSendOrder(orderId){
+	$.ajax({
+		url : 'showOrderC2cInfo',
+		data : {
+			orderId : orderId,
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			viewDialogShow(response);
+			showDiv(false,"adminSendOrder","sendGoods","cancelOrder","sendOrder","changeUser");
+			editForm.form('clear');
+			editForm.form('load', response);
+			var uid = response.sendUserId;
+			if(uid <= 0){
+				$("#adminSendInfo").html("");
+				var html = '<font color="red" >当前无可派单客服，请联系管理员，谢谢！</font>';
+				$("#adminSendInfo").html(html);
+			}
+			$.messager.progress('close');
+		}
+	});	
+}
+
+function sendGoods(orderId){
+	$.ajax({
+		url : 'showOrderC2cInfo',
+		data : {
+			orderId : orderId,
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			viewDialogShow(response);
+			showDiv(false,"sendGoods","cancelOrder","sendOrder","changeUser","adminSendOrder");
+			editForm.form('clear');
+			editForm.form('load', response);
+			$.messager.progress('close');
+		}
+	});	
+}
+
+function changeUser(orderId){
+	$.ajax({
+		url : 'showOrderC2cInfo',
+		data : {
+			orderId : orderId,
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			viewDialogShow(response);
+			showDiv(false,"changeUser","sendGoods","cancelOrder","sendOrder","adminSendOrder");
+			editForm.form('clear');
+			editForm.form('load', response);
+			var data = response.userList;
+			var html="";
+			if(response.changeUserType == 1){
+				html+='当前客服：'+response.customerServiceId;
+			}else if(response.changeUserType ==2){
+				html+='当前物服：'+response.physicServiceId;
+			}
+			if(data != null){
+				html+="&nbsp;&nbsp;转派给：";
+				$.each(data,function(i,item)
+				{
+					html+='<input type="radio" name="changeUserId" id="changeUserId" value='+item.userId+' onclick="getChangeUserIdValue(this.value)" />'+item.userId;
+				});
+			}else{
+				if(response.changeUserType == 1){
+					html+="&nbsp;&nbsp;<font color='red'>当前无可派单客服，请联系管理员!</font>";
+				}else if(response.changeUserType ==2){
+					html+="&nbsp;&nbsp;<font color='red'>当前无可派单物服，请联系管理员!</font>";
+				}
+			}
+			$("#changeUserTd").html(html);
+			$.messager.progress('close');
+		}
+	});	
+}
+function getChangeUserIdValue(id){
+	$("#changeUserIdForm").attr("value",id);
+}
+
+function getSendOrderPhysicIdValue(id){
+	$("#sendOrderPhysicIdForm").attr("value",id);
+}
+function adminSendOrderCommit(){
+	var remark=$("#adminSendOrderRemark").val();
+	var orderId=$("#orderIdForm").val();
+	if(confirm("确定派单?")){
+		$.ajax({
+			url : 'adminSendOrder',
+			type : 'POST',
+			data : {
+				orderId : orderId,
+				remark : remark
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+				if (data.success) {
+					$.messager.show({
+						title : '成功',
+						msg : data.msg
+					});
+					viewDialog.dialog('close');
+					datagrid.datagrid('reload');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : data.msg
+					});
+				}
+			}
+		});
+	}	
+}
+function sendOrderCommit(){
+	var remark=$("#sendOrderRemark").val();
+	var orderId=$("#orderIdForm").val();
+	var autoAssign=$("#autoAssignForm").val();
+	var sendOrderPhysicId = $("#sendOrderPhysicIdForm").val();
+	var flag = true;
+	if(autoAssign == 1){
+		if(sendOrderPhysicId == null || sendOrderPhysicId == ''){
+			flag = false;
+			alert('请选择派单物服!');
+		}
+	}
+	if(flag){
+		if(confirm("确定派单?")){
+			$.ajax({
+				url : 'sendOrder',
+				type : 'POST',
+				data : {
+					orderId : orderId,
+					sendOrderPhysicId :sendOrderPhysicId,
+					remark : remark
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(data) {
+					if (data.success) {
+						$.messager.show({
+							title : '成功',
+							msg : data.msg
+						});
+						viewDialog.dialog('close');
+						datagrid.datagrid('reload');
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : data.msg
+						});
+					}
+				}
+			});
+		}	
+	}
+}
+function showProductProperty(){
+	var orderId = $("#orderIdForm").val();
+	$.ajax({
+		url : '${request.contextPath}/order/queryOrderProductProperty.do',
+		data : {
+			orderId :orderId,
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			if(response != null){
+				showProperty(response);
+			}else{
+				alert("当前订单商品无相关自定义属性!");
+			}
+		}
+	});
+}
+
+function showProperty(response){
+	var ppStr = "";
+	var pp = response.productProperty
+	if(pp != null && pp != ''){
+		for(var i=0;i<pp.length;i++){
+			ppStr+="<span style=\"display:inline-block;width:125px\">"+pp[i].key+": </span>"+pp[i].value+"<br>";
+		}
+	}
+	var spStr="";
+	var sp=response.sellProperty;
+	if(sp != null && sp != ''){
+		for(var i=0;i<sp.length;i++){
+			spStr+="<span style=\"display:inline-block;width:75px\">"+sp[i].key+": </span>"+sp[i].value+"<br>";
+		}
+	}
+	var bpStr="";
+	var bp = response.buyProperty;
+	if(bp != null && bp !=''){
+		for(var i=0;i<bp.length;i++){
+			bpStr+="<span style=\"display:inline-block;width:75px\">"+bp[i].key+": </span>"+bp[i].value+"<br>";
+		}
+	}
+	$('#showCustomAttributesWindow').window({
+		title : "温馨提示：属性过多浏览不全时，请点击窗口最大话",
+		content : "商品属性: <div>"+ppStr+"</div><br>"+
+				  "卖家属性: <div>"+spStr+"</div><br>"+
+				  "买家属性: <div>"+bpStr+"</div>"
+	});
+	$('#showCustomAttributesWindow').window('open');
+}
+
+//显示更多备注
+function showMoreRemark(){
+	var orderId=$("#orderIdForm").val();
+	var link = "${request.contextPath}/order/followOrder/"+orderId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"订单"+orderId+"操作详情"
+			};
+	parent.addTab(node);
+}
+
+//所有游戏【查询条件】
+$(function() {
+	var url = "../product/allgameList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='gameId'] option").remove();
+		var def =  "<option value=''>请选择</option>";
+		$("select[name='gameId']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='gameId']").append(options);
+		}
+
+	});
+	
+});
+
+function allgamesearch(){
+	var gameid = $("select[name='gameId']").val();
+	selectsub(gameid);
+}
+</script>
+</head>
+<body class="easyui-layout" style="line-height: 25px;">
+<div region="north" border="false" title="搜索条件" style="height: 120px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<input type="hidden" name="uid" id="uid" value="${uid!''}" />
+		<input type="hidden" name="status" id="status" value="1" />
+		<table>
+			<tr>
+				<td>订单号: <input name="orderId" style="width:150px;" /></td>
+				<td>流程状态:
+				<select id="orderC2cStatus" class="easyui-combobox" name="orderC2cStatus" style="width:100px;">
+					<option value="">所有状态</option>
+				    <option value="1">主管/系统分单</option>  
+				    <option value="2">客服派单</option>  
+				    <option value="3">物服发货</option>  
+				    <option value="4">完成</option>  
+				    <option value="5">撤销</option> 
+				    <option value="6">客服审撤</option>
+				    <option value="7">物服重发货</option>  
+				    <option value="8">转账给卖家</option>  
+				</select>
+				</td>
+				<td>订单时间:<input name="beginTime" id="beginTime" class="easyui-datebox" type="text" style="width:100px;" />
+				—<input name="endTime" id="endTime" style="width:100px;" class="easyui-datebox" /></td>
+				<td>买家UID:<input name="buyId" style="width:100px;" /></td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">复合查询</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+			<tr>
+			<td>卖家UID:<input name="sellId" style="width:100px;" /></td>
+			<td>商品编号:<input name="goodsId" style="width:100px;" /></td>
+			<td>是否快速发货：
+				<select id="quickDeliverFlag" class="easyui-combobox" name="quickDeliverFlag" style="width:100px;">
+					<option value="">所有状态</option>
+				    <option value="0">不支持</option>  
+				    <option value="1">支持</option>   
+				</select>
+			</td>
+			<td colspan="2">是否支付:
+			<select id="orderIspay" class="easyui-combobox" name="orderIspay" style="width:100px;">
+				<option value="">所有状态</option>
+			    <option value="0">未支付</option>  
+			    <option value="1">己支付</option>   
+			</select>
+			</td>
+			</tr>
+			<tr>
+		    <td colspan="5" style="width: 580px;">
+		        游戏:<select id="g_id_receiver" name="gameId" onchange="javascript:allgamesearch();" style="width: 96px">
+	        </select>&nbsp;&nbsp;
+	        <b id = "area_sel">游戏分区： 
+		    <select name="partitionId" id ="g_id_area_receiver"   onchange="areachange()">
+               <option value="">请选择</option>
+               </select>&nbsp;&nbsp;
+               <font id="server_sel">     
+                               游戏服务器： <select name="serverId" id ="g_id_serverid_receiver"  >
+               <option value="">请选择</option>
+               </select>&nbsp;
+               </font>  
+	         </b>
+	         子渠道编号：<input name="sonChannelId" style="width:100px;" />
+	         
+	       </td>
+			</tr>
+		</table>
+	</form>
+</div>
+ 
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+	<div onclick="view();" iconCls="icon-edit">查看详情</div>
+</div>
+
+<!--浏览页面-->
+<div id="viewDialog" style="display: none;width: 600px;height: 450px; background-color: #f2f2f2;text-align: left" align="center" >
+	<form id="editForm" method="post" style="padding: 5px 10px">
+	<input type="hidden" name="orderId"  id="orderIdForm"/>
+	<input type="hidden" name="cancelOrderReason" id="cancelOrderReasonForm" />
+	<input type="hidden" name="changeUserType" id="changeUserType" />
+	<input type="hidden" name="isCustomerAccept" id="isCustomerAcceptForm" />
+	<input type="hidden" name="isPhysicAccept" id="isPhysicAcceptForm" />
+	<input type="hidden" name="changeUserIdForm" id="changeUserIdForm" />
+	<input type="hidden" name="autoAssign" id="autoAssignForm" />
+	<input type="hidden" name="sendOrderPhysicIdForm" id="sendOrderPhysicIdForm" />
+	<div>
+		<b>【订单信息】</b><br/>
+		订单号：<input type="text" name="orderId" size="25" maxlength="50" readonly style="border:thin; background-color: #f2f2f2"/>
+		订单总额：<input type="text" name="orderAmountForm" size="5" maxlength="50" readonly style="border:thin; background-color: #f2f2f2"/>
+		订单状态：
+		<select name="orderStatus" style="border: thin;size: 20px;" disabled="disabled">
+		      	 	<option value="0">等待付款</option>
+		      	 	<option value="2">等待发货</option>
+		      	 	<option value="4">待确认收货</option>
+		      	 	<option value="6">订单成功</option>
+		      	 	<option value="8">交易取消</option>
+		      	 	<option value="7">待转账</option>
+		      	 	<option value="10">己退款</option>
+		      	 	<option value="-1">己删除</option>
+		 </select><br/>
+			流程状态：
+				<select name="orderC2cStatus" style="border: thin;size: 20px;" disabled="disabled">
+				    <option value="1">主管/系统分单</option>  
+				    <option value="2">客服派单</option>  
+				    <option value="3">物服发货</option>  
+				    <option value="4">完成</option>  
+				    <option value="5">撤销</option> 
+				    <option value="6">客服审撤</option>
+				    <option value="7">物服重发货</option> 
+				    <option value="8">转账给卖家</option>
+		 </select>
+		 <span style="padding-left:55px">
+		 渠道：<input type="text" name="orderFr" size="20" maxlength="50" readonly style="border:thin; background-color: #f2f2f2"/>
+		 </span></br>
+		 子渠道：<input type="text" name="sonChannelId" size="20" maxlength="50" readonly style="border:thin; background-color: #f2f2f2"/>
+		 
+		  
+		
+		<br/>
+		备注：<input type="text" name="remark" size="70" maxlength="200" readonly style="border:thin; background-color: #f2f2f2"/>
+	</div>
+	<div style="border-top:1px dashed #666; ">
+		<b>【游戏信息】</b><br/>
+		游戏名：<input type="text" name="gameName" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2 "/>
+		区服：<input type="text" name="gameAreaServer" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/><br/>
+		游戏渠道：<input type="text" name="gameChannelName" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2 "/>
+	</div>
+	<div style="border-top:1px dashed #666; ">
+		<b>【买家账号信息】</b><br/>
+		角色名称：<input type="text" name="orderBuyGameRoleName" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		角色id：<input type="text" name="orderBuyGameRoleId" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		角色等级：<input type="text" name="orderBuyGameLevel" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+	</div>
+	<div style="border-top:1px dashed #666; ">
+		<b>【商品信息】</b><br/>
+		商品编号：<input type="text" name="goodsId" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/> 
+		商品名称：<input type="text" name="goodsName" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		<br/>
+		<div id="goodsSingleDiv">
+		单件数量：<input type="text" name="goodsSingleNumber" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		<span style="padding-left:90px">
+		单价：<input type="text" name="goodsSinglePrice" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		</span>
+		<span style="padding-left:30px">
+		商品总数：<input type="text" name="totalGoodsNumber" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		</span>
+		</div>
+		商品类型：
+		<select name="goodsType" style="border: thin;size: 10px;" disabled="disabled">  		    
+				<#list productTypeList as typeList>
+					<option value="${typeList.id }" >${typeList.name}</option>
+				</#list>
+		 </select><span style="padding-left:48px">
+		 商品备注：<input type="text" name="goodsRemark" size="30" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/></span><br/>
+		 商品存放：<select name="goodsPosition" style="border: thin;size: 10px;" disabled="disabled">
+				    <option value="1">交易所</option>  
+				    <option value="2">仓库</option>  
+				    <option value="3">邮箱</option> 
+				    <option value="4">包裹</option> 
+		 </select><span style="padding-left:92px"><a href="javascript:void()" onclick="showProductProperty();">商品属性</a></span>
+		 
+		 
+		
+		 <span  style="padding-left:102px">
+		商品售价：<input type="text" name="goodsPrice" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		</span>
+<!-- 		<span style="padding-left:50px"> -->
+<!-- 		商品原价：<input type="text" name="productOriginalPrice" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/> -->
+<!-- 		</span> -->
+	</div>	
+	
+	<div style="border-top:1px dashed #666; ">
+		<b>【卖家信息】</b><br/>
+		卖家UID：<input type="text" name="orderSellUid" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		姓名：<input type="text" name="orderSellRealName" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		联系QQ：<input type="text" name="orderSellQq" size="8" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		手机号码：<input type="text" name="orderSellRealPhone" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+	</div>	
+	<div style="border-top:1px dashed #666; ">
+		<b>【买家信息】</b><br/>
+		买家UID：<input type="text" name="orderBuyUid" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		姓名：<input type="text" name="orderBuyRealName" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		联系QQ：<input type="text" name="orderBuyQq" size="8" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		手机号码：<input type="text" name="orderBuyRealPhone" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+	    <br>
+	            买家填写的账号：<input type="text" name="buyAccount" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		买家填写的密码：<input type="text" name="buyAccountPwd" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		&nbsp买家的安全锁：<input type="text" name="buysafekey" size="8" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+	
+	</div>
+	<!-- 历史备注信息 -->
+	<div style="border-top:1px dashed #666; ">
+		<b>【历史备注信息】</b>
+		<input type="button" value="查看更多" onclick="showMoreRemark();"/><br/>
+		<input type="text" name="remark" size="70" maxlength="200" readonly style="border:thin;background-color: #f2f2f2; font: bolder;color: red;"/>
+	</div>
+	<!-- 派单物服 -->
+	<div id="sendOrder" style="border-top:1px dashed #666;display: none">
+		<div id="sendOrderInfo">
+		</div>
+	</div>
+	<!-- 派单客服 -->
+	<div id="adminSendOrder" style="border-top:1px dashed #666;display: none">
+		<div id="adminSendInfo">
+		备注：<textarea rows="" cols="50" id="adminSendOrderRemark"></textarea><input type="button" value="派单" onclick="adminSendOrderCommit();"/><input type="reset" value="取消" onclick="cancleOperate();"/>
+		</div>
+	</div>
+	<!-- 发货 -->
+	<div id="sendGoods" style="border-top:1px dashed #666;display: none">
+		<table width="550px;">
+			<tr>
+				<td width="200px;"><input type="button" value="卖家账号信息" id="accountInfo" onclick="showUserAccountInfo();"/></td>
+				<td>撤单原因：<select id="cancelReason">
+				<option value="" >-请选择-</option>
+				<#list reasonList as reason>
+					<option value="${reason.id }" >${reason.cancelReason}</option>
+				</#list>
+				</select>
+				</td>
+			</tr>
+			<tr>
+				<td width="200px;">
+					<div id="userAccountInfo"></div>
+				</td>
+				<td>
+					备注：<textarea rows="" cols="30" id="cancelReasonRemark"></textarea>
+				</td>
+			</tr>
+			<tr>
+				<td align="right" colspan="2">
+					<input type="button" value="生成发货链接" onclick="autoSendGoods();"/>
+					<input type="button" value="发货成功" onclick="sendGoodsSuccess();"/>
+					<input type="button" value="申请撤单" onclick="cancelOrderRequest();"/>
+					<input type="button" value="取消" onclick="cancleOperate();"/>
+				</td>
+			</tr>
+		</table>
+	</div>	
+	<!-- 撤单 -->
+	<div id="cancelOrder" style="border-top:1px dashed #666;display: none">
+		<table width="550px">
+			<tr>
+				<td><font color="red">撤单原因：</font><input type="text" name="cancelOrderReason" size="50" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<font color="red">备注：</font><input type="text" name="cancelOrderRemark" size="50" maxlength="200" readonly style="border:thin;background-color: #f2f2f2"/>
+				</td>
+			</tr>
+			<tr>
+				<td>备注：
+					<textarea rows="" cols="40" id="checkCancelOrderRemark"></textarea>
+				</td>
+			</tr>
+			<tr>
+				<td align="right">
+					<input type="button" value="转单卖家" onclick="toChangeSell();"/>
+					<input type="button" value="撤单" onclick="checkCancelOrder(0);"/>
+					<input type="button" value="重新发货" onclick="checkCancelOrder(1);"/>
+					<input type="button" value="取消" onclick="cancleOperate();"/>				
+				</td>
+			</tr>
+		</table>
+	</div>
+	<!-- 转单 -->
+	<div id="changeUser" style="border-top:1px dashed #666;display: none">
+		<table width="550px">
+			<tr>
+				<td id="changeUserTd">
+				
+				</td>
+			</tr>
+			<tr>
+				<td>备注：
+					<textarea rows="" cols="40" id="changeUserRemark"></textarea>
+				</td>
+			</tr>
+			<tr>
+				<td align="right">
+					<input type="button" value="转单" onclick="changeUserCommit();"/>
+					<input type="button" value="取消" onclick="cancleOperate();"/>				
+				</td>
+			</tr>
+		</table>
+	</div>
+</form>
+</div>
+<!--浏览页面-->
+<div id="returnMoneyDialog" style="display: none;width: 600px;height: 150px; background-color: #f2f2f2" align="center" >
+	<form id="returnMoney" method="post" style="padding: 5px 10px">
+	<input type="hidden" name="returnMoneyOrderId"  id="returnMoneyOrderId"/>
+	<div style="border-bottom:1px silver #666; ">
+		请选择超时原因：
+		<#if sendgoodsTimeoutReasonList??>
+		<select id="sendgoodsTimeoutReason" name="sendgoodsTimeoutReason">
+				<option value="" >-请选择-</option>
+				<#list sendgoodsTimeoutReasonList as reason>
+					<option value="${reason.reasonId }" >${reason.reasonRemark}<#if reason.reasonType == 0>[赔付]</#if><#if reason.reasonType == 1>[不赔付]</#if></option>
+				</#list>
+				</select>&nbsp;&nbsp;&nbsp;&nbsp;
+				
+		<input type="button" value="确定提交" onclick="sendgoodsTimeoutReasonSubmit();"/>
+		</#if>
+	</div>
+</form>
+</div>
+<div id="changeSellDialog" style="display: none;width: 600px;height: 200px; background-color: #f2f2f2" align="center" >
+	<form id="changeSell" method="post" style="padding: 5px 10px">
+	<input type="hidden" name="changeSellOrderId"  id="changeSellOrderId"/>
+	<input type="hidden" name="needUpdate"  id="needUpdate"/>
+			<table width="550px">
+			<tr>
+				<td id="changeSellTD">
+				</td>
+			</tr>
+			<tr>
+				<td>&nbsp;&nbsp;&nbsp;备注：<textarea rows="" cols="50" id="changeSellRemark"></textarea>
+				</td>
+			</tr>
+			<tr>
+				<td align="right">
+					<input type="button" value="转单" onclick="doChangeSell();"/>				
+				</td>
+			</tr>
+		</table>
+</form>
+</div>
+<!-- 客服直接撤单 -->
+	<!-- 撤单 -->
+	<div id="customerCancelDialog" style="display: none;width: 600px;height: 200px; background-color: #f2f2f2" align="center" >
+	<form id="customerCancelForm" method="post" style="padding: 5px 10px">
+	<input type="hidden" name="customerCancelOrderId"  id="customerCancelOrderId"/>
+		<table width="550px;">
+			<tr>
+				<td>撤单原因：
+				<#if customerReasonList??>
+				<select id="customerCancelReason">
+				<option value="" >-请选择-</option>
+				<#list customerReasonList as reason>
+					<option value="${reason.id!'0'}" >${reason.cancelReason!''}</option>
+				</#list>
+				</select>
+				</#if>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					备注：<textarea rows="" cols="30" id="customerCancelReasonRemark"></textarea>
+				</td>
+			</tr>
+			<tr>
+				<td align="right" colspan="2">
+					<input type="button" value="撤单" onclick="customerCancel();"/>
+				</td>
+			</tr>
+		</table>
+		</form>
+	</div>
+	<!-- 自定义属性详细窗口 -->
+<div id="showCustomAttributesWindow" class="easyui-window" title="自定义属性信息"
+		data-options="modal:true"
+		style="width: 800px; height: '550px'; line-height:15px; padding: 10px">详细信息内容</div>
+</body>
+</html>

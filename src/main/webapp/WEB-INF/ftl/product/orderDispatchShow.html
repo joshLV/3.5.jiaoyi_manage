@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>查询订单发货信息</title><#include "../common.html"/>
+<style>
+#content {
+	font-size: 14px;
+}
+
+.table_line tr td {
+	border-bottom: #999 1px dashed;
+	padding: 5px;
+}
+</style>
+<script type="text/javascript">
+	var searchForm;
+	$(function() {
+		searchForm = $('#searchForm').form();//条件搜索框
+		$('#gameList').remove();
+		var url = "queryAllGameJson.do";
+		$.getJSON(url,function(result) {
+							var gameCount = result.total;
+							searchForm.find("select[name='gameSelect'] option").remove();
+							for ( var i = 0; i < gameCount; i++) {
+								var options = "<option value='"+result.rows[i].gameId+"'>"+ result.rows[i].gameName + "</option>";
+								searchForm.find("select[name='gameSelect']").append(options);
+							}
+							var gameId = ${gameId};
+							if (!(!gameId && typeof (gameId) != "undefined" && gameId != 0)) {
+								searchForm.find("select[name='gameSelect'] option[value='"+ gameId + "']").attr("selected", "selected")
+							}
+							var orderId = "${orderId}";
+							if (!(!orderId && typeof (orderId) != "undefined" && orderId != 0)) {
+								if (orderId != "null") {
+									$('#orderId').val(orderId);
+								} 
+							}
+							var area= ${areaId};
+							if(!(!area&& typeof(area)!="undefined" && area!=0)){
+								if (area!= "null") {
+									$('#gameArea').val(area);
+								} 
+							}
+							var server= ${serverId};
+							if(!(!server && typeof(server)!="undefined" && server!=0)){
+								if (server != "null") {
+									$('#gameServer').val(server);
+								} 
+							}
+						});
+	});
+	function _search() {
+		var gameId = searchForm.find('#gameId').val();
+		var orderId = searchForm.find('#orderId').val();
+		var gameArea = $('#gameArea').val();
+		var gameServer = $('#gameServer').val();
+		$
+				.ajax({
+					url : 'orderDispatchInfoJson',
+					data : {
+						gameId : gameId,
+						oid : orderId,
+						areaId:gameArea,
+						serverId:gameServer
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(data) {
+						console.dirxml(data);
+						if (data != null) {
+							$('#content').html("您所查询的订单ID为<span style='color:red'>["
+													+ orderId
+													+ "]</span>的订单信息如下:<br>"
+													+ "<table id='orderDetail' class='table_line'>"
+													+ "<tr><td width='120px'>角色ID:</td><td>"
+													+ data.roleId
+													+ "</td>"
+													+ "<tr><td width='120px'>上架号:</td><td>"
+													+ data.pid
+													+ "</td>"
+													+ "<tr><td width='120px'>数量:</td><td>"
+													+ data.amount
+													+ "</td>"
+													+ "<tr><td width='120px'>创建时间:</td><td>"
+													+ data.createTime
+													+ "</td></table>");
+						} else {
+							$('#content').html("您所查询的订单ID为[" + orderId + "]的订单没有相关信息");
+						}
+					}
+				});
+	}
+
+	function cleanSearch() {
+		searchForm.find('#orderId').val('');
+		searchForm.find('#gameId').val('');
+		searchForm.find('#gameServer').val('');
+		searchForm.find('#gameArea').val('');
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="north" border="false" title="搜索条件"
+		style="height: 'auto';min-height:77px; overflow: hidden; padding: 10px" align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+					<td>游戏:<select style="width: 155px" name="gameSelect"id="gameId"></select>&nbsp;
+					游戏区ID:<input name="areaId" id="gameArea"  size="3">&nbsp;
+					游戏服ID:<input name="serverId" id="gameServer"  size="3">&nbsp;
+					订单号:<input id="orderId" type="text" name="oid" value=""size="35">&nbsp;
+					<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">查询</a> <a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<div region="center" border="false">
+		<div id="content" style="padding: 15px;padding-top:77px;"></div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>日金支出统计图形页面</title>
+<#include "../common.html"/>
+<script type="text/javascript" src="${request.contextPath}/js/Highcharts/highcharts.js"></script>
+<script type="text/javascript" src="${request.contextPath}/js/Highcharts/modules/exporting.js"></script>
+<script type="text/javascript" src="${request.contextPath}/js/Highcharts/themes/grid.js"></script>
+<script type="text/javascript">
+var chart;
+$(document).ready(function() {  
+    chart = new Highcharts.Chart({  
+        chart: {  
+            renderTo: 'container',  
+            defaultSeriesType: 'spline', //图表类型 line, spline, area, areaspline, column, bar, pie , column，scatter  
+            inverted: false //左右显示，默认上下正向。假如设置为true，则横纵坐标调换位置  
+        },  
+        xAxis: {  
+           categories:${xAxisCategories!'0'}, //X轴的坐标值  
+           title: ${title!'0'},  //Y轴坐标标题  labels:纵柱标尺  
+            labels: {  
+            	   step: 2, 
+            	   rotation:-45,
+            	   align:'right'
+           	} 
+        },  
+        yAxis: {  
+            title: {text: '金额(RMB)'},  //Y轴坐标标题  labels:纵柱标尺  
+            min:0  
+        },  
+        tooltip: {  
+            formatter: function() {  
+                //当鼠标悬置数据点时的格式化提示  
+                return '金额:' + Highcharts.numberFormat(this.y, 0)+'RMB<br/>当前日期: '+ this.x ;  
+            }  
+        },  
+        credits: {  
+            enabled: false
+           
+        },  
+        plotOptions: {  
+            column: {  
+                pointPadding: 0.2,  //图表柱形的  
+                borderWidth: 0      //图表柱形的粗细  
+            },bar: {  
+                dataLabels: {  
+                    enabled: false  
+                }  
+            },  series: {
+                cursor: 'pointer',
+                point: {
+                    events: {
+                        click: function() {
+                        	//alert(this.category);
+                            view(this.category,this.id);
+                        }
+                    }
+                }
+            }
+        },
+        title: { text: '日金支出统计图表' }, //图表主标题  
+        subtitle: {text: '' }, //图表副标题  
+        series: ${data}
+    }); 
+});   
+
+
+function view(time,id){
+	var platform=$("#platform").val();
+	var model=$("#model").val();
+	var ch=$("#ch").val();
+	if(id=='a'){
+   	window.location.href="../count/chartCountDayMoneyIo/chartMoneyIoTakeMemberNumByTime.do?time="+time;
+	}else if(id=='b'){
+		
+	window.location.href="../count/chartCountDayMoneyIo/chartMoneyIoTakeNumByTime.do?time="+time;
+	}else if(id=='e'){
+	window.location.href="../count/chartCountDayMoneyIo/chartMoneyIoTakeByTime.do?time="+time;
+	}else if(id=='f'){
+		window.location.href="../count/chartCountDayMoneyIo/chartMoneyIoRechargeMemberByTime.do?time="+time;	
+	}else if(id=='g'){
+		window.location.href="../count/chartCountDayMoneyIo/chartMoneyIoRechargeNumByTime.do?time="+time;	
+	}else if(id=='h'){
+		window.location.href="../count/chartCountDayMoneyIo/chartMoneyIoRechargeMoneyByTime.do?time="+time;	
+	}
+}
+function changeView(){
+	var btime = $("input[name='btime']").val();
+	var etime = $("input[name='etime']").val();
+
+	window.location.href="countDayMoneyIOList?btime="+btime+"&etime="+etime;
+}
+
+
+function _search() {
+	var btime = $("input[name='btime']").val();
+	var etime = $("input[name='etime']").val();
+	window.location.href="chartCountDayMoneyIO?btime="+btime+"&etime="+etime;
+}
+
+function cleanSearch() {
+	 $("input[name='btime']").attr("value","");
+	 $("input[name='etime']").attr("value","");
+	window.location.href="chartCountDayMoneyIO";
+}
+
+</script>
+</head>
+
+<body  >
+<div  class="easyui-panel" title="搜索条件" >
+	<form id="searchForm" class="searchForm">
+		<table>
+			<tr>
+
+				
+				
+				<td>日期<input name="btime" value="${btime!''}"  type="text"  class="easyui-datebox" /> -
+                <input name="etime"  value="${etime!''}" type="text" class="easyui-datebox" /></td>
+                
+           
+			
+			<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a> 
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a> 
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="changeView()">切换到列表</a> 
+			</td>
+			</tr>
+	
+			
+		
+		</table>
+	</form>
+</div> 
+ 
+
+ <div id="container" style="height: 400px; margin: 0 auto"></div>
+</body>
+</html>

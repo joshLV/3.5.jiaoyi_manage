@@ -1,0 +1,173 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>客服接单量统计</title> <#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var searchForm;
+var monthReport='年: ';
+monthReport+='<select name="year" id="selectYear">';
+monthReport+='<option value="'+new Date().getFullYear()+'" selected="selected">'+new Date().getFullYear()+'</option>';
+for(var i=1;i<12;i++){
+	var curr_year = new Date().getFullYear()-i;
+	monthReport+='<option value="'+curr_year+'">'+curr_year+'</option>';
+}
+monthReport+='</select>';
+monthReport+='月:';
+monthReport+='<select name="month" id="selectMonth">';
+var currMonth = new Date().getMonth()+1;
+for(var i=1;i<13;i++){
+	monthReport+='<option value="'+(i<10?"0"+i:i)+'" ';
+	if(currMonth==i){
+		monthReport+='selected="selected"';
+	}
+	monthReport+='>'+i+'月</option>';
+}
+monthReport+='</select>';
+var daysReport = '工作日:<input id="beginTime" type="text" style="width: 100px;">';
+	daysReport += '—<input id="endTime" style="width: 100px;">';
+var report;
+var reportHtml;
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url :'orderC2cCountByDayJson',
+			title : '客服接单量统计列表',
+			//iconCls : 'icon-save',
+			singleSelect:true,
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ ${pageList!'100'}, 150, 200],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			});
+// 	$('#reportMethod').toggle(function(){$('#reportModel').html(monthReport);},function(){$('#reportModel').html(daysReport);});
+	$('#reportMethod').bind('click',function(){
+		var isChecked = $('input[name="reportMethod"]:checked').length;
+		console.log(isChecked);
+		if(isChecked>0){
+			console.log('选中');
+			reportHtml = $('#reportModel span').html();
+			console.log(reportHtml);
+			report = $('#reportModel span').remove();
+			console.log(report);
+			$('#reportModel').html(monthReport);
+			datagrid.datagrid('load', sy.serializeObject(searchForm));
+			$('#datagrid').datagrid('hideColumn','date');
+		}else{
+			console.log('未选中');
+			$("#reportModel").html(daysReport);
+			$("#beginTime").datebox({});
+			$("#endTime").datebox({});
+			datagrid.datagrid('load', sy.serializeObject(searchForm));
+			$('#datagrid').datagrid('showColumn','date');
+		}
+	});
+});
+function formatUserType(val,row){
+	if(val==1){
+		return "寄售客服";
+	}else if(val==2){
+		return "寄售物服";
+	}
+}
+function _search() {
+	var isChecked = $('input[name="reportMethod"]:checked').length;
+	if(isChecked>0){
+		
+	}else{
+		var  btime = searchForm.find("table >tbody> tr input[name='beginTime']").val();
+		var  etime = searchForm.find("table >tbody> tr input[name='endTime']").val();
+		var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+		var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	
+		if(r==null && btime !=""){
+			$.messager.alert('提示', '请填写正确的开始时间', 'error');
+			return false;
+		}
+		if(r2==null && etime !=""){
+			$.messager.alert('提示', '请填写正确的结束时间', 'error');
+			return false;
+		}
+		if(btime > etime && btime !="" && etime !=""){
+			$.messager.alert('提示', '请选择正确的时间段', 'error');
+			return false;
+		}
+	}
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+</script>
+</head>
+<body class="easyui-layout">
+	<div region="north" border="false" title="搜索条件"
+		style="height: 70px; overflow: hidden;" align="left">
+		<form id="searchForm" action="">
+			<table>
+				<tr>
+					<td>客服岗位号: <input id="uid" name="uid" style="width: 150px;" /></td>
+					<td id="reportModel"><span>工作日:<input name="beginTime" id="beginTime"
+						class="easyui-datebox" type="text" value="" style="width: 100px;" />
+						—<input name="endTime" id="endTime" style="width: 100px;"
+						class="easyui-datebox" value="" /></span></td>
+					<td>
+						<span style="display:inline-block;width:210px;padding-left:15px;"><input type="checkbox" id="reportMethod" name="reportMethod" style="padding-right: 5px;padding-bottom:2px;vertical-align:middle">
+						<lable for="reportMethod">月报表</lable></span>
+					</td>
+					<td><a href="javascript:void(0);" class="easyui-linkbutton"
+						onclick="_search();">复合查询</a> <a href="javascript:void(0);"
+						class="easyui-linkbutton" onclick="cleanSearch();">取消</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<div region="center" border="false">
+		<table id="datagrid">
+			<thead data-options="frozen:true">
+				<tr>
+					<th data-options="field:'id',width:80,align:'center'" rowspan="2">编号</th>
+					<th data-options="field:'uid',width:100,align:'center'" rowspan="2">客服岗位号</th>
+					<th data-options="field:'loginId',width:100,align:'center'"
+						rowspan="2">讯鸟后台账号</th>
+					<th data-options="field:'fullName',width:100,align:'center'"
+						rowspan="2">姓名</th>
+					<th id="days" data-options="field:'date',width:100,align:'center'"
+						rowspan="2">工作日</th>
+					<th
+						data-options="field:'userType',width:100,align:'center',formatter:formatUserType"
+						rowspan="2">客服类型</th>
+				</tr>
+			</thead>
+
+			<thead>
+				<tr>
+					<#if allGameList??> <#list allGameList as game>
+					<th colspan="3">${game.gameName!""}</th>
+					</#list> </#if>
+				</tr>
+				<tr>
+					<#if allGameList??> <#list allGameList as game>
+					<th data-options="field:'game${game.gameId!""}OrderTotal',width:60,align:'center'">接单量</th>
+					<th data-options="field:'game${game.gameId!""}OrderSuccess',width:60,align:'center'">成功单量</th>
+					<th data-options="field:'game${game.gameId!""}OrderFail',width:60,align:'center'">失败单量</th>
+					</#list> </#if>
+				</tr>
+
+			</thead>
+
+		</table>
+
+	</div>
+</body>
+</html>

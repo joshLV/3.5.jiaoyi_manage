@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>模块权限列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+
+$(function() {
+	datagrid = $('#datagrid_modulePersion').datagrid({
+			url :'modulePermissionList_json',
+			queryParams:{
+				modId: ${modId}
+			},
+			title : '模块权限',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'pid',
+			sortName : '',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.pid;
+						}
+					},
+			   {field:'perName',title:'权限名称',align:'center',width:90,sortable:true},				
+			   {field:'perCode',title:'权限代码',align:'left',width:280,sortable:true,editor:'text'
+			   },				
+			   {field:'modId',title:'所属模块ID',align:'center',width:50,sortable:true},	
+			   {field:'remark',title:'备注',align:'center',width:90,sortable:true},
+			   {field:'action',title:'操作',width:70,align:'center', 
+				   formatter:function(value,row,index){ 
+				   if (row.editing){ 
+				   var s = '<a href="#" onclick="saverow('+index+')">保存</a> '; 
+				   var c = '<a href="#" onclick="cancelrow('+index+')">取消</a>'; 
+				   return s+c; 
+				   } else { 
+				   var e = '<a href="#" onclick="editrow('+index+')">编辑</a> '; 
+				   //var d = '<a href="#" onclick="deleterow('+index+')">删除</a>'; 
+				   return e; 
+				   } 
+				   } 
+				   } 
+			 ] ],
+			 onBeforeEdit:function(index,row){
+			        row.editing = true;
+			        $('#datagrid_modulePersion').datagrid('refreshRow', index);
+			    },
+			    onAfterEdit:function(index,row){
+			        row.editing = false;
+			        $('#datagrid_modulePersion').datagrid('refreshRow', index);
+			    	$.messager.confirm('请确认', '您要更改所选项目？', function(r) {
+			    		if (r) {
+			    			$.ajax({
+			    				url : 'modulePermissionEdit.do',
+			    				data : {
+			    					perCode:row.perCode,pid:row.pId
+			    				},
+			    				dataType : 'json',
+			    				success : function(response) {
+			    					datagrid.datagrid('reload');
+			    					datagrid.datagrid('unselectAll');
+			    					$.messager.show({
+			    						title : '提示',
+			    						msg : response.msg
+			    					});
+			    					
+			    				}
+			    			});
+			    		}
+			    	});
+			    },
+			    onCancelEdit:function(index,row){
+			        row.editing = false;
+			        $('#datagrid_modulePersion').datagrid('refreshRow', index);
+			    },
+			 
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+	
+		});
+
+		addForm = $('#addForm').form({
+			url : 'modulePermissionAdd.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加新的权限模块',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					addForm.submit();
+				}
+			} ]
+		});
+
+});
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+}
+
+function add() {
+	addDialog.dialog('open');
+}
+function del() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].pid);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'modulePermissionDel.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('reload');
+						datagrid.datagrid('unselectAll');
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	} 
+}
+function editrow(index){ 
+	$('#datagrid_modulePersion').datagrid('beginEdit', index); 
+	} 
+function saverow(index){ 
+	$('#datagrid_modulePersion').datagrid('endEdit', index); 
+
+	} 
+function cancelrow(index){ 
+	$('#datagrid_modulePersion').datagrid('cancelEdit', index); 
+	} 
+</script>
+</head>
+
+<body class="easyui-layout">
+
+<div region="center" border="false">
+	<table id="datagrid_modulePersion"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+	<div onclick="add();" iconCls="icon-add">增加</div>
+	<div onclick="del();" iconCls="icon-remove">删除</div>
+</div>
+
+<!--添加表单-->
+<div id="addDialog" style="display: none;width: 700px;height: 300px;" align="center">
+	<form id="addForm" method="post" style="padding: 5px 10px">
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">所属模块ID：</td>
+		      <td><input type="text" name="modId" value="${modId}" size="15" maxlength="50" readonly="readonly" /></td>
+		    </tr>
+		    <tr>
+		    	<td class="lable">权限名称：</td>
+		      <td><input type="text" name="perName" size="20" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写权限名" /></td>
+		    </tr>
+		    <tr>
+		    	<td class="lable">权限代码：</td>
+		      <td><input type="text" name="perCode" size="70" maxlength="100" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写权限代码" /></td>
+		    </tr>
+		    <tr>
+		      <td>备注：</td>
+		      <td><textarea name="remark" cols="30" rows="5"></textarea></td>
+		    </tr>
+		  </table> 
+	</form>
+</div>
+
+</body>
+</html>

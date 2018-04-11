@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>广州水煮科技</title>
+<link rel="stylesheet" type="text/css" href="jquery-easyui-1.4/themes/default/easyui.css" id="easyuiTheme">
+<link rel="stylesheet" type="text/css" href="jquery-easyui-1.4/themes/icon.css">
+<link rel="stylesheet" type="text/css" href="jquery-easyui-1.4/themes/color.css">
+<script type="text/javascript" src="jquery-easyui-1.4/jquery-1.8.0.min_menu.js"></script>
+<script type="text/javascript" src="jquery-easyui-1.4/jquery.easyui.min_menu.js"></script>
+<script type="text/javascript" src="jquery-easyui-1.4/locale/easyui-lang-zh_CN.js"></script>
+
+
+
+<script type="text/javascript" src="js/jquery.cookie.js"></script>
+<script type="text/javascript" src="js/syUtil.js"></script>
+
+<link rel="stylesheet" type="text/css" media="screen" href="xmpp/converse.css">
+<!-- <script data-main="xmpp/main" src="xmpp/components/requirejs/require.js"></script>  -->
+
+</head>
+<body class="easyui-layout">
+<div data-options="region:'north',border:false" style="height:30px;background:#B3DFDA;padding:5px" href="north.jsp"></div>
+<div data-options="region:'west',split:true,title:'功能菜单'" style="width:180px;padding:0px;" href="west.html"></div>
+<!--<div data-options="region:'east',split:true,collapsed:true,title:'East'" style="width:100px;padding:10px;">east region</div>-->
+<div data-options="region:'south',border:false" style="height:25px;line-height:25px; text-align:center;">版权所有 广州聚好玩信息科技有限公司</div>
+<div data-options="region:'center',title:'',border:true" href="centertabs.jsp" id="center"></div>
+
+
+<div id="conversejs"></div>
+
+
+
+<!-- <script> -->
+//  if (document.login_custom_service_id.length > 0) {
+//  	require(['converse'], function (converse) {
+// 	    converse.initialize({
+//  	        allow_otr: true,
+// 	        auto_list_rooms: false,
+// 	        auto_subscribe: false,
+// 	        allow_muc: false,
+// 	        //bosh_service_url: 'https://conversejs.org/http-bind', // Please use this connection manager only for testing purposes
+//  	        bosh_service_url: 'http://120.31.134.11:7070/http-bind/', 
+// 	        show_only_online_users: false,
+//  	        show_toolbar: false,
+// 	        hide_muc_server: false,
+//  	        prebind: false,
+//  	        show_controlbox_by_default: true,
+// 	        xhr_user_search: false,
+//  	    });
+//  	});
+//  }
+<!-- </script> -->
+<script>
+//外链接入，弹窗代码
+window.addEventListener("message", function( event ) { 
+//alert(event.data)
+addTab(event.data)
+})
+</script>
+</body>
+</html>

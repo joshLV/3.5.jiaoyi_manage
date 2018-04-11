@@ -1,0 +1,299 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=UTF-8">
+<title>人工充值</title> <#include "../common.html"/>
+<script type="text/javascript">
+	//浮点异常处理方法
+	function accMul(arg1,arg2){
+	    var m=0,s1=arg1.toString(),s2=arg2.toString();
+	    try{m+=s1.split(".")[1].length}catch(e){}
+	    try{m+=s2.split(".")[1].length}catch(e){}
+	    return Number(s1.replace(".",""))*Number(s2.replace(".",""))/Math.pow(10,m)
+	}
+	var checkSubmitFlag = true;
+	function checkSubmit() {
+		var uid = $('#uid').val();
+		var orderId = $('#orderId').val();
+		var amount = $('#amount').val();
+		var accountType = $('#refundForm input[name="accountType"]:checked').val();
+		var fee2 = $('#refundForm input[name="fee"]:checked').val();
+		var remark = $('#remark').val();
+		var vcode = $('#vcode').val();
+
+		if ($.trim(uid).length != 0 && $.trim(amount).length != 0) {
+			$.messager.confirm('请确认', "充值" + amount + "元至" + uid + "的账户", function(flag) {
+				if(flag){
+					var data = "uid=" + uid + "&orderId="+orderId+"&amount=" + amount +"&atype=" + accountType+ "&fee2=" + fee2 + "&remark=" + remark + "&vcode="+ vcode;
+					$.ajax({
+						type: "post",
+						url: 'refund',
+						data: data,
+						success: function(response){
+							var json = $.parseJSON(response);
+							if (json && json.success) {
+								$.messager.show({
+									title : '成功',
+									msg : json.msg
+								});
+								$('#refundForm').form('reset');
+								clear();
+							} else {
+								$.messager.show({
+									title : '失败',
+									msg : json.msg
+								});
+							}
+						}
+					});
+				}
+			});
+
+		}
+	}
+	function getMemberInfo() {
+		var uid = $('#uid').val();
+		$.ajax({
+			type : "POST",
+			url : "displayMemberInfo",
+			data : "uid=" + uid,
+			success : function(data) {
+				if (data == "") {
+					$('#result').html("没有该用户信息")
+					$('#memberInfo').hide();
+					return;
+				}
+				var json = $.parseJSON(data);
+				if (!json.uid) {
+					$('#result').html("没有该用户信息")
+					$('#memberInfo').hide();
+				} else {
+					$('#result').html("");
+					$('#memberInfo').show();
+					$('#mUID').html(json.uid);
+					$('#mloginName').html(json.loginName);
+					$('#mNickName').html(json.nickName);
+					$('#mMobile').html(json.mobile);
+					$('#mUserType').html(json.userType);
+					$('#mIsRealValidate').html(json.isRealValidate);
+				}
+			}
+		});
+	}
+	$(function() {
+		$('#memberInfo').hide();
+		$('#refundForm input[name="accountType"][value="1"]').attr('checked','checked');
+		$('#refundForm input[name="fee"]').bind('click',function() {
+			var feeSelected = $('#refundForm input[name="fee"]:checked').val();
+			var amount = $('#amount').val();
+			if (feeSelected == "0") {
+				$("#fee").val("0");
+			} else if (feeSelected == "1") {
+				$("#fee").val(accMul(amount,0.02));
+			} else if (feeSelected == "2") {
+				$("#fee").val(accMul(amount,0.06));
+			}
+		});
+	});
+	var minuts = 60;
+	var intervalFlag;
+	function sendVCode() {
+		$.ajax({
+			type : "POST",
+			url : "sendVerifyCode",
+			data:"amount="+$('#amount').val(),
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		$('#getVCode').attr("disabled", "disabled");
+		intervalFlag = setInterval(minutsZero, 1000);
+	}
+	function minutsZero() {
+		minuts--;
+		$('#getVCode').val(minuts + '后可以重新发送');
+		if (minuts == 0) {
+			$('#getVCode').val('点击获取');
+			$('#getVCode').removeAttr("disabled");
+			clearInterval(intervalFlag);
+			minuts = 60;
+		}
+	}
+	function clear(){
+		$('#memberInfo').hide();
+	}
+	function modChar(field, countfield, maxlimit) {    
+		if (field.value.length > maxlimit){    
+			field.value = field.value.substring(0, maxlimit);  
+			countfield.html(0);   
+		}else{    
+			countfield.html(maxlimit - field.value.length);    
+		}  
+	}
+</script>
+</head>
+<body>
+	<div >
+		<form id="refundForm">
+			<table
+				cellpadding="10"
+				style="min-width: 660px">
+				<tr>
+					<td style="width: 120px;">用户UID:</td>
+					<td><input
+						type="text"
+						name="uid"
+						id="uid"
+						data-options="required:true"
+						class="easyui-validatebox"
+						missingMessage="请填写UID"
+						onblur="getMemberInfo();"></td>
+				</tr>
+				<tr>
+					<td style="width: 120px;">订单号:</td>
+					<td><input
+						type="text"
+						name="orderId"
+						id="orderId"
+						data-options="required:true"
+						class="easyui-validatebox"
+						missingMessage="请订单号">
+					</td>
+				</tr>
+				<tr>
+					<td>账户类型:</td>
+					<td><input
+						type="radio"
+						name="accountType"
+						value="1">现金账户 
+						<input
+						type="radio"
+						name="accountType"
+						value="2">非现金账户</td>
+				</tr>
+				<tr>
+					<td>金额:</td>
+					<td><input
+						class="easyui-numberbox"
+						id="amount"
+						name="amount"
+						class="easyui-validatebox"
+						missingMessage="请填写退款金额"
+						maxLength="6"
+						data-options="required:true,precision:2,groupSeparator:'',decimalSeparator:'.'">元</td>
+				</tr>
+				<tr id="feeFlag">
+					<td>手续费:</td>
+					<td><input
+						readonly="readonly"
+						name="fee2"
+						id="fee"
+						value="0">元<input
+						type="radio"
+						name="fee"
+						value="0"
+						checked="checked">0% <input
+						type="radio"
+						name="fee"
+						value="1">2% <input
+						type="radio"
+						name="fee"
+						value="2">6%</td>
+				</tr>
+				<tr>
+					<td>备注:</td>
+					<td><input type="text"
+							name="remark"
+							id="remark"
+							size="100"
+							data-options="required:true"
+							class="easyui-validatebox"
+							missingMessage="请填写备注"
+							onKeyDown="modChar(this.form.remark,$('#result_content')30);"
+							onKeyUp="modChar(this.form.remark,$('#result_content'),28);">
+						<font color="red">*(内容长度不超过28个字) 您还可以输入<span id="result_content">28</span>个字符
+				</tr>
+				<tr>
+					<td>短信验证码:</td>
+					<td><input
+						type="text"
+						name="vcode"
+						id="vcode"
+						size="15"> <input
+						type="button"
+						id="getVCode"
+						data-options="required:true"
+						class="easyui-validatebox"
+						missingMessage="请填写校验码"
+						onclick="sendVCode();"
+						value="点击获取"></td>
+				</tr>
+			</table>
+			<input
+				type="button"
+				value="提交"
+				onclick="checkSubmit();"> <input
+				type="reset"
+				value="取消" onclick="clear();">
+		</form>
+	</div>
+	<hr>
+	<div>
+		用户信息:<br>
+		<div
+			id="result"
+			style="color: red"></div>
+		<div id="memberInfo">
+			<table
+				cellspacing="1"
+				border="1"
+				bordercolor="blue"
+				style="min-width: 350px"
+				cellpadding="10"
+				rules="none">
+				<tr>
+					<td>用户UID:</td>
+					<td id="mUID"></td>
+				</tr>
+				<tr>
+					<td>用户类型:</td>
+					<td><span
+						style="color: red;"
+						id="mUserType"></span></td>
+				</tr>
+				<tr>
+					<td>帐号:</td>
+					<td id="mloginName"></td>
+				</tr>
+				<tr>
+					<td>昵称:</td>
+					<td id="mNickName"></td>
+				</tr>
+				<tr>
+					<td>手机号:</td>
+					<td id="mMobile"></td>
+				</tr>
+				<tr>
+					<td>实名认证:</td>
+					<td><span
+						style="color: red;"
+						id="mIsRealValidate"></span></td>
+				</tr>
+			</table>
+		</div>
+	</div>
+</body>
+</html>

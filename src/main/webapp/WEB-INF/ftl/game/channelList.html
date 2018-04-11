@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<title>游戏渠道列表</title> <#include "../common.html"/>
+<script type="text/javascript">
+	var datagrid;
+	var addDialog;
+	var addForm;
+	var editDialog;
+	var editForm;
+	var searchForm;
+	function getQueryString(name) {
+		var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+		var r = window.location.search.substr(1).match(reg);
+		if (r != null) return unescape(r[2]); return null;
+		}
+	var gameId = getQueryString('gameId');
+	$(function() {
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid').datagrid({
+			url : 'channelList_json.do',
+// 			queryParams : {
+// 				gameId: gameId
+// 			},
+			title : '渠道列表',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'weight',
+			sortOrder : 'desc',
+			columns : [ [ {
+				field : 'ck',
+				checkbox : true,
+				formatter : function(value, row, index) {
+					return row.obid;
+				}
+			}, {
+				field : 'id',
+				title : '编号',
+				align : 'center'
+				
+			},
+// 			{
+// 				field : 'gameVersionId',
+// 				title : '游戏版本ID',
+// 				align : 'center'
+// 			}, 
+			{
+				field : 'name',
+				title : '渠道名称',
+				align : 'center'
+				
+			}, {
+				field : 'status',
+				title : '状态',
+				align : 'center'
+			}, {
+				field : 'weight',
+				title : '权重',
+				align : 'center',
+				sortable : true
+			}, {
+				field : 'rechargeType',
+				title : '充值方式',
+				align : 'left',
+				   formatter:function(value,row,index){
+					   var types = row.rechargeType;
+					   var tname ="";
+					   if(types.indexOf(",") >=0){
+						   var str = types.split(",");
+						   for(var i=0;i<str.length;i++){
+							   if(str[i] ==1){
+								   tname +="骏网卡," 
+							   }else  if(str[i] ==12){
+								   tname +="天下卡," 
+							   }else  if(str[i] ==13){
+								   tname +="360骏网卡," 
+							   }else  if(str[i] ==2){
+								   tname +="支付宝自充," 
+							   }else  if(str[i] ==3){
+								   tname +="支付宝白名单," 
+							   }else  if(str[i] ==4){
+								   tname +="余额卡充值," 
+							   }
+						   }
+						   return tname;
+					   }else{
+			 				 if (types==0){
+								   return "<font color='red'>暂无</font>";
+							   }else if(types==1){
+								   return "骏网卡";
+							   }else if(types==2){
+								   return "支付宝自充";
+							   }else if(types==3){
+								   return "支付宝白名单";
+							   }else if(types==12){
+								   return "天下卡";
+							   }else if(types==13){
+								   return "360骏网卡";
+							   }else if(types==4){
+								   return "余额卡充值";
+							   }else{
+								   return "--"
+							   }
+					   }
+// 					   if (row.rechargeType==0){
+// 						   return "<font color='red'>暂无</font>";
+// 					   }else if(row.rechargeType==1){
+// 						   return "卡类";
+// 					   }else if(row.rechargeType==2){
+// 						   return "支付宝自充";
+// 					   }else if(row.rechargeType==3){
+// 						   return "支付宝白名单";
+// 					   }else{
+// 						   return "--"
+// 					   }
+                      //return row.rechargeType+"__"+types.indexOf(",");
+					}   
+			}, {
+				field : 'channelHomeUrl',
+				title : '渠道官方网址',
+				align : 'left',
+				sortable : true
+			}
+
+			] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '修改',
+				iconCls : 'icon-edit',
+				handler : function() {
+					edit();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			},
+
+			//双击事件
+			onDblClickRow : function(rowIndex, rowData) {
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				edit();
+			}
+		});
+		addForm = $('#addForm').form({
+			url : 'channel_add',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加游戏渠道',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					isChannelIdExist($('#addForm input[name="id"]').val());
+				}
+			} ]
+		});
+		editDialog = $('#editDialog').show().dialog({
+			title : '编辑游戏渠道信息',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					var checked_1 = $("#rechargeTypebox_1").attr("checked");
+					var checked_12 = $("#rechargeTypebox_12").attr("checked");
+					var checked_13 = $("#rechargeTypebox_13").attr("checked");
+					var checked_2 = $("#rechargeTypebox_2").attr("checked");
+					var checked_3 = $("#rechargeTypebox_3").attr("checked");
+					var checked_4 = $("#rechargeTypebox_4").attr("checked");
+					//alert(checked_1+"_"+checked_12+"__"+"_"+checked_13+"_"+checked_2+"_"+checked_3);
+					if((checked_1=="checked"||checked_12=="checked"||checked_13=="checked")&&(checked_2=="checked")){
+						$.messager.alert("提示","选择骏网卡，天下卡，360骏网卡中的任何一种，不能再选支付宝自充");
+						return;
+					}
+					if((checked_1=="checked"||checked_12=="checked"||checked_13=="checked")&&(checked_3=="checked")){
+						$.messager.alert("提示","选择骏网卡，天下卡，360骏网卡中的任何一种，不能再选支付宝白名单");
+						return;
+					}
+// 					if((checked_1=="checked"||checked_12=="checked"||checked_13=="checked")&&(checked_4=="checked")){
+// 						$.messager.alert("提示","选择骏网卡，天下卡，qq卡中的任何一种，不能再选余额卡充值");
+// 						return;
+// 					}
+					if(checked_2=="checked"&&checked_3=="checked"){
+						$.messager.alert("提示","支付宝白名单和支付宝自充只能选一种");
+						return;
+					}
+					
+					closeDialog('您确定要修改该游戏渠道信息吗?', 'editForm', 'editDialog');
+					
+				}
+			} ]
+		});
+		editForm = $('#editForm').form({
+			url : 'channel_edit',
+			success : function(data) {
+				var json = $.parseJSON(data);
+
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+	});
+	function add() {
+		addDialog.dialog('open');
+		addForm.form('reset');
+		$('#addForm select[name="status"][value="0"]').attr("selected","selected");
+		$('#addForm input[type="hidden"][name="gameId"]').val(gameId);
+	}
+
+	function del() {
+		var rows = datagrid.datagrid('getSelections');
+		var ids = [];
+		if (rows.length > 0) {
+			$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+				if (r) {
+					for ( var i = 0; i < rows.length; i++) {
+						ids.push(rows[i].id);
+					}
+					console.log(ids.join(','));
+					$.ajax({
+						url : 'channel_delete',
+						data : {
+							ids : ids.join(',')
+						},
+						dataType : 'json',
+						success : function(response) {
+							datagrid.datagrid('load');
+							datagrid.datagrid('unselectAll');
+							$.messager.show({
+								title : '提示',
+								msg : response.msg
+							});
+
+						}
+					});
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		}
+	}
+
+	function edit() {
+		var rows = datagrid.datagrid('getSelections');
+		if (rows.length == 1) {
+			editForm.find("input[type='hidden'][name='id']").val(rows[0].id);
+			editForm.find("input[name='name']").val(rows[0].name);
+			editForm.find("input[name='weight']").val(rows[0].weight);
+			editForm.find("input[type='hidden'][name='weight']").val(rows[0].weight);
+			editForm.find('select[name="status"] option[value="'+rows[0].status+'"]').attr("selected","selected");
+			editForm.find('input[name="rechargeTypebox"]').attr("checked",false);
+			//alert(editForm.find('input[name="rechargeTypebox"]').length);
+			 var types = rows[0].rechargeType;
+			   var tname ="";
+			   if(types.indexOf(",") >=0){
+				   var str = types.split(",");
+				   for(var i=0;i<str.length;i++){
+					   if(str[i] ==1){
+						   $('#rechargeTypebox_1').attr("checked",true);
+					   }else  if(str[i] ==12){
+						   $('#rechargeTypebox_12').attr("checked",true);
+					   }else  if(str[i] ==13){
+						   $('#rechargeTypebox_13').attr("checked",true);
+					   }else  if(str[i] ==2){
+						   $('#rechargeTypebox_2').attr("checked",true);
+					   }else  if(str[i] ==3){
+						   $('#rechargeTypebox_3').attr("checked",true);
+					   }else if(str[i] ==4){
+						   $('#rechargeTypebox_4').attr("checked",true);
+					   }
+				   }
+				   editForm.find('select[name="rechargeType"] option[value="'+rows[0].rechargeType+'"]').attr("selected","selected");
+			   }else{
+	 				  if(types==1){
+						   $('#rechargeTypebox_1').attr("checked",true);
+					   }else if(types==2){
+						   $('#rechargeTypebox_2').attr("checked",true);
+					   }else if(types==3){
+						   $('#rechargeTypebox_3').attr("checked",true);
+					   }else if(types==12){
+						   $('#rechargeTypebox_12').attr("checked",true);
+					   }else if(types==13){
+						   $('#rechargeTypebox_13').attr("checked",true);
+					   }else if(types==4){
+						   $('#rechargeTypebox_4').attr("checked",true); 
+					   }
+			   }
+			//editForm.find('select[name="rechargeType"] option[value="'+rows[0].rechargeType+'"]').attr("selected","selected");
+			
+			//editForm.find('select[name="rechargeTypebox"] option[value="'+rows[0].rechargeType+'"]').attr("selected","selected");
+			//$('#rechargeTypebox_1').attr("checked",true);
+			editForm.find('input[name="gameVersionId"]').val(rows[0].gameVersionId);
+			editForm.find('input[name="channelHomeUrl"]').val(rows[0].channelHomeUrl);
+			$('div.validatebox-tip').remove();
+			editDialog.dialog('open');
+		} else {
+			$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+		}
+	}
+	function isChannelIdExist(channelId){
+		if (channelId == null || channelId.length == 0) {
+			return $.messager.show({
+				title : '提示',
+				msg : '请输入游戏渠道Id'
+			});
+		}
+		$.ajax({
+			type : 'post',
+			url : 'channelIdIsExist',
+			data : {
+				id : channelId
+			},
+			dataType : 'json',
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+					isChannelNameExist($('#addForm input[name="name"]').val());
+				} else {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+				}
+			}
+		});
+	}
+	function isChannelNameExist(channelName) {
+		if (channelName == null || channelName.length == 0) {
+			return $.messager.show({
+				title : '提示',
+				msg : '请输入游戏渠道名称'
+			});
+		}
+		$.ajax({
+			type : 'post',
+			url : 'channelNameIsExist',
+			data : {
+				name : channelName
+			},
+			dataType : 'json',
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+					closeDialog('您确定要添加该游戏渠道吗?', 'addForm', 'addDialog');
+				} else {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+				}
+			}
+		});
+	}
+	function _search() {
+		datagrid.datagrid("unselectAll");
+		gameId = $('#searchForm input[name="gameId"]').val();
+		datagrid.datagrid({title:'游戏ID为' + gameId + '的渠道列表'});
+		datagrid.datagrid({
+			queryParams : {
+				gameId: gameId
+			}
+		});
+		datagrid.datagrid('reload');
+	}
+
+	function cleanSearch() {
+		datagrid.datagrid('load', {});
+		searchForm.find('input').val('');
+		datagrid.datagrid('reload');
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div
+		region="north"
+		border="false"
+		title="搜索条件"
+		style="height: 65px; overflow: hidden;"
+		align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+					<td>游戏ID:<input
+						name="gameId"
+						style="width: 100px;" />&nbsp;
+					</td>
+					<td><a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="_search();">搜索</a> <a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="cleanSearch();">取消</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+
+	<div
+		region="center"
+		border="false">
+		<table id="datagrid"></table>
+	</div>
+
+	<div
+		id="menu"
+		class="easyui-menu"
+		style="width: 120px; display: none;">
+		<div
+			onclick="add();"
+			iconCls="icon-add">增加</div>
+		<div
+			onclick="del();"
+			iconCls="icon-remove">删除</div>
+		<div
+			onclick="edit();"
+			iconCls="icon-edit">编辑</div>
+	</div>
+
+	<!--添加表单-->
+	<div
+		id="addDialog"
+		style="display: none; width: 700px; height: auto;"
+		align="center">
+
+		<form
+			id="addForm"
+			method="post"
+			style="padding: 5px 10px">
+			<table
+				width="100%"
+				border="0"
+				cellspacing="1"
+				cellpadding="1">
+				<tr>
+					<td class="lable">渠道ID：</td>
+					<td><input type="text" name="id" size="20" maxlength="50" onkeyup="value=value.replace(/[^\-?\d]/g,'')" />
+					</td>
+				</tr>
+				<!-- <tr>
+					<td class="lable">游戏版本ID：</td>
+					<td><input type="text" name="gameVersionId" size="20" maxlength="50"
+						class="easyui-validatebox" data-options="required:true"
+						missingMessage="请填写游戏版本ID" />
+					</td>
+				</tr> -->
+				<tr>
+					<td class="lable">渠道名称：</td>
+					<td><input
+						type="text"
+						name="name"
+						size="20"
+						maxlength="50"
+						class="easyui-validatebox"
+						data-options="required:true"
+						missingMessage="请填写渠道名称" />
+					</td>
+				</tr>
+				<tr>
+					<td class="lable">状态：</td>
+					<td>
+						<select name="status" style="width: 155px;">
+							<option value="0" selected="selected">开启</option>
+							<option value="1">关闭</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td class="lable">权重：</td>
+					<td><input type="text" name="weight" size="20" maxlength="50" onkeyup="value=value.replace(/[^\-?\d]/g,'')" />
+					</td>
+				</tr>
+				
+				<tr>
+					<td class="lable">充值方式：</td>
+					<td>
+<!-- 						<select name="rechargeType" style="width: 155px;"> -->
+<!-- 							<option value="0" selected="selected">暂无</option> -->
+<!-- 							<option value="1">卡类</option> -->
+<!-- 							<option value="2">支付宝自充</option> -->
+<!-- 							<option value="3">支付宝白名单</option> -->
+<!-- 						</select> -->
+						<input type="checkbox" name="rechargeTypebox" value="1"  id="add_rechargeTypebox_1"/>骏网卡
+						<input type="checkbox" name="rechargeTypebox" value="12" id="add_rechargeTypebox_12" />天下卡
+						<input type="checkbox" name="rechargeTypebox" value="13" id="add_rechargeTypebox_13"/>360骏网卡
+						<input type="checkbox" name="rechargeTypebox" value="2"  id="add_rechargeTypebox_2"/>支付宝自充
+						<input type="checkbox" name="rechargeTypebox" value="3"  id="add_rechargeTypebox_3"/>支付宝白名单
+						<input type="checkbox" name="rechargeTypebox" value="4"  id="add_rechargeTypebox_4"/>余额卡充值
+					</td>
+				</tr>
+				
+					<tr>
+					<td class="lable">渠道官方网址：</td>
+					<td><input
+						type="text"
+						name="channelHomeUrl"
+						size="50"
+						maxlength="100"
+						class="easyui-validatebox"
+						data-options="required:true"
+						missingMessage="请填写渠道官方网址：" />
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<!--编辑表单-->
+	<div
+		id="editDialog"
+		style="display: none; width: 700px; height: auto;"
+		align="center">
+		<form
+			id="editForm"
+			method="post"
+			style="padding: 5px 10px"
+			class="pageForm required-validate">
+			<input
+				type="hidden"
+				name="id" />
+			<table
+				width="100%"
+				border="0"
+				cellspacing="1"
+				cellpadding="1">
+				<tr>
+					<td class="lable">渠道名称：</td>
+					<td><input
+						type="text"
+						name="name"
+						size="20"
+						maxlength="50"
+						class="easyui-validatebox"
+						data-options="required:true"
+						missingMessage="请填写渠道名称" />
+					</td>
+				</tr>
+				<!-- <tr>
+					<td class="lable">游戏版本ID：</td>
+					<td><input type="text" name="gameVersionId" size="20" maxlength="50"
+						class="easyui-validatebox" data-options="required:true"
+						missingMessage="请填写游戏版本ID" />
+					</td>
+				</tr> -->
+				<tr>
+					<td class="lable">状态：</td>
+					<td>
+						<select name="status" style="width: 155px;">
+							<option value="0" selected="selected">开启</option>
+							<option value="1">关闭</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td class="lable">权重：</td>
+					<td><input type="text" name="weight" size="20" maxlength="50" onkeyup="value=value.replace(/[^\-?\d]/g,'')"/>
+					</td>
+				</tr>
+				<tr>
+					<td class="lable">充值方式：</td>
+					<td>
+<!-- 						<select name="rechargeType" style="width: 155px;"> -->
+<!-- 							<option value="0" selected="selected">暂无</option> -->
+<!-- 							<option value="1">卡类</option> -->
+<!-- 							<option value="2">支付宝自充</option> -->
+<!-- 							<option value="3">支付宝白名单</option> -->
+<!-- 						</select> -->
+						<input type="checkbox" name="rechargeTypebox" value="1"  id="rechargeTypebox_1"/>骏网卡
+						<input type="checkbox" name="rechargeTypebox" value="12" id="rechargeTypebox_12"/>天下卡
+						<input type="checkbox" name="rechargeTypebox" value="13" id="rechargeTypebox_13"/>360骏网卡
+						<input type="checkbox" name="rechargeTypebox" value="2"  id="rechargeTypebox_2"/>支付宝自充
+						<input type="checkbox" name="rechargeTypebox" value="3"  id="rechargeTypebox_3"/>支付宝白名单
+						<input type="checkbox" name="rechargeTypebox" value="4"  id="rechargeTypebox_4"/>余额卡充值
+					</td>
+				</tr>
+				
+					<tr>
+					<td class="lable">渠道官方网址：</td>
+					<td><input
+						type="text"
+						name="channelHomeUrl"
+						size="50"
+						maxlength="100"
+						class="easyui-validatebox"
+						data-options="required:true"
+						missingMessage="请填写渠道官方网址：" />
+					</td>
+			</table>
+		</form>
+	</div>
+
+</body>
+</html>

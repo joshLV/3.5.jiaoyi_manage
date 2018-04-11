@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>退游商品列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'getProductTyList',
+			title : '退游商品列表',
+			pagination : true,
+			loadMsg:null,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 25,
+			pageList : [30, 40, 50, 100],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : 'product_id',
+			columns : [ [ 
+               {field:'ck',checkbox:true,
+					formatter:function(value,row,index){
+						return row.product_id;
+					}
+				},
+			   {field:'game_name',title:'游戏',align:'left',width:100},
+			   {field:'product_id',title:'商品ID',align:'center',width:150},			
+			   {field:'product_name',title:'商品名称',align:'left',width:150},		
+			   {field:'product_stock',title:'库存',align:'center',width:50},	
+			   {field:'market_value',title:'市场价',align:'center',width:50},	
+			   {field:'product_single_price',title:'单价(折扣价)',align:'center',width:80},
+			   {field:'product_status',title:'商品状态',align:'left',width:80,
+				   formatter:function(value,row,index){
+						if(row.productStatus==1){
+						   return "暂存中";
+						}else if(row.productStatus==3){
+						   return "审核中";
+						}else if(row.productStatus==5){
+						   return "审核失败";
+						}else if(row.productStatus==7){
+						   return "<font color='red' >上架</font>";
+					    }else if(row.productStatus==8){
+						   return "用户下架";
+					    }else if(row.productStatus==9){
+						   return "已售完";
+					    }else if(row.productStatus==10){
+						   return "游戏下架";
+					    }else if(row.productStatus==11){
+						   return "已过期";
+					    }else if(row.productStatus==12){
+						   return "管理员下架";
+					    }else if(row.productStatus==13){
+						   return "下架失败";
+					    }else if(row.productStatus==-1){
+						   return "用户删除";
+					    }else{
+						   return "暂存中";
+					    }
+					}  
+			   },
+			   {field:'status',title:'前台显示状态',align:'center',width:80,
+				   formatter:function(value,row,index){
+						if(row.status==10){
+							return "不显示";
+						}else if(row.status==20){
+							return "显示";
+						}
+					}  
+			   },
+			   {field:'is_recommend',title:'是否推荐商品',align:'center',width:80,
+				   formatter:function(value,row,index){
+						if(row.is_recommend==0){
+							return "否";
+						}else if(row.is_recommend==1){
+							return "是";
+						}
+					}  
+			   },
+			   {field:'weight',title:'权重',align:'center',width:50},
+			   {field:'pic_url',title:'商品图片',align:'center',width:120,
+				   formatter:function(value,row,index){
+						if(row.pic_url==""){
+							return "无";
+						}else{
+							return "<img src=\""+row.pic_url+"\" style=\"vertical-align:middle\" width=100 />";
+						}
+					}  
+			   },
+			   {field:'show_info',title:'展示信息',align:'left',width:200},
+			   {field:'create_time',title:'创建时间',align:'center',width:120}
+			 ] ],
+			 toolbar : [ {
+					text : '增加',
+					iconCls : 'icon-add',
+					handler : function() {
+						add();
+					}
+				}, '-', {
+					text : '删除',
+					iconCls : 'icon-remove',
+					handler : function() {
+						del();
+					}
+				}, '-', {
+					text : '修改',
+					iconCls : 'icon-edit',
+					handler : function() {
+						edit();
+					}
+				}, '-', {
+					text : '取消选中',
+					iconCls : 'icon-undo',
+					handler : function() {
+						datagrid.datagrid('unselectAll');
+					}
+				}, '-' ],
+		     //双击事件
+		     onDblClickRow:function (rowIndex,rowData){
+			   alert("id="+rowData.product_id);
+			   //edit(rowData.product_id);
+		     }
+		});
+		editForm = $('#editForm').form({
+			url : 'product_edit.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		editDialog = $('#editDialog').show().dialog({
+			title : '商品信息详情',
+			modal : true,
+			closed : true,
+			maximizable : true
+		}); 
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加新商品',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					addForm.submit();
+				}
+			} ]
+		});
+
+});
+
+//游戏名称列表
+$(function() {
+	var url = "allgameList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='gameId'] option").remove();
+		var def =  "<option value='-1'>请选择</option>";
+		$("select[name='gameId']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='gameId']").append(options);
+		}
+	});
+});
+
+//搜索
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+//取消
+function cleanSearch() {
+	searchForm.find('input').val('');
+	searchForm.find('select').val('0'); 
+}
+
+//新增
+function add() {
+	addDialog.dialog('open');
+	addForm.find("input[type='text']").val("");
+}
+</script>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 60px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>商品ID:<input name="productId" style="width:160px;" />&nbsp;</td>
+		     	<td>游戏名称:<select id="gameId" name="gameId" style="width: 96px"></select>&nbsp;</td>
+		     	<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a> 
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+<!--添加表单-->
+<div id="addDialog" style="display: none;width: 600px;height: 350px;" align="center">
+	<form id="addForm" method="post" style="padding: 5px 10px" enctype="multipart/form-data">
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		  <tr><td><span style="color:red">*</span>商品ID</td><td><input type="text" name="product_id" size="30" maxlength="50" class="easyui-validatebox" data-options="required:true" missingMessage="请填写商品ID" /></td></tr>
+		  <tr><td><span style="color:red">*</span>市场价</td><td><input type="text" name="market_value" size="30" maxlength="10" class="easyui-numberbox" data-options="required:true" missingMessage="请填写市场价" /></td></tr>
+		  <tr><td>商品图片</td><td><input type="file" name="pic_url" size="30" /></td></tr>
+		  <tr><td><span style="color:red">*</span>是否推荐商品</td><td><select name="is_recommend"><option value="0">否</option><option value="1" selected>是</option></select></td></tr>
+		  <tr><td><span style="color:red">*</span>前台显示状态</td><td><select name="status"><option value="10">不显示</option><option value="20" selected>显示</option></select></td></tr>
+		  <tr><td>权重</td><td><input type="text" name="weight" size="30" maxlength="4" class="easyui-numberbox" data-options="required:true" missingMessage="请填写权重" /></td></tr>
+		  <tr><td>前台展示信息</td><td><textarea name="show_info" cols="50" rows="4"></textarea></td></tr>
+		  </table> 
+	</form>
+</div>
+</body>
+</html>

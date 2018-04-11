@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<title>站内信类型管理</title><#include "../common.html"/>
+<script type="text/javascript">
+	var datagrid;
+	var addDialog;
+	var addForm;
+	var editDialog;
+	var editForm;
+	$(function() {
+		datagrid = $('#datagrid').datagrid({
+			url : 'messageMissionCategoryList_json',
+			title : '站内信类型列表',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'mmcId',
+			sortName : 'weight',
+			sortOrder : 'desc',
+			columns : [ [ {
+				field : 'ck',
+				checkbox : true,
+				formatter : function(value, row, index) {
+					return row.obid;
+				}
+			}, {
+				field : 'mmcId',
+				title : 'ID',
+				align : 'center',
+				sortable : true
+			}, {
+				field : 'categoryName',
+				title : '站内信类型',
+				align : 'center',
+				width : 100,
+				sortable : true
+			}, {
+				field : 'weight',
+				title : '权重',
+				align : 'center',
+				sortable : true,
+			} ] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '修改',
+				iconCls : 'icon-edit',
+				handler : function() {
+					edit();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			}
+		});
+		addForm = $('#addForm').form({
+			url : 'messageMissionCategory_add',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog(
+				{
+					title : '添加站内信类型',
+					modal : true,
+					closed : true,
+					maximizable : true,
+					buttons : [ {
+						text : '添加',
+						handler : function() {
+							isExistMccId($('#addForm input[name="mmcId"]').val());
+						}
+					} ]
+				});
+		editDialog = $('#editDialog').show().dialog({
+			title : '站内信类型名称编辑',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					closeDialog('您确定要修改该站内信类型吗?', 'editForm', 'editDialog');
+				}
+			} ]
+		});
+		editForm = $('#editForm').form({
+			url : 'messageMissionCategory_edit',
+			success : function(data) {
+				var json = $.parseJSON(data);
+
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+	});
+	function add() {
+		addDialog.dialog('open');
+		addForm.form('clear');
+	}
+
+	function del() {
+		var rows = datagrid.datagrid('getSelections');
+		var ids = [];
+		if (rows.length > 0) {
+			$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+				if (r) {
+					for ( var i = 0; i < rows.length; i++) {
+						ids.push(rows[i].mmcId);
+					}
+					console.log(ids.join(','));
+					$.ajax({
+						url : 'messageMissionCategory_delete',
+						data : {
+							ids : ids.join(',')
+						},
+						dataType : 'json',
+						success : function(response) {
+							datagrid.datagrid('load');
+							datagrid.datagrid('unselectAll');
+							$.messager.show({
+								title : '提示',
+								msg : response.msg
+							});
+
+						}
+					});
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		}
+	}
+
+	function edit() {
+		var rows = datagrid.datagrid('getSelections');
+		if (rows.length == 1) {
+			editForm.find("input[type='hidden']").val(rows[0].mmcId);
+			editForm.find("input[name='categoryName']").val(
+					rows[0].categoryName);
+			editForm.find("input[numberboxname='weight']").val(rows[0].weight);
+			editForm.find("input[type='hidden'][name='weight']").val(rows[0].weight);
+			
+			$('div.validatebox-tip').remove();
+			editDialog.dialog('open');
+		} else {
+			$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+		}
+	}
+	function isCategoryNameExist(categoryName) {
+		if (categoryName == null || categoryName.length == 0) {
+			return $.messager.show({
+				title : '提示',
+				msg : '请输入站内信类型名称'
+			});
+		}
+		$.ajax({
+			type : 'post',
+			url : 'messageMissionCategoryIsExist',
+			data : {
+				categoryName : categoryName,
+			},
+			dataType : 'json',
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+					closeDialog('您确定要添加该站内信类型吗?', 'addForm', 'addDialog');
+				} else {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+				}
+			}
+		});
+	}
+	function isExistMccId(mmcId){
+		if (mmcId == null || mmcId.length == 0) {
+			return $.messager.show({
+				title : '提示',
+				msg : '请输入站内信类型ID'
+			});
+		}
+		$.ajax({
+			type : 'post',
+			url : 'mmcIsExistId',
+			data : {
+				mmcId : mmcId,
+			},
+			dataType : 'json',
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+					isCategoryNameExist($('#addForm input[name="categoryName"]').val());
+				} else {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+				}
+			}
+		});
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+
+	<div
+		region="center"
+		border="false">
+		<table id="datagrid"></table>
+	</div>
+
+	<div
+		id="menu"
+		class="easyui-menu"
+		style="width: 120px; display: none;">
+		<div
+			onclick="add();"
+			iconCls="icon-add">增加</div>
+		<div
+			onclick="edit();"
+			iconCls="icon-add">修改</div>
+		<div
+			onclick="del();"
+			iconCls="icon-remove">删除</div>
+	</div>
+
+	<!--添加表单-->
+	<div
+		id="addDialog"
+		style="display: none; width: 300px; height: auto;"
+		align="center">
+		<form
+			id="addForm"
+			method="post"
+			style="padding: 5px 10px">
+			<table
+				width="100%"
+				border="0"
+				cellspacing="1"
+				cellpadding="1">
+				<tr>
+					<td class="lable">站内信类型ID：</td>
+					<td><input
+						type="text"
+						name="mmcId"
+						size="20"
+						maxlength="11"
+						class="easyui-numberbox"
+						data-options="required:true"
+						missingMessage="请填写类型ID,请使用数字" /></td>
+				</tr>
+				<tr>
+					<td class="lable">站内信类型名称：</td>
+					<td><input
+						type="text"
+						name="categoryName"
+						size="20"
+						maxlength="50"
+						class="easyui-validatebox"
+						data-options="required:true"
+						missingMessage="请填写FAQ类型" /></td>
+				</tr>
+				<tr>
+					<td class="lable">站内信类型权重：</td>
+					<td><input
+						type="text"
+						name="weight"
+						class="easyui-numberbox"
+						size="20"
+						maxlength="5"
+						data-options="required:true" /></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+
+	<!--编辑表单-->
+	<div
+		id="editDialog"
+		style="display: none; width: 300px; height: 150px;"
+		align="center">
+		<form
+			id="editForm"
+			method="post"
+			style="padding: 5px 10px">
+			<input
+				type="hidden"
+				name="mmcId" />
+			<table
+				width="100%"
+				border="0"
+				cellspacing="1"
+				cellpadding="1">
+				<tr>
+					<td class="lable">站内信类型名称：</td>
+					<td><input
+						type="text"
+						name="categoryName"
+						size="20"
+						maxlength="50"
+						data-options="required:true" /></td>
+				</tr>
+				<tr>
+					<td class="lable">站内信类型权重：</td>
+					<td><input
+						type="text"
+						name="weight"
+						class="easyui-numberbox"
+						size="20"
+						maxlength="5"
+						data-options="required:true" /></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+</body>
+</html>

@@ -1,0 +1,844 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>虚拟游戏币充值管理</title>
+<#include "../common.html"/>
+</head>
+<script type="text/javascript">
+var tableDataGrid;
+var addDialog;
+var addForm;
+var editForm;
+var editDialog;
+
+var modifyDialog;
+var modifyForm;
+
+var modifyBalanceDialog;
+var modifyBalanceForm;
+
+$(function(){
+	searchForm = $('#searchForm').form();//条件搜索框
+	_initPageData();
+	_initGameInfo();
+	_initElementEvent();
+})
+
+//初始化查询数据
+function _initPageData(){
+	tableDataGrid = $("#gameCurrencyData").datagrid({
+		url : "queryPageData",
+		title : "虚拟游戏币充值列表",
+		pagination : true,
+		pagePosition : 'bottom',
+		rownumbers : true,
+		pageSize : 40,
+		pageList : [ 40, 100, 140, 160 ],
+		fit : true,
+		fitColumns : true,
+		nowrap : true,
+		border : false,
+		idField : 'id',
+		sortName : 'id',
+		columns : [[
+	            {field:'ck',checkbox:true,
+					formatter:function(value,row,index){
+						return row.id;
+					}
+				},
+			   {field:'CHANNEL_NAME',title:'渠道名称',align:'left'},
+			   {field:'GAME_NAME',title:'游戏名称',align:'left'},
+			   {field:'AREA_NAME',title:'分区名称',align:'left'},
+			   {field:'GAME_ACCOUNT',title:'游戏账号',align:'left'},
+			   {field:'CREATE_TIME',title:'创建时间',align:'left'},
+			   {field:'BALANCE',title:'余额',align:'left'},
+			   {field:'RATIO',title:'对应比例',align:'left'},
+			   {field:'VIRTUAL_CURRENCY',title:'虚拟币',align:'left'},
+			   {field:'operate',title:'操作',align:'center',sortable:true,
+				   formatter:function(value,row,index){
+					    if(row.operate==null || row.operate==''){
+					    	var a ='<a href="javascript:void(0)" onclick="edit(\''+row.ID+'\',\''+row.GAME_ACCOUNT+'\')" >使用库存</a>';
+					    	var b ='<a href="javascript:void(0)" onclick="editblance(\''+row.ID+'\',\''+row.GAME_ACCOUNT+'\',\''+row.VIRTUAL_CURRENCY+'\')" >修改总库存</a>';
+					    	return a +"||"+b;
+					    }
+					}
+			   	}
+		]],
+		toolbar : [
+			{
+				text : '添加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}
+		],
+		 onDblClickRow:function (rowIndex,rowData){
+			   $(this).datagrid('unselectAll');
+			   $(this).datagrid('selectRow', rowIndex);	
+			   edit(rowData.ID);
+		   }
+	})
+	
+	modifyDialog = $('#modifyDialog').show().dialog({
+		title : '修改订单库存记录',
+		modal : true,
+		closed : true,
+		maximizable : true
+	});
+	
+	modifyBalanceDialog = $('#modifyBalanceDialog').show().dialog({
+		title : '修改记录总额',
+		modal : true,
+		closed : true,
+		maximizable : true
+	});
+}
+
+function _initElementEvent(){
+	addForm = $('#addForm').form({
+		url : 'addVirtual',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.FLAG == "0") {
+				$.messager.show({
+					title : '成功',
+					msg : "添加成功"
+				});
+				tableDataGrid.datagrid('reload');
+				tableDataGrid.datagrid('unselectAll');
+				addDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : "当前游戏存在一样的账号,请修改"
+				});
+			}
+		}
+	});
+	addDialog = $('#addDialog').show().dialog({
+		title : '添加',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '添加',
+			handler : function() {
+				if($("#channel").val() == "-1"){
+					alert("请选择渠道");
+					return;
+				}
+				if($("#game").val() == "-1"){
+					alert("请选择游戏");
+					return;
+				}
+				if($("#game_version").val() == "-1"){
+					alert("请选择游戏版本");
+					return;
+				}
+				if($("#game_area").val() == "-1"){
+					alert("请选择游戏分区");
+					return;
+				}
+				if($("#addForm input[name=game_account]").val() == ""){
+					alert("请输入游戏账号");
+					return;
+				}
+				addForm.submit();
+			}
+		} ]
+	});
+	
+	
+	editForm = $('#editForm').form({
+		url : 'updateVirtualById',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.FLAG == "0") {
+				$.messager.show({
+					title : '成功',
+					msg : "修改成功"
+				});
+				tableDataGrid.datagrid('reload');
+				editDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : "修改失败"
+				});
+			}
+		}
+	});
+
+	editDialog = $('#editDialog').show().dialog({
+		title : '编辑',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '保存',
+			handler : function() {
+				//editForm.submit();
+				if ($("#ratio").val() == "0") {
+					alert("请先配置游戏对应的比例");
+					return;
+				}
+				if ($("#cardInfo").is(":hidden")) {
+					alert("请先领卡");
+					return;
+				}
+				if (params == "") {
+					alert("请保存充值卡");
+					return;
+				}
+				$.ajax({
+					url : 'updateVirtualById',
+					data : {
+						id : $("#id").val(),
+						params : params,
+						virtual_currency : $("#virtual_currency").val(),
+						balance : $("#balance").val(),
+						ratio : $("#ratio").val()
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(data) {
+						if (data && data.FLAG == "0") {
+							$.messager.show({
+								title : '成功',
+								msg : "充值成功"
+							});
+							tableDataGrid.datagrid('reload');
+							tableDataGrid.datagrid('unselectAll');
+							editDialog.dialog('close');
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : "充值失败"
+							});
+						}
+					}
+				});
+				
+			}
+		} ]
+	}); 
+	
+}
+
+
+function add() {
+	addDialog.dialog('open');
+	addForm.form('reset');
+	addForm.find("input[type='text']").val("");
+	addForm.find("select").val("-1");
+}
+
+var tempBalance = 0;
+
+function edit(id) {
+	$("#getCard").linkbutton('enable');
+	$("#savePay").linkbutton('enable')
+	params = "";
+	$("#cardInfo").hide();
+	$("#cardInfo").empty('');
+	$("#num").val('1');
+	$("#showBtn").hide();
+	$.ajax({
+		url : 'querySingletonById',
+		data : {
+			id : id
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+			$("#id").val(data.data.id);
+			$("#channel_name").val(data.data.channel_name);
+			$("#game_name").val(data.data.game_name);
+			$("#area_name").val(data.data.area_name);
+			$("#game_version").val(data.data.game_version);
+			$("#number").val(data.data.number);
+			$("#game_account").val(data.data.game_account);
+			$("#virtual_currency").val(data.data.virtual_currency == "" ? 0 : data.data.virtual_currency);
+			tempBalance = data.data.balance == "" ? 0 : data.data.balance;
+			$("#balance").val(tempBalance);
+			$("#ratio").val(data.data.ratio);
+			editDialog.dialog('open');
+			$.messager.progress('close');
+		}
+	});
+	
+}
+
+
+function _search() {
+	var  btime = searchForm.find("table >tbody> tr input[name='btime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='etime']").val();
+	var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+	
+	tableDataGrid.datagrid("unselectAll");
+	tableDataGrid.datagrid('load', sy.serializeObject(searchForm));
+	
+}
+
+function _initGameInfo(){
+	var url = "../product/allgameList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='game_id'] option").remove();
+		var def =  "<option value='-1'>请选择</option>";
+		$("select[name='game_id']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("#g_id_receiver").append(options);
+			var options1 = "<option value='"+result.rows[i].id+"@"+result.rows[i].name+"'>"+ result.rows[i].name + "</option>";
+			$("#game").append(options1);
+		}
+
+	});
+	
+	
+	var url = "../product/allChannelList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='channel_id'] option").remove();
+		var def =  "<option value='-1'>请选择</option>";
+		$("select[name='channel_id']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("#channel_search").append(options);
+			var options = "<option value='"+result.rows[i].id+"@"+result.rows[i].name+"'>"+ result.rows[i].name + "</option>";
+			$("#channel").append(options);
+		}
+
+	});
+}
+
+
+function cleanSearch(){
+	tableDataGrid.datagrid('load', {});
+	searchForm.find('input').val('');
+	searchForm.find('select').val('-1');
+}
+
+
+//选择游戏
+function gamechange(obj){
+	
+	var gameid = $(obj).val();
+	if (gameid.indexOf("@") != -1) {
+		gameid = gameid.split("@")[0];
+	}
+	var id = $(obj).attr("id");
+	$.ajax({
+		url : '../game/selectVesion',
+		data : {
+			gameId : gameid
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+		    var version_select = id == "game" ? $("#game_version") : $("#g_id_version_receiver");
+			var area_select =  id == "game" ? $("#game_area") : $("#g_id_area_receiver");
+			
+	        version_select.empty();
+	        version_select.append("<option value=\'-1'>请选择</option>"); 
+	        
+	        area_select.empty();
+	        area_select.append("<option value=\'-1'>请选择</option>"); 
+	        
+	
+			//添加选项
+			if(data.length > 0){
+				for(var i = 0 ;i<data.length;i++){
+					var ver_id = data[i].id;
+					
+					//有版本
+					$("#version_sel").show();
+					if (id == "game") {
+						ver_id += "@"+data[i].name;
+					}
+					version_select.append("<option value=\'"+ver_id+"\'>"+data[i].name+"</option>"); 
+					
+				}
+			}
+		}
+	});
+	
+}
+
+
+
+//选择版本
+function allgamesearch(obj){
+	var id = $(obj).attr("id");
+	var gameid = id == "game_version" ? $("#game").val() : $("#g_id_receiver").val();
+	var verid = id == "game_version" ? $("#game_version").val() : $("#g_id_version_receiver").val();
+	if (gameid.indexOf("@") != -1) {
+		gameid = gameid.split("@")[0];
+	}
+	if (verid.indexOf("@") != -1) {
+		verid = verid.split("@")[0];
+	}
+	selectsub(gameid,verid,id);
+}
+
+function selectsub(gameId,verid,id){
+	$("#server_sel").show();
+	$("#area_sel").show();
+	$.ajax({
+		url : '../game/selectPatition',
+		data : {
+			gameId : gameId,
+			verId:verid
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+			var area_select =  id == "game_version" ? $("#game_area") : $("#g_id_area_receiver");
+			
+	        area_select.empty();
+	        area_select.append("<option value=\'-1'>请选择</option>"); 
+	        
+			//添加选项
+			for(var i = 0 ;i<data.length;i++){
+				var p_id = data[i].id;
+				if (id == "game_version") {
+					p_id += "@"+data[i].name;
+				}
+				//if(p_id > 0){
+					//有分区 
+					$("#area_sel").show();
+					 area_select.append("<option value=\'"+p_id+"\'>"+data[i].name+"</option>"); 
+				//}
+			}
+		}
+	});
+}
+
+
+
+//导出Excel
+function exportExcel() {
+	var param= $("#searchForm").serialize();
+	if(confirm("确定导出数据?")){
+		window.open(
+				'${request.contextPath}/gameCurrency/exportExcel?'+param,
+				'',
+				'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+		window.close();
+	}
+}
+
+
+function onlyNum(obj) {
+	var value = $(obj).val();
+	if (!/^[1-9]+\.?\d{0,5}$/g.test(value)) {
+		$(obj).val('');
+	}
+	
+}
+
+function onlyInputNum(obj) {
+	var value = $(obj).val();
+	if (!/^[1-9]+\d*$/g.test(value)) {
+		$(obj).val('');
+	}
+}
+
+function compute(obj) {
+	if (typeof obj == 'object') {
+		onlyNum(obj);
+	}
+	/* var money = $("#addForm input[name=balance]").val();
+	var ratio = $("#addForm input[name=ratio]").val();
+	
+	if (money && ratio) {
+		var count =  Math.round(parseFloat(money)*parseFloat(ratio));
+		$("#addForm input[name=virtual_currency]").val(count);
+	}
+ */
+	var money1 = $("#editForm input[name=balance]").val();
+	var ratio1 = $("#editForm input[name=ratio]").val();
+	if (ratio1 == "") {
+		$("#editForm input[name=virtual_currency]").val('');
+	}
+	if (money1 && ratio1) {
+		var count1 =  Math.round(parseFloat(ratio1)*parseFloat(money1));
+		$("#editForm input[name=virtual_currency]").val(count1);
+	}
+}
+
+
+function _getCard() {
+	if ($("#ratio").val() == "0") {
+		alert("请先配置游戏对应的比例");
+		return;
+	}
+	if ($("#num").val() > 20) {
+		alert("当前领卡数量不能超过20张")
+		return;
+	}
+	$.ajax({
+		url : 'getPayCardList',
+		data : {
+			num : $("#num").val()
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+			if (data.FLAG == "S") {
+				_createElement(data.data);
+			} else {
+				alert("当前卡库无卡,请联系管理员");
+				$("#cardInfo").hide();
+				$("#showBtn").hide();
+			}
+		}
+	});
+}
+
+function _createElement(data) {
+	var str = [];
+	str.push('<tr><th>卡号</th><th>卡密</th><th>面额</th><th>是否可用</th></tr>')
+	for (var i=0,len=data.length;i<len;i++){
+		str.push('<tr card_id='+data[i].id+' type='+data[i].type+'>');
+		str.push('<td name="number" width="140px;">'+data[i].number+'</td>');
+		str.push('<td name="password" width="140px;">'+data[i].password+'</td>');
+		str.push('<td name="denomination" width="140px;">'+data[i].denomination+'</td>');
+		str.push('<td width="180px;">');
+		str.push('<input type="radio" name="yes_'+data[i].id+'" value="1"/><label>可用</label>');
+		str.push('<input type="radio" name="yes_'+data[i].id+'" value="0"/><label>不可用(待主管回收)</label>');
+		str.push('</tr>')
+	}
+	$("#cardInfo").html('');
+	$("#cardInfo").append(str.join(''));
+	$("#cardInfo").show();
+	$("#showBtn").show();
+}
+
+var params = "";
+function _savePay() {
+	params = "";
+	var checkRadio = $("#cardInfo input[type=radio]:checked");
+	if (checkRadio.length == 0) {
+		alert("请选择充值卡是否可用");
+		return;
+	}
+	var radios = $("#cardInfo input[type=radio]");
+	if (radios.length/2 != checkRadio.length) {
+		alert("是否可用按钮未完全选中");
+		return;
+	}
+	var sumMoney = 0;
+	$("#cardInfo tr:not(:first)").each(function(){
+		var _this = $(this);
+		var id = _this.attr("card_id");
+		var type = _this.attr("type");
+		var radio = _this.find("input[type=radio]:checked");
+		var number = _this.find("td[name=number]").text();
+		var password = _this.find("td[name=password]").text();
+		var denomination = _this.find("td[name=denomination]").text();
+		var tempStr = id+"@"+radio.val()+"@"+number+"@"+password+"@"+denomination+"@"+type+"#"
+		params += tempStr;
+		if (radio.val() == "1") {
+			var balance = parseInt(denomination);
+			sumMoney = parseInt(sumMoney) + balance;
+		}
+	});
+	$("#balance").val(parseInt(tempBalance)+sumMoney);
+	compute();
+	params = params.substring(0,params.length-1);
+	$("#getCard").linkbutton('disable');
+	$("#savePay").linkbutton('disable');
+	$("#cardInfo input[type=radio]").each(function(){
+		$(this).attr("disabled",true);
+	})
+	alert("保存成功");
+}
+
+function edit(id,account){
+	$('#account_show').html(account);
+	$('#modify_id').val(id);
+	modifyDialog.dialog('open');
+}
+
+function domodify(){
+	$.ajax({
+		url : 'modifyrecord.do',
+		data :  $("#modifyForm").serialize(),
+		dataType : 'json',
+		success : function(json) {
+			if (json && json.status == 0) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				modifyDialog.dialog('close');
+				tableDataGrid.datagrid('reload');  
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+	});
+}
+
+//修改总额
+function editblance(id,account,virturl){
+	$('#account_balance_show').html(account);
+	$('#modify_Balance_id').val(id);
+	$('#modify_Balance_virtual').val(virturl);
+	modifyBalanceDialog.dialog('open');
+}
+
+function domodifybalance(){
+	$.ajax({
+		url : 'modifybalance.do',
+		data :  $("#modifyBalanceForm").serialize(),
+		dataType : 'json',
+		success : function(json) {
+			if (json && json.status == 0) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				modifyBalanceDialog.dialog('close');
+				tableDataGrid.datagrid('reload');
+			   
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+	});
+}
+
+</script>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 153px;overflow: hidden;" align="left">
+<form id="searchForm">
+		<table>
+			<tr>
+				<td>游戏账号:<input name="game_account" style="width:100px;" />&nbsp;</td>
+			    <td>创建日期:<input name="btime"  type="text"class="easyui-datebox" style="width: 90px;" /> - 
+			    	<input name="etime"  type="text" class="easyui-datebox" style="width: 90px;" /> 
+				</td>
+				<td>
+					渠道:<select id="channel_search" name="channel_id">
+							<option value="-1">请选择</option>
+						</select>
+				          游戏:<select id="g_id_receiver" name="game_id" onchange="gamechange(this);" style="width: 96px">
+				       		<option value="-1">请选择</option>
+						</select>&nbsp;&nbsp; 
+					<b id="version_sel">
+					游戏版本： <select name="game_version" id="g_id_version_receiver" onchange="allgamesearch(this)">
+								<option value="-1">请选择</option>
+						</select>&nbsp;&nbsp; 
+						<b id="area_sel">游戏分区： <select name="area_id" id="g_id_area_receiver" >
+									<option value="-1">请选择</option>
+							</select>&nbsp;&nbsp; 
+                </font>  
+		         </b>
+		       </td>
+				<td>
+					<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+					<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			<tr>
+				<td> 
+					<a href="javascript:void(0);" class="easyui-linkbutton" onclick="exportExcel();">导出数据</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+<div region="center" border="false ">
+	<table id="gameCurrencyData"></table>
+</div>
+
+<div style="display: none;width: 550px;height: 300px;" id="addDialog">
+	<form id="addForm" method="post">
+		<table>
+			<tr>
+				<td>渠道:</td>
+				<td>
+					<select id="channel" name="channel_id">
+						<option value="-1">请选择</option>
+					</select>
+				</td>
+				<td>游戏:</td>
+				<td>
+					<select id="game" name="game_id" onchange="gamechange(this);" style="width: 96px">
+						<option value="-1">请选择</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>游戏版本:</td>
+				<td>
+					<select name="game_version" id="game_version" onchange="allgamesearch(this)">
+						<option value="-1">请选择</option>
+					</select>
+				</td>
+				<td>游戏分区:</td>
+				<td>
+					 <select name="area_id" id="game_area" >
+						<option value="-1">请选择</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>游戏账号</td>
+				<td><input type="text" name="game_account" /></td>
+			</tr>
+		</table>
+	</form>
+</div>
+
+
+
+<div style="display: none;width: 700px;height: 400px;" id="editDialog">
+<div>
+	<form id="editForm" method="post">
+		<table>
+			<tr style="display: none;">
+				<td>编号:</td>
+				<td><input type="text" name="id" id="id" readonly="readonly"></td>
+			</tr>
+			<tr>
+				<td>游戏账号:</td>
+				<td><input type="text" name="account" id="game_account" readonly="readonly"></td>
+				<td>渠道名称:</td>
+				<td><input type="text" name="channel_name" id="channel_name" readonly="readonly"></td>
+			</tr>
+			<tr>
+				<td>游戏名称:</td>
+				<td><input type="text" name="game_name" id="game_name" readonly="readonly"></td>
+				<td>分区名称:</td>
+				<td><input type="text" name="area_name" id="area_name" readonly="readonly"></td>
+			</tr>
+			<tr> 
+				<td>金额:</td>
+				<td><input type="text" name="balance" id="balance" readonly="readonly"></td>
+				<td>比例:</td>
+				<td><input type="text" name="ratio" id="ratio" readonly="readonly"></td>
+			</tr>
+			<tr>
+				<td>虚拟币:</td>
+				<td><input type="text" name="virtual_currency" id="virtual_currency" readonly="readonly"></td>
+				<td>领卡数量:</td>
+				<td><input type="text" id="num" onkeyup="onlyInputNum(this)" value="1"><span style="margin-left: 10px"><a href="javascript:void(0);" id="getCard" class="easyui-linkbutton" icon="icon-add" onclick="_getCard();">领卡</a></span></td>
+			</tr>
+		</table>
+	</form>
+</div>
+
+
+<!--修改订单使用记录-->
+<div id="modifyDialog" style="display: none;width: 720px;height: 350px;" align="center">
+<form id="modifyForm">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		<tr>
+		<td><font color="red" id="account_show"></font></td>
+		</tr>
+		<tr>
+		<td>
+		<input type="hidden" name="id" value="0" id="modify_id"/>
+		使用虚拟币的订单：<input type="text" name="order_id" size="30px;" /> 
+		</td>
+		</tr>
+		
+		<tr>
+		<td>
+		使用虚拟币的数量：<input type="text" name="num" id="modify_num" size="30px;" /> 
+		</td>
+		</tr>
+		
+		<tr>
+		<td>
+		备注：
+		<textarea rows="5" cols="35" name="remark"  id="modify_remark" ></textarea>
+		</td>
+		</tr>
+		
+		<tr>
+		<td>&nbsp;</td>
+		<tr>
+		
+		<tr>
+		<td>
+	
+		<input type="button" name="sub" value="提交更新" onclick="domodify()"/>
+		</td>
+		</tr>
+		
+		</table> 
+</form>
+</div>
+
+
+<!--修改总额记录-->
+<div id="modifyBalanceDialog" style="display: none;width: 720px;height: 350px;" align="center">
+<form id="modifyBalanceForm">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		<tr>
+		<td><font color="red" id="account_balance_show"></font></td>
+		</tr>
+		<tr>
+		<td>
+		<input type="hidden" name="id" value="0" id="modify_Balance_id"/>
+		该区虚拟币总存量：<input type="text" name="virtual" size="30px;" id="modify_Balance_virtual"/> 
+		</td>
+		</tr>
+		<tr>
+		<td>
+		备注：
+		<textarea rows="5" cols="35" name="remark"  id="modify_balance_remark" ></textarea>
+		</td>
+		</tr>
+		
+		<tr>
+		<td>&nbsp;</td>
+		<tr>
+		
+		<tr>
+		<td>
+	
+		<input type="button" name="sub" value="提交更新" onclick="domodifybalance()"/>
+		</td>
+		</tr>
+		
+		</table> 
+</form>
+</div>
+
+<div>
+	<table style="display: none;" id="cardInfo">
+	</table>
+	<div id="showBtn" style="display: none;">
+		<a href="javascript:void(0);" class="easyui-linkbutton" id="savePay" icon="icon-save" onclick="_savePay()">保存充值卡</a>
+	</div>
+</div>
+</div>
+</body>
+</html>

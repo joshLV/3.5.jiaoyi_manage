@@ -1,0 +1,28 @@
+ <#if pageInfo.items??>
+{"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+
+{
+"id":${item.id},
+"uid":${item.uid},
+"accountType":${item.accountType!'0'},
+"operatorType":${item.operatorType!'0'},
+"orderId":"${item.orderId!''}",
+"amount":${item.amount!'0'},
+"balance":${item.balance!'0'},
+"totalBalance":${item.totalBalance!'0'},
+"remark":"${item.remark!''}",
+"orderId":"${item.orderId!''}",
+<#if item.createTime??>
+"createTime":"${item.createTime?string('yyyy-MM-dd HH:mm:ss')!''}"
+<#else>
+"createTime":""
+</#if>
+}
+<#t>
+<#if item_has_next>,</#if>
+</#list>
+]}
+  <#else>
+  {"total":0,"rows":[]}
+</#if>

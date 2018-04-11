@@ -1,0 +1,408 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>游戏版本列表</title> <#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+var gameId;
+var gameName;
+$(function() {
+	gameId = ${gameId!0};
+	gameName = '${gameName!''}';
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+		url : 'versionList_json',
+		title : '游戏名['+gameName+']版本列表',
+		queryParams : {
+			gameId : gameId
+		},
+		//iconCls : 'icon-save',
+		pagination : true, 
+		pagePosition : 'bottom',
+		rownumbers : true,
+		pageSize : 100,
+		pageList : [ 100, 120, 140, 160 ],
+		fit : true,
+		fitColumns : true,
+		nowrap : true,
+		border : false,
+		idField : 'id',
+		sortName : 'weight',
+		sortOrder : 'desc',
+		columns : [ [ 
+	       {field:'ck',checkbox:true,
+				formatter:function(value,row,index){
+					return row.id;
+				}
+			},
+		   {field:'id',title:'版本ID',align:'center'},				
+		   {field:'game_id',title:'游戏ID',align:'center',width:100},				
+		   {field:'name',title:'版本名称',align:'center',width:100},				
+		   {field:'status',title:'状态',align:'center',width:120,
+			   formatter:function(value,row,index){
+					if(value == 0){
+						return "显示";
+					}
+					if(value == 1){
+						return "隐藏";
+					}
+					
+			   } 
+		   },
+		   {field:'weight',title:'权重',align:'center',width:100},				
+		   {field : 'operate',title : '操作',align : 'center',
+				formatter : function(value, row, index) {
+					var a = "<a href='javascript:void(0)' onclick='showGameCategory("
+					+ row.game_id+",\""+row.name+ "\","+row.id+")'>游戏区分类管理</a>" 
+					var b = "<a href='javascript:void(0)' onclick='manageArea("
+						+ row.id+",\""+row.game_id
+						+ "\")'>管理区服 </a> "
+					if (value == null || value == '') {
+						return b +"||" + a;
+					}
+				}
+		   }
+		] ],
+		
+		toolbar : [ {
+			text : '增加',
+			iconCls : 'icon-add',
+			handler : function() {
+				add();
+			}
+		}, '-', {
+			text : '删除',
+			iconCls : 'icon-remove',
+			handler : function() {
+				del();
+			}
+		}, '-', {
+			text : '修改',
+			iconCls : 'icon-edit',
+			handler : function() {
+				edit();
+			}
+		}, '-', {
+			text : '取消选中',
+			iconCls : 'icon-undo',
+			handler : function() {
+				datagrid.datagrid('unselectAll');
+			}
+		}, '-' ]
+// 		,
+// 		//右键菜单 
+// 		onRowContextMenu : function(e, rowIndex, rowData) {
+// 			e.preventDefault();
+// 			$(this).datagrid('unselectAll');
+// 			$(this).datagrid('selectRow', rowIndex);
+// 			$('#menu').menu('show', {
+// 				left : e.pageX,
+// 				top : e.pageY
+// 			});
+// 		}
+		  //双击事件
+		  , onDblClickRow:function (rowIndex,rowData){
+			   $(this).datagrid('unselectAll');
+			   $(this).datagrid('selectRow', rowIndex);	
+			   edit(rowData.id);
+		   }
+	});
+	
+	 addForm = $('#addForm').form({
+		url : 'version_add',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				datagrid.datagrid('reload');
+				addDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+	});
+	
+	addDialog = $('#addDialog').show().dialog({
+		title : '添加游戏版本',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '添加',
+			handler : function() {
+				closeDialog('您确定要添加该游戏版本吗?','addForm', 'addDialog');
+			}
+		} ]
+	});
+	
+	editDialog = $('#editDialog').show().dialog({
+		title : '编辑游戏版本',
+		modal : true,
+		closed : true,              
+		maximizable : true,
+		buttons : [ {
+			text : '保存',
+			handler : function() {
+				closeDialog('您确定要编辑该游戏版本吗?','editForm', 'editDialog');
+			}
+		} ]
+	});
+	editForm = $('#editForm').form({
+		url : 'version_update',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				datagrid.datagrid('reload');
+				editDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+	});
+	 
+});
+
+function _search(){
+	var versionName = $('#searchForm input[name="versionName"]').val();
+	console.log("versionName:"+versionName);
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', {gameId : gameId,name : versionName});
+}
+
+function cleanSearch(){
+	datagrid.datagrid('load', {gameId : gameId});
+	searchForm.find('input').val('');
+}
+
+function add(){
+	addForm.form('reset');
+	addDialog.dialog('open');
+}
+
+
+function edit() {
+	var rows = datagrid.datagrid('getSelections');
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'version_edit',
+			data : {
+				id : rows[0].id,
+				gameId : gameId
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				editForm.form('clear');
+				editForm.form('load', response);
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+
+function del(){
+	var rows = datagrid.datagrid('getSelections');
+	var ids =[];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].id);
+				}
+				$.ajax({
+					url : 'version_del',
+					data : {
+						ids : ids.join(','),
+						gameId : gameId
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	}
+}
+
+function manageArea(id,gameId){
+	var link = "${request.contextPath}/game/gameAreaList.do?versionId="+id+"&gameId="+gameId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"游戏ID["+gameId+"]版本ID["+id+"]区服列表" 
+			};
+	parent.addTab(node);
+}
+
+
+//游戏版本区分类跳转
+function showGameCategory(gameId,gameName,versionId){
+	var link = encodeURI(encodeURI("${request.contextPath}/game/gamePartitionCategoryList?gameId="+gameId+"&versionId="+versionId));
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"游戏版本["+gameName+"]分类管理"
+			};
+	parent.addTab(node);
+}
+
+
+//判断版本是否存在
+function isVersionExist(versionName){
+	$.ajax({
+		url : 'isGameVersionNameExist',
+		data : {
+			versionName : versionName,
+			gameId : gameId
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			if (!response.success) {
+				$.messager.show({
+					title : '失败',
+					msg : response.msg
+				});
+			} else {
+			}
+		}
+	});
+}
+
+</script>
+</head>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height:70px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>版本名称:<input name="versionName" style="width:140px;" />&nbsp;
+				<input type="hidden" name="gameId" value="${gameId}"/>
+				<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a> 
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+<div id="menu" class="easyui-menu" style="width: 120px; display: none;">
+		<div onclick="add();" iconCls="icon-add">增加</div>
+		<div
+			onclick="del();"
+			iconCls="icon-remove">删除</div>
+		<div
+			onclick="edit();"
+			iconCls="icon-edit">编辑</div>
+	</div> 
+<!--添加表单-->
+ 	 <div
+		id="addDialog"
+		style="display: none; width: 600px; height: auto;"
+		align="center">
+		<form id="addForm" method="post" style="padding: 5px 10px">
+		 	<input type="hidden" name="gameId" value="${gameId}"/>
+			<table width="100%" border="0" cellspacing="5" cellpadding="5">
+				<!-- <tr>
+					<td class="label">游戏ID：</td>
+					<td><input name="gameId" size="20" maxlength="50" class="easyui-validatebox" data-options="required:true" missingMessage="请填游戏ID"/></td>
+				</tr> -->
+				<tr>
+					<td class="label">版本名称：</td>
+					<td><input type="text" name="name" size="20" maxlength="50" class="easyui-validatebox" data-options="required:true" 
+						missingMessage="请填版本名称" onblur="isVersionExist($(this).val());"/>
+					</td>
+				</tr>
+				<tr>
+					<td class="label">状态：</td>
+					<td><select name="status" >
+							<option value="0">显示</option>
+							<option value="1">隐藏</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td class="label">权重：</td>
+					<td><input name="weight" size="20" maxlength="50" onkeyup="value=value.replace(/[^\-?\d]/g,'')"/></td>
+				</tr>
+				</table>
+		</form>
+	</div>  
+<!--编辑表单-->
+ 	 <div
+		id="editDialog"
+		style="display: none; width: 600px; height: auto;"
+		align="center">
+		<form id="editForm" method="post" style="padding: 5px 10px">
+		    <input type="hidden" name="id" />
+		    <input type="hidden" name="gameId" />
+			<table width="100%" border="0" cellspacing="5" cellpadding="5">
+			<!-- 	<tr>
+					<td class="label">游戏ID：</td>
+					<td><input name="gameId" size="20" maxlength="50" class="easyui-validatebox" data-options="required:true" missingMessage="请填游戏ID"/></td>
+				</tr> -->
+				<tr>
+					<td class="label">版本名称：</td>
+					<td><input type="text" name="name" size="20" maxlength="50" class="easyui-validatebox" data-options="required:true" 
+						missingMessage="请填版本名称" onchange="isVersionExist($(this).val());"/>
+					</td>
+				</tr>
+				<tr>
+					<td class="label">状态：</td>
+					<td><select name="status" >
+							<option value="0">显示</option>
+							<option value="1">隐藏</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td class="label">权重：</td>
+					<td><input name="weight" size="20" maxlength="50" onkeyup="value=value.replace(/[^\-?\d]/g,'')"/></td>
+				</tr>
+				</table>
+		</form>
+	</div>  
+</body>
+</html>

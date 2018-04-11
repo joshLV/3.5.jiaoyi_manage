@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>意见反馈</title> 
+<#include "../common.html"/>
+<script type="text/javascript">
+	var datagrid;
+	var addFeedbackReplyForm;
+	var replayDialog;
+	var addDialog;
+	var addForm;
+	var searchForm;
+	var showDetailDailog;
+	var KEContentAdd;
+	$(function() {
+		showDetailDailog = $('#showDetail');
+		showDetailDailog.dialog('close');
+		searchForm = $('#searchForm').form();//条件搜索框
+		
+		datagrid = $('#datagrid').datagrid({
+			url : 'feedbackList_json',
+			title : '意见反馈列表',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'suggestionId',
+			sortName : 'createtime',
+			sortOrder : 'desc',
+			columns : [ [ {
+				field : 'ck',
+				checkbox : true,
+				formatter : function(value, row, index) {
+					return row.obid;
+				}
+			}, {
+				field : 'suggestionId',
+				title : 'ID',
+				align : 'center',
+			}, {
+				field : 'userId',
+				title : '用户ID',
+				align : 'center',
+			}, {
+				field : 'categoryName',
+				title : '问题类型',
+				align : 'center',
+			}, {
+				field : 'content',
+				title : '内容',
+				align : 'left',
+				width : 40,
+			}, {
+				field : 'handledUser',
+				title : '处理人',
+				align : 'left',
+				width : 40,
+			}, {
+				field : 'isHandled',
+				title : '是否处理',
+				align : 'left',
+				width : 40,formatter:function(value,row,index){  
+			       if(row.isHandled=="已处理"){
+				   return "已处理";
+				   }else{
+				   return "<font color='red' >未处理</font>";   
+				   }
+			   },
+			}, {
+				field : 'remark',
+				title : '备注',
+				align : 'left',
+				width : 40,
+			}, {
+				field : 'status',
+				title : '状态',
+				align : 'center',
+			}, {
+				field : 'createtime',
+				title : '创建时间',
+				align : 'center',
+				width : 40,
+				sortable : true
+			}, {
+				field : 'handledTime',
+				title : '处理备注时间',
+				align : 'center',
+				width : 40,
+			} ,{
+				field : 'source',
+				title : '来源',
+				align : 'left',
+				width : 40,formatter:function(value,row,index){  
+			       if(row.source=="0"){
+				   return "8868";
+				   }else{
+				   return "<font color='red' >充值助手</font>";   
+				   }
+			   },
+			}, {
+				field : 'qq',
+				title : 'QQ',
+			},{
+				field : 'si',
+				title : 'si',
+				align : 'center',
+				width : 40,
+			}
+			, {
+				field : 'opreation',
+				title : '操作列表',
+				align : 'center',
+			}, ] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			
+			
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			}
+
+		});
+
+		addForm = $('#addForm').form({
+			url : 'feedback_add',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		KEContentAdd = KindEditor.create('#KEContentAdd', editOptions);
+		addDialog = $('#addDialog').show()
+				.dialog(
+						{
+							title : '内容录入',
+							modal : true,
+							closed : true,
+							buttons : [ {
+								text : '添加',
+								handler : function() {
+									KEContentAdd.sync();
+									$('#addForm input[name="content"]').val(
+											$('#KEContentAdd').val());
+									closeDialog('您确定要添加该意见反馈吗?', 'addForm',
+											'addDialog');
+								}
+							} ]
+						});
+		
+
+	});
+	function add() {
+		KEContentAdd.html("");
+		addDialog.dialog('open');
+		addForm.form('clear');
+		$("#addForm select option").first().attr("selected", 'selected');
+	}
+	function del() {
+		var rows = datagrid.datagrid('getSelections');
+		var ids = [];
+		if (rows.length > 0) {
+			$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+				if (r) {
+					for ( var i = 0; i < rows.length; i++) {
+						ids.push(rows[i].suggestionId);
+					}
+					console.log(ids.join(','));
+					$.ajax({
+						url : 'feedback_delete',
+						data : {
+							ids : ids.join(',')
+						},
+						dataType : 'json',
+						success : function(response) {
+							datagrid.datagrid('load');
+							datagrid.datagrid('unselectAll');
+							$.messager.show({
+								title : '提示',
+								msg : response.msg
+							});
+
+						}
+					});
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		}
+	}
+	function _search() {
+		datagrid.datagrid("unselectAll");
+		var categoryId = searchForm.find('#categoryId').val();
+		var status = searchForm.find('#status').val();
+		var huid=$('#huID').val();
+		var ihandle=$('#handledID').val();
+		var source=$('#source').val();
+		datagrid.datagrid({
+			queryParams : {
+				categoryId : categoryId,
+				status : status,
+				handledUserID:huid,
+				isHandled:ihandle,
+				source:source
+			}
+		});
+		//reload 又调用了controller
+		//datagrid.datagrid('reload');
+	}
+
+	function cleanSearch() {
+		datagrid.datagrid("unselectAll");
+		searchForm.find('#categoryId').val('-1');
+		searchForm.find('#status').val('-2');
+		searchForm.find('#source').val('-1');
+		datagrid.datagrid({
+			queryParams : {}
+		});
+		//datagrid.datagrid('reload');
+	}
+	function showDetail(feedbackId) {
+		$.get('feedbackChangeStatus?feedbackId=' + feedbackId);
+		datagrid.datagrid('unselectAll');//去除多选
+		$.ajax({
+			url : 'feedback_json',
+			data : {
+				feedbackId : feedbackId
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(suggestion) {
+				var sta = suggestion.status;
+				var staname = "";
+				var source = suggestion.source;
+				var sourcename ="";
+	
+				if(sta == 0){
+					staname = "未读";
+				}else if(sta == 1){
+					staname = "已读";
+				}else{
+					staname = "删除";
+				}
+				
+				if(source ==0){
+					sourcename ="8868";
+				}else{
+					sourcename ="充值助手";
+				}
+				
+				$('#showDetail').window(
+						{
+							title : "温馨提示: 文章过长时阅读完整信息 请点击窗口最大化",
+							content :"<div align=\"center\"><h1>意见反馈第"
+								+ suggestion.suggestionId
+								+ "条记录</h1></div>"
+								+ "<div align=\"center\">UserId："
+								+ suggestion.userId
+								+ "　　手机:　" + suggestion.mobile
+								+ "　　状态:　" + staname
+								+ "　　来源:　" + sourcename
+								//+ (suggestion.status == 0 ? "w" : "删除")
+								+ "　　创建时间:　"
+								+ new Date(suggestion.createtime).format('yyyy-MM-dd hh:mm:ss')
+								+ "</div><hr>" + "<div style='height:120px'>"+suggestion.content+"</div>"
+								+"<div style='padding:10px 10px 0px 0px'><form id='remarkForm'><table><tr><td><input type='hidden' name='suggestionId' id='sid' value="+suggestion.suggestionId+" /></td>"
+								+"<td>备注：<textarea cols='70' rows='3' name='remark'>"
+								+suggestion.remark+"</textarea></td>"
+								+"<td><select id='handled_id' name='isHandled'>是否处理：<option value='0'>已处理</option><option value='1'>未处理</option></select></td>"
+								+"<td><a href='javascript:void(0);' class='easyui-linkbutton' onclick='dohandle();'>提交</a></td>"
+								+"<td><a href='javascript:void(0);' class='easyui-linkbutton' onclick='docancel();'>取消</a></td></tr>"
+								+"</form></div>",
+						});
+				$('#handled_id').val(suggestion.isHandled);
+				$('#showDetail').window('open');
+			}
+		});
+		
+	}
+		 function dohandle(){
+				 $('#remarkForm').form({
+					url : 'remark_update',
+					success : function(data) {
+						var json = $.parseJSON(data);
+						if (json && json.success) {
+							$.messager.show({
+								title : '成功',
+								msg : json.msg
+							});
+							datagrid.datagrid('reload');
+							$('#showDetail').window('close'); 
+						} else {
+							$.messager.show({
+								title : '失败',
+								msg : json.msg
+							});
+						}
+					}
+				});
+				$('#remarkForm').submit();
+			 }
+		 function docancel(){
+				 $('#showDetail').window('close');
+			 }
+	
+	
+	
+</script>
+</head>
+
+<body class="easyui-layout">
+	 <div region="north" border="false" title="搜索条件"
+		style="height: 70px; overflow: hidden; padding: 10px" align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+					<td>问题类型:<select id="categoryId" name="categoryId">
+							<option value="-1">所有</option>
+							<option value="1">优化建议</option>
+							<option value="2">问题错误</option>
+							<option value="4">VIP礼包申请</option>
+							<option value="3">其他反馈</option>
+
+					</select>&nbsp;
+					</td>
+					<td>状态:<select id="status" name="status">
+							<option value="-2">所有</option>
+							<option value="0">未读</option>
+							<option value="1">已读</option>
+							<option value="-1">删除</option>
+
+					</select>&nbsp;
+					</td>
+					<td>处理人ID:<input type="text" id="huID" name="handledUserID" size="20" maxlength="50"/>
+					&nbsp;
+					</td>
+					<td>是否处理:<select  name="isHandled" id="handledID">
+							<option value="-3">所有</option>
+							<option value="0">已处理</option>
+							<option value="1">未处理</option>
+					</select>&nbsp;
+					</td>
+					<td>来源:<select  name="source" id="source">
+							<option value="-1">所有</option>
+							<option value="0">8868</option>
+							<option value="1">充值助手</option>
+					</select>&nbsp;
+					</td>
+					<td><a href="javascript:void(0);" class="easyui-linkbutton"
+						onclick="_search();">筛选</a> <a href="javascript:void(0);"
+						class="easyui-linkbutton" onclick="cleanSearch();">取消</a></td>
+				</tr>
+
+		
+			</table>
+		</form>
+	</div> 
+
+	<div region="center" border="false">
+		<table id="datagrid"></table>
+	</div>
+	<!--添加表单start-->
+	<div id="addDialog" class="easyui-dialog"
+		style="width: 780px; height: auto" align="center">
+		<form id="addForm" method="post" style="padding: 5px 10px">
+			<table
+				style="width: 100%; border: 0; cellspacing: 1; cellpadding: 1;">
+				<tr>
+					<td class="lable">用户ID：</td>
+					<td><input type="text" name="userId" size="20" maxlength="50"
+						class="easyui-validatebox" data-options="required:true"
+						missingMessage="请填写用户ID" /></td>
+					<td class="lable">用户账号：<input type="text" name="userGameId"
+						size="20" maxlength="50" class="easyui-validatebox"
+						data-options="required:true" missingMessage="请填写用户账号" /></td>
+				</tr>
+				<tr>
+					<td class="label">问题类型:</td>
+					<td colspan="3"><select name="categoryId" style="width: 155px">
+							<option value="1">优化建议</option>
+							<option value="2">问题错误</option>
+							<option value="4">VIP礼包申请</option>
+							<option value="3">其他反馈</option>
+					</select>&nbsp;</td>
+				</tr>
+				<tr>
+					<td class="lable">内容：</td>
+					<td colspan="3"><textarea name="content"
+							class="easyui-validatebox" data-options="required:true"
+							missingMessage="请填写内容" cols="60" rows="6" id="KEContentAdd"></textarea></td>
+				</tr>
+				<tr>
+					<td class="lable">联系方式：</td>
+					<td>电话： <input type="text" name="mobile" size="20"
+						maxlength="50" class="easyui-validatebox"
+						data-options="required:true,validType:'phone'"
+						missingMessage="请填写电话" />
+
+					</td>
+					<td colspan="2">QQ： <input type="text" name="qq" size="20"
+						maxlength="50" data-options="required:true,validType:'qq'"
+						class="easyui-numberbox" />
+					</td>
+
+				</tr>
+				<tr>
+					<td>&nbsp;</td>
+					<td colspan="4">邮箱： <input type="text" name="email" size="20"
+						maxlength="50" class="easyui-validatebox"
+						data-options="required:true,validType:'email'"
+						missingMessage="请填写正确的邮箱" /></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<!-- 详细信息窗口 -->
+	<div id="showDetail" class="easyui-window" title="详细信息"
+		data-options="modal:true"
+		style="width: 1000px; height: auto; padding: 10px 10px 70px 10px">详细信息内容</div>
+</body>
+</html>

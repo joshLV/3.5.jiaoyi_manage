@@ -1,0 +1,24 @@
+<#if pageInfo??>
+{
+"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+{"id":${item.id},
+"gameId":"${item.gameId!'0'}",
+"gameName":"${item.gameName!''}",
+"channelId":"${item.channelId!'0'}",
+"channelName":"${item.channelName!''}",
+"account":"${item.account!''}",
+"remark":"${item.remark!''}",
+<#if item.createTime??>
+"createTime":"${item.createTime?string('yyyy-MM-dd HH:mm:ss')}"
+<#else>
+"createTime":""
+</#if>
+}<#t>
+<#if item_has_next>,</#if>
+</#list>
+]
+}
+<#else>
+  {"total":0,"rows":[]}
+</#if>

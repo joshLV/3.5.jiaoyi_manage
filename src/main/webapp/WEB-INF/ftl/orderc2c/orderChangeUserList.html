@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>转单用户列表</title> <#include "../common.html"/>
+<script type="text/javascript">
+	var datagrid;
+	var addDialog;
+	var addForm;
+	var editDialog;
+	var editForm;
+	var searchForm;
+	function formatterQufu(value, row, index) {
+		if (row.gameAreaName != null
+				&& row.gameServerName != null) {
+			return row.gameAreaName + "/"
+					+ row.gameServerName
+		}
+		if (row.gameServerName != null) {
+			return row.gameServerName;
+		}
+		if (row.gameAreaName != null) {
+			return row.gameAreaName;
+		}
+	}
+	function formatterAllowToSingle(value,row,index){
+		if(row.allowToSingle>0){
+			return "禁止";
+		}else{
+			return "允许";
+		}
+	}
+	$(function() {
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid').datagrid(
+				{
+					url : 'orderChangeUserJson',
+					title : '转单用户列表',
+					//iconCls : 'icon-save',
+					pagination : true,
+					pagePosition : 'bottom',
+					rownumbers : true,
+					pageSize : 100,
+					pageList : [ 100, 120, 140, 160 ],
+					fit : true,
+					fitColumns : true,
+					nowrap : true,
+					border : false,
+					idField : 'id',
+					sortName : 'create_time',
+					sortOrder : 'desc',
+					toolbar : [ {
+						text : '增加',
+						iconCls : 'icon-add',
+						handler : function() {
+							add();
+						}
+					}, '-', {
+						text : '删除',
+						iconCls : 'icon-remove',
+						handler : function() {
+							del();
+						}
+					}, '-', {
+						text : '修改',
+						iconCls : 'icon-edit',
+						handler : function() {
+							edit();
+						}
+					}, '-', {
+						text : '取消选中',
+						iconCls : 'icon-undo',
+						handler : function() {
+							datagrid.datagrid('unselectAll');
+						}
+					}, '-' ],
+					//右键菜单 
+					onRowContextMenu : function(e, rowIndex, rowData) {
+						e.preventDefault();
+						$(this).datagrid('unselectAll');
+						$(this).datagrid('selectRow', rowIndex);
+						$('#menu').menu('show', {
+							left : e.pageX,
+							top : e.pageY
+						});
+					},
+					//双击事件
+					onDblClickRow : function(rowIndex, rowData) {
+						$(this).datagrid('unselectAll');
+						$(this).datagrid('selectRow', rowIndex);
+						edit();
+					}
+				});
+		editForm = $('#editForm').form({
+			url : 'updateOrderChangeUser.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '修改转单人信息',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					editForm.submit();
+				}
+			} ]
+		});
+
+		addForm = $('#addForm').form({
+			url : 'addOrderChangeUser.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加转单用户信息',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					addForm.submit();
+				}
+			} ]
+		});
+
+	});
+	function _search() {
+		datagrid.datagrid("unselectAll");
+		datagrid.datagrid('load', sy.serializeObject(searchForm));
+	}
+
+	function cleanSearch() {
+		datagrid.datagrid('load', {});
+		searchForm.find('input').val('');
+		searchForm.find('select').val('');
+	}
+	function add() {
+		addDialog.dialog('open');
+		addForm.find("input[type='text']").val("");
+		$.ajax({
+			url : '../publicJson/queryAllProductType_json.do',
+			dataType:'json',
+			success:function(response){
+				var productTypeLength = response.length;
+				$("#selectProductTypeAdd option").remove();
+				for ( var i = 0; i < productTypeLength; i++) {
+					var options = "<option value='"+response[i].productId+"'>"
+							+ response[i].productName + "</option>";
+					$("#selectProductTypeAdd").append(options);
+				}
+			}
+		});
+	}
+	function del() {
+		var rows = datagrid.datagrid('getSelections');
+		var ids = [];
+		if (rows.length > 0) {
+			$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+				if (r) {
+					for ( var i = 0; i < rows.length; i++) {
+						ids.push(rows[i].id);
+					}
+					console.log(ids.join(','));
+					$.ajax({
+						url : 'delOrderChangeUser.do',
+						data : {
+							ids : ids.join(',')
+						},
+						dataType : 'json',
+						success : function(response) {
+							datagrid.datagrid('load');
+							datagrid.datagrid('unselectAll');
+							$.messager.show({
+								title : '提示',
+								msg : response.msg
+							});
+
+						}
+					});
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		}
+	}
+	function edit() {
+		var rows = datagrid.datagrid('getSelections');
+		if (rows.length == 1) {
+			$.messager.progress({
+				text : '数据加载中....',
+				interval : 100
+			});
+			$.ajax({
+				url : 'orderChangeUserInfo.do',
+				data : {
+					id : rows[0].id
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(response) {
+					editForm.form('clear');
+					editForm.form('load', response);
+					$.ajax({
+						url : '../publicJson/queryAllProductType_json.do',
+						dataType:'json',
+						success:function(productTypeResponse){
+							var productTypeLength = productTypeResponse.length;
+							$("#selectProductTypeEdit option").remove();
+							for ( var i = 0; i < productTypeLength; i++) {
+								var options = "<option value='"+productTypeResponse[i].productId+"'>"
+										+ productTypeResponse[i].productName + "</option>";
+								$("#selectProductTypeEdit").append(options);
+							}
+							$("#selectProductTypeEdit option[value='"+response.productType+"']").attr("selected","selected");
+						}
+					});
+					selectsubEdit(response.gameId, response.gameServerId,
+							response.gameAreaId);
+					editDialog.dialog('open');
+					$.messager.progress('close');
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+		}
+	}
+
+	//所有游戏[查询条件]
+	$(function() {
+		var url = "../product/allgameList_json";
+		$.getJSON(url, function(result) {
+			var categoryCount = result.total;
+			$("select[name='gameId'] option").remove();
+			var def = "<option value='-1'>请选择</option>";
+			$("select[name='gameId']").append(def);
+			for ( var i = 0; i < categoryCount; i++) {
+				var options = "<option value='"+result.rows[i].id+"'>"
+						+ result.rows[i].name + "</option>";
+				$("select[name='gameId']").append(options);
+			}
+
+		});
+
+	});
+
+	function allgamesearch() {
+		var gameids = $("#s_g_id_receiver").val();
+		selectsub(gameids);
+	}
+	function allgamesearchAdd() {
+		var gameidadd = $("#add_g_id_receiver").val();
+		selectsubAdd(gameidadd, null, null);
+	}
+	function allgamesearchEdit() {
+		var gameidedit = $("#edit_g_id_receiver").val();
+		selectsubEdit(gameidedit, null, null);
+	}
+	function selectsubAdd(gameId, gameServerId, gameAreaId) {
+		$("#server_sel").show();
+		$("#area_sel").show();
+		$
+				.ajax({
+					url : '../game/selectGameAreaDetail',
+					data : {
+						gameId : gameId
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(data) {
+						var area_select = $("#add_g_id_area_receiver");
+						var server_select = $("#add_g_id_serverid_receiver");
+
+						//先清理上次分区残留选项
+						var maxindex = $("select[name='partitionId']").find(
+								"option:last").index();
+						if (maxindex >= 1) {
+							for ( var j = 1; j <= maxindex; j++) {
+								$("#add_g_id_area_receiver option:last")
+										.remove();
+							}
+						}
+
+						//先清理上次服务器残留选项
+						var maxindex2 = $("select[name='serverId']").find(
+								"option:last").index();
+						if (maxindex2 >= 1) {
+							for ( var j = 1; j <= maxindex2; j++) {
+								$("#add_g_id_serverid_receiver option:last")
+										.remove();
+							}
+						}
+						//添加选项
+						if (typeof data.total != "undefined") {
+
+							for ( var i = 0; i < data.total; i++) {
+
+								var patition_id = data.rows[i].partitionId;
+								if ((typeof patition_id == "undefined")) {
+									//有分区 
+									$("#area_sel").show();
+									if (gameAreaId != null
+											&& gameAreaId == data.rows[i].id) {
+										area_select
+												.append("<option selected='selected' value=\'"+data.rows[i].id+"\'>"
+														+ data.rows[i].name
+														+ "</option>");
+									} else {
+										area_select
+												.append("<option value=\'"+data.rows[i].id+"\'>"
+														+ data.rows[i].name
+														+ "</option>");
+									}
+								} else {
+									//没分区 隐藏分区
+									$("#area_sel").hide();
+									if (gameServerId != null
+											&& gameServerId == data.rows[i].id) {
+										server_select
+												.append("<option selected='selected' value=\'"+data.rows[i].id+"\'>"
+														+ data.rows[i].name
+														+ "</option>");
+									} else {
+										server_select
+												.append("<option value=\'"+data.rows[i].id+"\'>"
+														+ data.rows[i].name
+														+ "</option>");
+									}
+								}
+							}
+
+						}
+					}
+				});
+	}
+	function selectsubEdit(gameId, gameServerId, gameAreaId) {
+		$("#server_sel").show();
+		$("#area_sel").show();
+		$
+				.ajax({
+					url : '../game/selectGameAreaDetail',
+					data : {
+						gameId : gameId
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(data) {
+						var area_select = $("#edit_g_id_area_receiver");
+						var server_select = $("#edit_g_id_serverid_receiver");
+
+						//先清理上次分区残留选项
+						var maxindex = $("select[name='partitionId']").find(
+								"option:last").index();
+						if (maxindex >= 1) {
+							for ( var j = 1; j <= maxindex; j++) {
+								$("#edit_g_id_area_receiver option:last")
+										.remove();
+							}
+						}
+
+						//先清理上次服务器残留选项
+						var maxindex2 = $("select[name='serverId']").find(
+								"option:last").index();
+						if (maxindex2 >= 1) {
+							for ( var j = 1; j <= maxindex2; j++) {
+								$("#edit_g_id_serverid_receiver option:last")
+										.remove();
+							}
+						}
+						//添加选项
+						if (typeof data.total != "undefined") {
+
+							for ( var i = 0; i < data.total; i++) {
+
+								var patition_id = data.rows[i].partitionId;
+								if ((typeof patition_id == "undefined")) {
+									//有分区 
+									$("#area_sel").show();
+									if (gameAreaId != null
+											&& gameAreaId == data.rows[i].id) {
+										area_select
+												.append("<option selected='selected' value=\'"+data.rows[i].id+"\'>"
+														+ data.rows[i].name
+														+ "</option>");
+									} else {
+										area_select
+												.append("<option value=\'"+data.rows[i].id+"\'>"
+														+ data.rows[i].name
+														+ "</option>");
+									}
+								} else {
+									//没分区 隐藏分区
+									$("#area_sel").hide();
+									if (gameServerId != null
+											&& gameServerId == data.rows[i].id) {
+										server_select
+												.append("<option selected='selected' value=\'"+data.rows[i].id+"\'>"
+														+ data.rows[i].name
+														+ "</option>");
+									} else {
+										server_select
+												.append("<option value=\'"+data.rows[i].id+"\'>"
+														+ data.rows[i].name
+														+ "</option>");
+									}
+								}
+							}
+
+						}
+					}
+				});
+	}
+
+	function selectsub(gameId) {
+		$("#server_sel").show();
+		$("#area_sel").show();
+		$
+				.ajax({
+					url : '../game/selectGameAreaDetail',
+					data : {
+						gameId : gameId
+					},
+					dataType : 'json',
+					cache : false,
+					success : function(data) {
+						var area_select = $("#s_g_id_area_receiver");
+						var server_select = $("#s_g_id_serverid_receiver");
+
+						var checkIndex = area_select.get(0).selectedIndex;
+						var checkIndex2 = server_select.get(0).selectedIndex;
+
+						//先清理上次分区残留选项
+						var maxindex = $("select[name='partitionId']").find(
+								"option:last").index();
+						if (maxindex >= 1) {
+							for ( var j = 1; j <= maxindex; j++) {
+								$("#s_g_id_area_receiver option:last").remove();
+							}
+						}
+
+						//先清理上次服务器残留选项
+						var maxindex2 = $("select[name='serverId']").find(
+								"option:last").index();
+						if (maxindex2 >= 1) {
+							for ( var j = 1; j <= maxindex2; j++) {
+								$("#s_g_id_serverid_receiver option:last")
+										.remove();
+							}
+						}
+						//添加选项
+						if (typeof data.total != "undefined") {
+
+							for ( var i = 0; i < data.total; i++) {
+
+								var patition_id = data.rows[i].partitionId;
+								if ((typeof patition_id == "undefined")) {
+									//有分区 
+									$("#area_sel").show();
+									area_select
+											.append("<option value=\'"+data.rows[i].id+"\'>"
+													+ data.rows[i].name
+													+ "</option>");
+								} else {
+									//没分区 隐藏分区
+									$("#area_sel").hide();
+									server_select
+											.append("<option value=\'"+data.rows[i].id+"\'>"
+													+ data.rows[i].name
+													+ "</option>");
+								}
+							}
+
+						}
+					}
+				});
+	}
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="north" border="false" title="搜索条件"
+		style="height: auto;min-height:55px;" align="left">
+				<form id="searchForm">
+					用户id:<input name="uid" style="width: 100px;" />&nbsp;
+				
+					用户账号:<input name="account" style="width: 100px;" />&nbsp;
+			
+					游戏:<select id="s_g_id_receiver" name="gameId"
+						onchange="javascript:allgamesearch();" style="width: 96px">
+					</select>&nbsp;&nbsp; 游戏分区： <select name="partitionId"
+							id="s_g_id_area_receiver">
+								<option value="-1">请选择</option>
+						</select>&nbsp;&nbsp;游戏服务器： <select
+								name="serverId" id="s_g_id_serverid_receiver">
+									<option value="-1">请选择</option>
+
+							</select>&nbsp;
+		
+					<a href="javascript:void(0);" class="easyui-linkbutton"
+						onclick="_search();">搜索</a> <a href="javascript:void(0);"
+						class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</form>
+				<form id="uploadForm" method="post" action="inputXlsFile"
+					enctype="multipart/form-data">
+					<input type="file" name="file" /><input type="submit" value="上传xls文件" /> 
+						<#if msg??> <font color="red">${msg}</font>
+						</#if>
+					<a href="${basePath}data/changeOrderUserDemo.xls"
+						class="easyui-linkbutton">下载模板文件</a>
+				</form>
+	</div>
+
+	<div region="center" border="false">
+		<table id="datagrid">
+			<thead>
+				<tr>
+					<th data-options="field:'id',align:'center',frozen:true" rowspan="2">编号</th>
+					<th data-options="field:'uid',align:'center'"  rowspan="2">用户UID</th>
+					<th data-options="field:'allowToSingle',align:'center',formatter:formatterAllowToSingle"  rowspan="2">允许转单</th>
+					<th colspan="6">转单规则</th><th colspan="6">卖家信息</th>
+				</tr>
+				<tr>
+					<th data-options="field:'gameName',align:'center'">游戏名称</th>
+					<th data-options="field:'qufu',align:'center',formatter:formatterQufu">游戏区服</th>
+					<th data-options="field:'productType',align:'center'">商品类型</th>
+					<th data-options="field:'allowToSingleStandardRate',align:'center'">允许转单标准比率</th>
+					<th data-options="field:'allowToSingleHighestRate',align:'center'">允许转单最高比率</th>
+					<th data-options="field:'allowToSingleHighestAmount',align:'center'">允许转单最高金额</th>
+					<th data-options="field:'channelName',align:'center'">渠道</th>
+					
+
+					<th data-options="field:'gameAccount',align:'center'">卖家帐号</th>
+					<th data-options="field:'gamePwd',align:'center'">卖家密码</th>
+					<th data-options="field:'gameSafekey',align:'center'">安全锁</th>
+					<th data-options="field:'gameRoleId',align:'center'">角色Id</th>
+					<th data-options="field:'gameRoleName',align:'center'">角色名</th>
+					
+				</tr>
+			</thead>
+		</table>
+	</div>
+
+	<div id="menu" class="easyui-menu" style="width: 120px; display: none;">
+		<div onclick="add();" iconCls="icon-add">增加</div>
+		<div onclick="del();" iconCls="icon-remove">删除</div>
+		<div onclick="edit();" iconCls="icon-edit">编辑</div>
+	</div>
+
+	<!--添加表单-->
+	<div id="addDialog"
+		style="display: none; width: 600px; height: 'auto';" align="center">
+		<form id="addForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<tr>
+					<td class="lable" colspan="4">游戏：&nbsp;&nbsp;&nbsp;&nbsp;<select
+						id="add_g_id_receiver" name="gameId"
+						onchange="javascript:allgamesearchAdd();" style="width: 96px">
+					</select>&nbsp;&nbsp; 游戏分区： <select name="partitionId"
+						id="add_g_id_area_receiver" >
+							<option value="-1">请选择</option>
+					</select>&nbsp;&nbsp; <font id="server_sel"> 游戏服务器： <select
+							name="serverId" id="add_g_id_serverid_receiver">
+								<option value="-1">请选择</option>
+						</select>&nbsp;
+					</font>
+					</td>
+				</tr>
+				<tr>
+					<td class="lable">用户Id：</td>
+					<td><input type="text" name="uid" size="20" maxlength="50"
+						class="easyui-validatebox" data-options="required:true"
+						missingMessage="请填写用户ID" /></td>
+					<td class="lable">游戏账号ID：</td>
+					<td><input type="text" name="gameUid" size="20" maxlength="50"
+						class="easyui-validatebox" data-options="required:true"
+						missingMessage="请填写游戏账号ID" /></td>
+				</tr>
+				<tr>
+					<td class="lable">商品类型：</td>
+					<td><select id="selectProductTypeAdd"  name="productType"
+						style="width: 150px"></select></td>
+					<td class="lable">允许转单标准比率：</td>
+					<td><input type="text" name="allowToSingleStandardRate"
+						size="20" maxlength="50" class="easyui-numberbox"
+						data-options="required:true,mix:0" missingMessage="请填写允许转单标准比率" /></td>
+				</tr>
+				<tr>
+					<td class="lable">允许转单最高比率：</td>
+					<td><input type="text" name="allowToSingleHighestRate"
+						size="20" maxlength="50" class="easyui-numberbox"
+						data-options="required:true,mix:0" missingMessage="请填写允许转单最高比率" /></td>
+					<td class="lable">允许转单最高金额：</td>
+					<td><input type="text" name="allowToSingleHighestAmount"
+						size="20" maxlength="50" class="easyui-numberbox"
+						data-options="required:true,mix:0" missingMessage="请填写允许转单最高金额" /></td>
+				</tr>
+				<tr>
+					<td class="lable">卖家账号：</td>
+					<td><input type="text" name="gameAccount" size="20"
+						maxlength="50" class="easyui-validatebox"
+						data-options="required:true" missingMessage="请填写卖家账号" /></td>
+					<td>卖家密码：</td>
+					<td><input type="text" name="gamePwd" size="20" maxlength="20"
+						class="easyui-validatebox" data-options="required:true"
+						missingMessage="请填写卖家密码" /></td>
+				</tr>
+				<tr>
+					<td class="lable">账号安全锁：</td>
+					<td><input type="text" name="gameSafekey" size="20"
+						maxlength="50" /></td>
+					<td>商品存放处：</td>
+					<td><select name="goodsPosition" id="goodsPosition">
+							<option value="0">-请选择-</option>
+							<option value="1">交易所</option>
+							<option value="2">仓库</option>
+							<option value="3">邮箱</option>
+							<option value="4">包裹</option>
+					</select></td>
+				</tr>
+				<tr>
+					<td class="lable">游戏角色ID：</td>
+					<td><input type="text" name="gameRoleId" size="20"
+						maxlength="50" /></td>
+					<td>游戏角色名：</td>
+					<td><input type="text" name="gameRoleName" size="20"
+						maxlength="20" /></td>
+				</tr>
+				<tr>
+					<td class="lable">渠道：</td>
+					<td><select name="channelId" id="channelId">
+							<option value="0">-请选择-</option> <#list channelList as channel>
+							<option value="${channel.id }">${channel.name }</option>
+							</#list>
+					</select></td>
+					<td class="lable">允许转单：</td>
+					<td><select name="allowToSingle">
+							<option value="0" selected="selected">允许</option> 
+							<option value="1">禁止</option>
+					</select></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<!--编辑表单-->
+	<div id="editDialog"
+		style="display: none; width: 720px; height: 'auto';" align="center">
+		<form id="editForm" method="post" style="padding: 5px 10px">
+			<input type="hidden" name="id" />
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<tr>
+					<td class="lable" colspan="4">游戏：&nbsp;&nbsp;&nbsp;&nbsp;<select
+						id="edit_g_id_receiver" name="gameId"
+						onchange="javascript:allgamesearchEdit();" style="width: 96px">
+					</select>&nbsp;&nbsp; 游戏分区： <select name="partitionId"
+						id="edit_g_id_area_receiver" >
+							<option value="-1">请选择</option>
+					</select>&nbsp;&nbsp; <font id="server_sel"> 游戏服务器： <select
+							name="serverId" id="edit_g_id_serverid_receiver">
+								<option value="-1">请选择</option>
+						</select>&nbsp;
+					</font>
+					</td>
+				</tr>
+				<tr>
+					<td class="lable">用户Id：</td>
+					<td><input type="text" name="uid" size="20" maxlength="50"
+						class="easyui-validatebox" data-options="required:true"
+						missingMessage="请填写用户ID" /></td>
+					<td class="lable">游戏账号ID：</td>
+					<td><input type="text" name="gameUid" size="20" maxlength="50"
+						class="easyui-validatebox" data-options="required:true"
+						missingMessage="请填写游戏账号ID" /></td>
+				</tr>
+				<tr>
+					<td class="lable">商品类型：</td>
+					<td><select id="selectProductTypeEdit"  name="productType"
+						style="width: 150px"></select></td>
+					<td class="lable">允许转单标准比率：</td>
+					<td><input type="text" name="allowToSingleStandardRate"
+						size="20" maxlength="50" class="easyui-numberbox"
+						data-options="required:true,mix:0" missingMessage="请填写允许转单标准比率" /></td>
+				</tr>
+				<tr>
+					<td class="lable">允许转单最高比率：</td>
+					<td><input type="text" name="allowToSingleHighestRate"
+						size="20" maxlength="50" class="easyui-numberbox"
+						data-options="required:true,mix:0" missingMessage="请填写允许转单最高比率" /></td>
+					<td class="lable">允许转单最高金额：</td>
+					<td><input type="text" name="allowToSingleHighestAmount"
+						size="20" maxlength="50" class="easyui-numberbox"
+						data-options="required:true,mix:0" missingMessage="请填写允许转单最高金额" /></td>
+				</tr>
+				<tr>
+					<td class="lable">卖家账号：</td>
+					<td><input type="text" name="gameAccount" size="20"
+						maxlength="50" class="easyui-validatebox"
+						data-options="required:true" missingMessage="请填写卖家账号" /></td>
+					<td>卖家密码：</td>
+					<td><input type="text" name="pwd" size="20" maxlength="20" /></td>
+				</tr>
+				<tr>
+					<td>商品存放处：</td>
+					<td><select name="goodsPosition" id="goodsPosition">
+							<option value="0">-请选择-</option>
+							<option value="1">交易所</option>
+							<option value="2">仓库</option>
+							<option value="3">邮箱</option>
+							<option value="4">包裹</option>
+					</select></td>
+					<td class="lable">账号安全锁：</td>
+					<td><input type="text" name="safeKey" size="20" maxlength="50" /></td>
+				</tr>
+				<tr>
+					<td class="lable">游戏角色ID：</td>
+					<td><input type="text" name="gameRoleId" size="20"
+						maxlength="50" /></td>
+					<td>游戏角色名：</td>
+					<td><input type="text" name="gameRoleName" size="20"
+						maxlength="20" /></td>
+				</tr>
+				<tr>
+					<td class="lable">渠道：</td>
+					<td><select name="channelId" id="channelId">
+							<option value="0">-请选择-</option> <#list channelList as channel>
+							<option value="${channel.id }">${channel.name }</option>
+							</#list>
+					</select></td>
+					<td class="lable">允许转单：</td>
+					<td><select name="allowToSingle" id="allowToSingle">
+							<option value="0">允许</option> 
+							<option value="1">禁止</option>
+					</select></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+
+</body>
+</html>

@@ -1,0 +1,41 @@
+<#if pageInfo??>
+{"total":${pageInfo.recordCount},"rows":[ 
+<#if pageInfo.items??><#list pageInfo.items as item>
+{"id":${item.id},
+"uid":"${item.uid}",
+"logIp":"${item.logIp}",
+<#if item.logType==1>
+"logType":"手机换绑",
+<#elseif item.logType==2>
+"logType":"注册",
+<#elseif item.logType==3>
+"logType":"实名认证确认",
+<#elseif item.logType==4>
+"logType":"支付密码设置",
+<#elseif item.logType==5>
+"logType":"修改个人银行信息",
+<#elseif item.logType==6>
+"logType":"提现设置",
+<#elseif item.logType==7>
+"logType":"登录",
+<#elseif item.logType==8>
+"logType":"找回密码",
+<#elseif item.logType==9>
+"logType":"发布商品",
+<#elseif item.logType==10>
+"logType":"下架商品",
+<#elseif item.logType==11>
+"logType":"购买商品",
+<#elseif item.logType==12>
+"logType":"充值",
+<#elseif item.logType==13>
+"logType":"提现",
+<#elseif item.logType==14>
+"logType":"快捷支付",
+<#else>
+"logType":"没有该日志类型",
+</#if>
+"logRemark":"${item.logRemark}",
+"createTime":"${item.createTime?string('yyyy-MM-dd HH:mm:ss')}"
+}<#t><#if item_has_next>,</#if> </#list> </#if>]}
+</#if>

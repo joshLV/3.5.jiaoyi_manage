@@ -1,0 +1,25 @@
+<#if pageInfo??>
+{
+"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+{"uids":${item.userId},
+"customerServiceId":"${item.customServiceId!''}",
+"workStatus":"${item.workStatus!''}",
+"loginName":"${item.loginid!''}",
+"fullName":"${item.fullname!''}",
+"onDuty":${item.isOnDuty!'0'},
+"workStatus":${item.onlineStatus!'0'},
+"isCustomer":${item.isCustomer!'0'},
+"isObjectCustomer":${item.isObjectCustomer!'0'},
+"isInvestmentService":${item.isInvestmentService!'0'},
+"payCount":${item.payCount!'0'},
+"unPayCount":${item.unPayCount!'0'},
+"headImg":"${item.headImg!''}"
+}<#t>
+<#if item_has_next>,</#if>
+</#list>
+]
+}
+<#else>
+  {"total":0,"rows":[]}
+</#if>

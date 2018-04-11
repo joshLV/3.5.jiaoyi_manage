@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>用户验证码解锁</title>
+<#include "../common.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+
+//解除验证码锁定
+function unlockDynamicPass(){
+	var telphone=$("#telphone_num").val();
+	if(telphone==""){
+		alert("请输入您的手机号！");
+		return false;
+	}
+	$.messager.confirm('确认框','您确认要解除验证码锁定吗?',function(r){
+		if(r){
+			$.ajax({
+				url:'unlockDynamicPass.do'+Math.round(Math.random()*10000),
+				data:{
+					telphone:telphone
+				},
+				dataType:'json',
+				success:function(response){
+					$.messager.show({
+						title:'提示',
+						msg:response.msg
+					});
+				}
+			});
+		}
+	});
+}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="center" border="false" title="请输入用户手机号<font color=red>(输入手机号后按回车可以查看用户信息)</font>" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table >
+			<tr>
+				<td>用户手机号：<input name="telphone"  style="width:200px;" id="telphone_num" value="${telphone}"/>&nbsp;</td>
+				<td style="border-bottom:#999 1px dashed;">
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="unlockDynamicPass();">验证码解锁</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+	
+	<#if platname??>
+			<table  class="table_line">
+			<tr>
+			<td colspan="2" ><b>用户信息</b></td>
+			</tr>
+			<tr>
+				<td>&nbsp;用户UID:</td>
+				<td>
+				<p>${uId!''}</p>
+				</td>
+			</tr>
+				<tr>
+				<td>平台账号:</td>
+				<td>
+				<p>${platname!''}</p>
+				</td>
+			</tr>
+			<tr>
+				<td>手机号码:</td>
+				<td>
+				<p>${telphone}</p>
+				</td>
+			</tr>
+						<tr>
+				<td>真实姓名:</td>
+				<td>
+				<p>${realname!'暂无'}</p>
+				</td>
+			</tr>
+			
+									<tr>
+				<td>登录密码情况:</td>
+				<td>
+				<p>${loginStatus!''}</p>
+				</td>
+			</tr>
+									<tr>
+				<td>支付密码情况:</td>
+				<td>
+				<p>${payStatus!''}</p>
+				</td>
+			</tr>
+
+		</table>
+		<#else>
+		
+		</#if>
+</div> 
+
+</body>
+</html>

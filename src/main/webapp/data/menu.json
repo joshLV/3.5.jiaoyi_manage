@@ -1,0 +1,8 @@
+[
+{"attributes":{"url":""},"checked":false,"iconCls":"","id":"44","state":"closed","text":"首页"},
+{"attributes":{"url":"http://www.baidu.com"},"checked":false,"iconCls":"icon-save","id":"3107e6c6-0818-58d7-a1a9-065bc0b68b35","state":"open","text":"baidu.com"},
+{"attributes":{"url":"http://www.163.com"},"checked":false,"iconCls":"","id":"33ddf43c-ef1c-7a62-07df-cd6bd5d4833c","state":"open","text":"163.com"},
+{"attributes":{"url":"http://www.21cn.com"},"checked":false,"iconCls":"","id":"38236ff1-5b82-d952-de6c-a68177ca049e","state":"open","text":"21cn.com"},
+{"attributes":{"url":"fileupload.html"},"checked":false,"iconCls":"","id":"683a494c-18d6-6195-3362-75387c505f80","state":"open","text":"文件上传"},
+{"attributes":{"url":""},"checked":false,"iconCls":"","id":"a743ceed-4cd7-91aa-36ac-98fa49d502e0","state":"open","text":"菜单名称"},
+{"attributes":{"url":"userinfo/list.html"},"checked":false,"iconCls":"","id":"f811ef16-95e7-3520-ae03-f9bc4cc589bf","state":"open","text":"用户管理"}]

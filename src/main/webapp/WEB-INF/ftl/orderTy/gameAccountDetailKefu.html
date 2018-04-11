@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<#assign status = tyGameAccount['status']/>
+<#assign valaInfo = tyGameAccount['vala_info']?eval/>
+<#assign valuationContent = valaInfo.valuationContent/>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>退游订单列表</title>
+<#include "../common.html"/>
+<script type="text/javascript" src="../js/order_helper.js"></script>
+<style>
+body{ padding: 0px ;margin: 0px;}
+.table_line{
+	width: 100%;
+	background-color: #fefefe;
+}
+.table_line tr td{
+	border-bottom: #999 1px dashed;
+	line-height: 20px;
+}
+.table_line .title{
+	padding:3px;
+	width:100px;
+	text-align: right;
+}
+.table_line .info{
+	padding:3px;
+}
+.pc{ font-size: 24px;font-family: 微软雅黑; }
+.pc_userPrict{ color: #ff0000 }
+.pc_realPrict{ color: #ff00ff  }
+.pc_cut{ color: #0000ff  }
+.tyBalance{ font-size: 18px;font-family: 微软雅黑;  color: #ff0000}
+.myTille{ padding: 5px; background-color: #ddd; line-height: 25px; font-weight: bold;}
+.myHead{ background-color: #ddd}
+</style>
+<script>
+//更新客服备注信息,不修改状态
+function udpateKefuRemark(){
+	var remark = $("#remark").val();
+	var updatePwd = $("#updatePwd").val();
+	var tyid = $("#tyid").val();
+	var updateAccountId = $("#updateAccountId").val();
+	var newAccount = $("#newAccount_updata").val();
+	if(remark == ""){
+		$.messager.alert("提示","请输入更新资料","error");
+		return ;
+	}
+// 	if(updateAccountId ==""){
+// 		$.messager.alert("提示","请输入游戏账号标识Id","error");
+// 		return ;
+// 	}
+	if(updatePwd ==""){
+		$.messager.alert("提示","请输入游戏新密码","error");
+		return ;
+	}
+
+	$.messager.confirm('提示', '确定 [更新资料] 操作？', function(r){
+		if (r){
+			var win = $.messager.progress({
+			        title:'处理中',
+			        msg:'请稍等 ...'
+		    });
+
+			var param = {};
+			param.tyid = tyid;
+			param.remark = remark;
+			param.updatePwd = updatePwd;
+			param.updateAccountId = updateAccountId;
+			param.newPwdAccount = newAccount;
+		    $.ajax({
+		    	url:"udpateKefuRemark",
+				type:"POST",
+				data:param,
+				dataType:"json",
+				success:function(data){
+					$.messager.progress('close');
+					if (data.success){
+						$.messager.alert('提示',"操作成功",'success');
+						$("#gameAccountFinish_but").attr("disabled", false);
+					}else{
+						$.messager.alert('提示',data.msg,'error');
+					}
+				},
+				error:function(req,err,obj){
+					alert("操作失败");
+					$.messager.progress('close');
+				}
+		    });
+		}
+	});
+}
+//更新账号密码
+function updateAccountInfo(){
+	var tyid = $("#tyid").val();
+	var newAccount = $("#newAccount").val();
+	var newPwd = $("#newPwd").val();
+	var newSafeLock = $("#newSafeLock").val();
+	var realAreaId = $("#realAreaId").val();
+	
+	<#if (status == 101 )>
+	if(newPwd==""){
+		alert("请输入新密码");
+		return ;
+	}
+	</#if>
+	<#if (status == 102 )>
+	if(newSafeLock==""){
+		alert("请输入新安全锁");
+		return ;
+	}
+	</#if>
+	$.messager.confirm('提示', '确定操作？', function(r){
+		if (r){
+			var win = $.messager.progress({
+			        title:'处理中',
+			        msg:'请稍等 ...'
+		    });
+
+			var param = {};
+			param.tyid = tyid;
+			param.newAccount = newAccount;
+			param.newPwd = newPwd;
+			param.newSafeLock = newSafeLock;
+			param.realAreaId = realAreaId;
+		    $.ajax({
+		    	url:"updateAccountInfo",
+				type:"POST",
+				data:param,
+				dataType:"json",
+				success:function(data){
+					$.messager.progress('close');
+					if (data.success){
+						$.messager.alert('提示',"操作成功",'success',function(){
+							try{
+								window.opener.location.reload();
+								window.close();
+							}catch(ex){
+								
+							}
+						});
+					}else{
+						$.messager.alert('提示',data.msg,'error');
+					}
+				},
+				error:function(req,err,obj){
+					alert("操作失败");
+					$.messager.progress('close');
+				}
+		    });
+		}
+	});
+}
+//估值 
+function gameAccountFinish(){
+	var tyid = $("#tyid").val();
+	var remark = $("#remark").val();
+	var updatePwd = $("#updatePwd").val();
+	var updateAccountId = $("#updateAccountId").val();
+	if (remark == ""){
+		$.messager.alert('提示',"请输入更新资料",'error');
+		return;
+	}
+	
+	if (updateAccountId == ""){
+		$.messager.alert('提示',"请输入游戏账号标识Id",'error');
+		return;
+	}
+	if (updatePwd == "") {
+		$.messager.alert('提示',"请输入新密码",'error');
+		return ;
+	}
+	
+	$.messager.confirm('提示', '订单完成后，不能再进行其他操作。确定操作？', function(r){
+		if (r){
+			var win = $.messager.progress({
+		        title:'处理中',
+		        msg:'请稍等 ...'
+		    });
+		    var param = {"tyid": tyid , "remark": remark,"updatePwd":updatePwd};
+			$.ajax({
+				url:"gameAccountFinish",
+				type:"POST",
+				data:param,
+				dataType:"json",
+				success:function(data){
+					$.messager.progress('close');
+					if (data.success){
+						$.messager.alert('提示',"更新信息成功",'success',function(){
+							//document.location.reload();
+							window.opener.location.reload();
+							window.close();
+						});
+					}else{
+						$.messager.alert('提示',data.msg,'error');
+					}
+				},
+				error:function(req,err,obj){
+					alert("操作失败");
+					$.messager.progress('close');
+				}
+			});
+        }
+	}); 
+}
+//生成随机密码
+function randomPassword(){
+	$("#updatePwd").val(OrderHelper.randomString());
+}
+
+//查询游戏账号标识id是否已经存在
+function searchAccountId(){
+	var updateAccountId = $("#updateAccountId").val();
+	var tyid = $("#tyid").val();
+	if(updateAccountId ==""){
+		$.messager.alert("提示","请输入游戏账号标识Id","error");
+		return ;
+	}
+	
+	var param = {};
+	param.tyid = tyid;
+	param.updateAccountId = updateAccountId;
+    $.ajax({
+    	url:"searchAccountId",
+		type:"POST",
+		data:param,
+		dataType:"json",
+		success:function(data){
+			if (data.success){
+				$.messager.alert('提示',data.msg,'success');
+			}else{
+				$.messager.alert('提示',data.msg,'success');
+			}
+		},
+		error:function(req,err,obj){
+			alert("操作失败");
+			$.messager.progress('close');
+		}
+    });
+}
+//游戏帐号表示ID说明
+function accountIdInfo(){
+	var html="";
+	html="<table border='1'>"
+	html+="<tr><th>渠道</th> <th>该标记什么?</th> <th>备注</th> </tr>"
+	html+="<tr><td>UC</td> <td>UID</td> <td></td> </tr>";
+	html+="<tr><td>多酷</td> <td>UID</td> <td></td> </tr>";
+	html+="<tr><td>91</td> <td>UID</td> <td></td> </tr>";
+	html+="<tr><td>当乐</td> <td>UID</td> <td>乐号</td> </tr>";
+	html+="<tr><td>小米</td> <td>UID</td> <td></td> </tr>";
+	html+="<tr><td>老虎</td> <td>UID</td> <td></td> </tr>";
+	html+="<tr><td>oppo（可可账号）</td> <td>UID</td> <td></td> </tr>";
+	html+="<tr><td>360</td> <td>用户名</td> <td>如果用户名为空，随便设置一个</td> </tr>";
+	html+="<tr><td>偶玩</td> <td>用户名</td> <td></td> </tr>";
+	html+="<tr><td>宝软</td> <td>用户名</td> <td></td> </tr>";
+	$.messager.alert('标记说明',html,'success');
+}
+</script>
+<body >
+<input name="tyid" id="tyid" value="${tyGameAccount['ty_id']}" type="hidden">
+<input name="real_price" id="realPrice" value="" type="hidden">
+
+<div class="easyui-panel" title="账号信息[${tyGameAccount['ty_id']}] <a href='javascript:document.location.reload()'>刷新</a>">
+	<div class="myTille">账号信息：</div>
+	<table class="table_line">
+		<tr>
+			<td class="title">账号名称：</td>
+			<td class="info" colspan="5">${tyGameAccount['good_name']}</td>
+		</tr>
+		<tr>
+			<td class="title">状态：</td>
+			<td class="info" colspan="5">
+				<#if status == 1000>
+				${accountStatusMap[tyGameAccount['status']+""]!''}
+				<#else>
+				<font color="#ff0000">${accountStatusMap[tyGameAccount['status']+""]!''}</font>
+				</#if>
+				
+			</td>
+		</tr>
+		<tr>
+			<td class="title">物服备注：</td>
+			<td class="info" colspan="5">${tyGameAccount['wufu_remark']!'--'}</td>
+		</tr>
+		<#if gameInfo??>
+		<tr>
+			<td class="title">游戏：</td>
+			<td class="info">${gameInfo['game_name']}</td>
+			<td class="title">区/服：</td>
+			<td class="info">${gameInfo['partition_name']}</td>
+			<td class="title">角色：</td>
+			<td class="info">${valaInfo.rolename!''}</td>
+		</tr>
+		</#if>
+	</table>
+	<div class="myTille">
+	卖家信息： &nbsp;&nbsp;
+	</div>
+	<div style="padding:10px 5px;background-color: #eee;" id="passwdDiv">&nbsp;&nbsp;&nbsp;&nbsp;
+		账号:<span style="padding:0 15px;">${tyGameAccount['game_account']!'--'}</span><#t>
+		<#if (gameInfo?? && gameInfo['is_show_pwd'] == 1)><#t>
+		密码：<span style="padding:0 15px;">${tyGameAccount['game_passwd']!'--'}</span><#t>
+		<#else><#t>
+		密码：****<#t>
+		</#if><#t>
+		安全锁：${tyGameAccount['game_safe_lock']!'--'}<#t>
+	</div>
+
+
+	<#if tyGameAccount['real_vala_info']??>
+		<#assign realValaInfo = tyGameAccount['real_vala_info']?eval/>
+		<#assign realValuationContent = realValaInfo.valuationContent/>
+	<#else>
+		<#assign realValuationContent = valuationContent/>
+	</#if>
+	<table width="100%" class="table_line">
+		<tr style="background-color: #eee;">
+			<td >参数名称</td>
+			<td>用户填写值</td>
+			<td>实际值</td>	
+		</tr>
+		<#list valParamList as item>
+		<tr>
+			<td>${item['name']!''}：</td>
+			<td>
+				<#if (item['param_type']==1)>
+				<select name="vn_${item['id']!''}" class="vn" id="vn_${item['id']!''}">
+					<#list item['param_option']?split(",") as x>
+					<option value="${x?split(':')[0]!''}">${x?split(':')[1]!''}</option>
+					</#list>
+				</select>
+				<#else>
+				<input name="vn_${item['id']!''}" class="vn" id="vn_${item['id']!''}" value="" size=12>
+				</#if>
+			</td>
+			<td>
+				<#if (item['param_type']==1)>
+				<select name="vp_${item['id']!''}" class="vp" id="vp_${item['id']!''}">
+					<option value="">-请选择-</option>
+					<#list item['param_option']?split(",") as x>
+					<option value="${x?split(':')[0]!''}">${x?split(':')[1]!''}</option>
+					</#list>
+				</select>
+				<#else>
+				<input name="vp_${item['id']!''}" id="vp_${item['id']!''}" class="vp" value="" size=12>
+				</#if>
+			</td>
+		</tr>
+		</#list>
+		<tr>
+			<td></td>
+			<td>
+				<input name="user_price" id="userPrice" value="${tyGameAccount['user_price']/100}" type="text"  size=5 style="font-size:24px;padding:1px;color:#ff0000" readonly>
+			</td>
+			<td>
+				<#if tyGameAccount['real_price']??>
+			    			<input name="real_price" id="realPrice" value="${tyGameAccount['real_price']/100}" type="text"  size=5 style="font-size:24px;padding:1px;color:#ff0000" readonly>
+			    			<#else>
+			    			<input name="real_price" id="realPrice" size=5 value="" type="text" style="font-size:24px;padding:1px;color:#ff0000" readonly>
+			    			</#if>
+			</td>
+		</tr>
+	</table>
+	<div class="myTille">订单操作：</div>
+	<#if (status > 20 && status < 1200 )>
+	 	<#if (status < 1000 )>
+			<div>用户提供新的信息：</div>
+<!-- 			<div>新 账 号： <input name="newAccount" id="newAccount" type="text" value="" size="14"/></div> -->
+			<div>新 密 码： <input name="newPwd" id="newPwd" type="text" value=""  size="14"/></div>
+			<div>新安全锁： <input name="newSafeLock" id="newSafeLock" type="text" value=""  size="14"/></div>
+			<div>
+				新区服： 
+				<select name="realAreaId" id="realAreaId"> 
+					<option value="0">-请选择-</option>
+					<#list tyGamePartList as item>
+					<option value="${item.gamePartitionId}">${item.partitionName}</option>
+					</#list>
+				</select>
+			<div> <input type="button" value="更新信息，并重新派单给物服" onclick="updateAccountInfo()"/></div>
+		<#else>
+			<div style='padding:5px 0'>更新资料：</div>
+			<div style='padding:5px 0'>
+				<#if gameHome??>
+				<a href="${gameHome}" target="_blank">点我进入第三方网站【检测帐号是否绑定手机、邮箱、密保】</a>
+				<#else>
+				<font color="red">找不到第三方网站地址，请联系管理员（盖越/陈立波），在"系统管理" > "参数配置"，配置参数：
+					<#if (chId == 100)>
+					game.home.url.${gameId}
+					<#else>
+					channel.home.url.${chId}
+					</#if>
+				</font>
+				</#if>
+			</div>
+			<textarea name="remark" id="remark" cols="55" rows="8">${tyGameAccount['kefu_remark']!''}</textarea>
+			<div>
+			       最新的登录帐号：<input type="text" name="newupdateAccount" id="newAccount_updata" value="" size="10"/><font color="red">如果退游账号为手机或邮箱，执行换绑操作会使用户的登录账号变更，因此要把换绑后的新账号录入系统，以便账号交易卖出去。</font>
+			</div>
+			 <div>
+			   
+			    <a href="#" onclick="accountIdInfo()">   游戏账号标识ID：</a><input type="text" name="updateAccountId" id="updateAccountId" value="" size="10"/>
+			    <input type="button" value="查询游戏账号标识ID" onclick="searchAccountId()"/> 
+			    <br>
+			 	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;更新密码：<input type="text" name="updatePwd" id="updatePwd" value="" size="10"/>
+			 	<input type="button" value="生成密码" onclick="randomPassword()"/> 
+			</div>
+			<div>
+			 	<input style="margin-left: 98px;margin-top: 18px;" type="button" value=" 更新资料 " onclick="udpateKefuRemark()"/>&nbsp;&nbsp;&nbsp;&nbsp;
+			 	<input type="button" value=" 我已完成账号回收 " onclick="gameAccountFinish()"  disabled="true" id="gameAccountFinish_but"/>
+			</div>
+		</#if>	
+	<#else>
+	<div style="padding:10px;">订单状态，当前不能进行操作</div>
+	</#if>
+</div>
+<script type="text/javascript">
+
+<#list valuationContent as item2>
+$("#vn_${item2['valueid']}").val("${item2['vpvalue']!''}");
+</#list>
+<#list realValuationContent as item2>
+$("#vp_${item2['valueid']}").val("${item2['vpvalue']!''}");
+</#list>
+$(".vn").attr("disabled","disabled");
+
+
+if ($("#remark").length > 0 && $("#remark").val().length == 0){
+	var str = "换绑后的手机：\n"+
+				"换绑后的邮箱：\n"+
+				"新密保问题1：\n"+
+				"新密保答案1：\n"+
+				"新密保问题2：\n"+
+				"新密保答案2：\n"+
+				"新密保问题3：\n"+
+				"新密保答案3：\n";
+	$("#remark").val(str);
+}
+
+</script>
+</body>
+</html>

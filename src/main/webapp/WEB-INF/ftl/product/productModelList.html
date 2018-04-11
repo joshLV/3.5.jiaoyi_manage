@@ -1,0 +1,251 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>商品模式列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+$(function() {
+	datagrid = $('#datagrid').datagrid({
+			url : 'productModelList_json',
+			title : '商品模式列表',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 30,
+			pageList : [ 30, 40, 50, 60 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'modelId',
+			sortName : 'modelId',
+			sortOrder : 'desc',
+			columns : [ [ 
+					   {field:'ck',checkbox:true,
+								formatter:function(value,row,index){
+									return row.obid;
+								}
+							},
+					   {field:'modelId',title:'商品模式ID',align:'center',width:60,sortable:true},							
+					   {field:'modelName',title:'商品模式名称',align:'center',width:80},
+					   {field:'status',title:'状态',align:'center',width:50,
+						   formatter:function(value,row,index){
+							   if(value == 1){
+								   return "正常";
+							   }
+							   if(value == 0){
+								   return "隐藏";
+							   }
+						   }
+					   },
+					   {field:'remark',title:'备注',align:'center',width:50},
+					   {field:'defaultC2cStatus',title:'订单c2c表初始状态值',align:'center',width:50}
+					 ] ],
+			 toolbar : [
+						{
+							text : '增加',
+							iconCls : 'icon-add',
+						    handler : function() {
+								add();
+							}
+						}, '-',
+						{
+							text : '编辑',
+							iconCls : 'icon-edit',
+							handler : function() {
+								edit();
+							}
+						}, '-',
+						{
+							text : '删除',
+							iconCls : 'icon-remove',
+							handler : function() {
+								del();
+							}
+						}, '-', {
+							text : '取消选中',
+							iconCls : 'icon-undo',
+							handler : function() {
+								datagrid.datagrid('unselectAll');
+							}
+						}, '-' ],
+		  //双击事件
+		   onDblClickRow:function (rowIndex,rowData){
+			   $(this).datagrid('unselectAll');
+			   $(this).datagrid('selectRow', rowIndex);	
+			   edit();
+		   }
+			});
+	
+	addForm = $('#addForm').form({
+		url : 'proudctModel_add.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+				$.messager.show({
+					title : '提示',
+					msg : json.msg
+					
+				});
+				datagrid.datagrid('reload');
+				addDialog.dialog('close');
+			
+		}
+	});
+	
+	editForm = $('#editForm').form({
+		url : 'productModel_update.do',
+		success : function(data) {
+			 var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+		}
+	});
+	
+	addDialog = $('#addDialog').show().dialog({
+		title : '添加商品模式信息',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '添加',
+			handler : function() {
+				closeDialog('您确定要添加此信息吗?','addForm', 'addDialog');
+			}
+		} ]
+	});
+	
+	editDialog = $('#editDialog').show().dialog({
+		title : '修改商品模式信息',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '保存',
+			handler : function() {
+				closeDialog('您确定要修改此信息吗?','editForm', 'editDialog');
+			}
+		} ]
+	}); 
+	
+});
+
+function add() {
+	addDialog.dialog('open');
+	addForm.find(":input").val("");
+}
+
+function edit() {
+	var rows = $('#datagrid').datagrid('getSelections');
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'productModel_edit.do',
+			data : {
+				modelId : rows[0].modelId
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				editForm.form('clear');
+				editForm.form('load', response);
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+
+function del(){
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].modelId);
+				}
+				$.ajax({
+					url : 'productModel_del.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	} 
+}
+</script>
+</head>
+<body class="easyui-layout">
+<div region="center" border="false" >
+	<table id="datagrid"></table>
+</div>
+<!--添加表单-->
+<div id="addDialog" style="display: none;width: 400px;height: 200px;" align="center">
+	<form id="addForm" method="post" style="padding: 5px 10px">
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		  	<tr><td class="label">模式ID</td><td><input type="text" name="modelId" class="easyui-validatebox"  data-options="required:true" missingMessage="模式ID不能为空"/></td></tr>
+		  	<tr><td class="label">模式名称</td><td><input type="text" name="modelName" class="easyui-validatebox"  data-options="required:true" missingMessage="模式名称不能为空"/></td></tr>
+		  	<tr><td class="label">状态</td><td><select name="status">
+		  			<option value="0">隐藏</option>
+		  			<option value="1" selected="selected">正常</option>
+		  		</select></td></tr>
+		  		<tr><td class="label">订单c2c表初始状态值</td><td><input type="text" name="defaultC2cStatus" class="easyui-validatebox"  data-options="required:true" missingMessage="订单c2c表初始状态值不能为空"/></td></tr>
+		  	<tr><td class="label">备注</td><td><input type="text" name="remark" class="easyui-validatebox"  data-options="required:true" missingMessage="备注不能为空"/></td></tr>
+		  </table> 
+	</form>
+</div>
+<!-- 编辑表单 -->
+<div id="editDialog" style="display: none;width: 600px;height: 200px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr><td class="label">模式ID</td><td><input type="text" name="modelId" readOnly/></td></tr>
+		  	<tr><td class="label">模式名称</td><td><input type="text" name="modelName" class="easyui-validatebox"  data-options="required:true" missingMessage="模式名称不能为空"/></td></tr>
+		  	<tr><td class="label">状态</td><td>
+		  		<select name="status">
+		  			<option value="0">隐藏</option>
+		  			<option value="1">正常</option>
+		  		</select>
+		  		</td></tr>
+		  	<tr><td class="label">订单c2c表初始状态值</td><td><input type="text" name="defaultC2cStatus" class="easyui-validatebox"  data-options="required:true" missingMessage="订单c2c表初始状态值不能为空"/></td></tr>
+		  	<tr><td class="label">备注</td><td><input type="text" name="remark" class="easyui-validatebox"  data-options="required:true" missingMessage="备注不能为空"/></td></tr>
+		</table> 
+	</form>
+</div>
+</body>
+</html>

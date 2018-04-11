@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>订单取消原因列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'orderC2cCancelReasonList_json',
+			title : '订单取消原因',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 30, 40, 80, 100 ],
+			fit : true,
+			fitColumns :true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'id',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.obid;
+						}
+			   },
+			   {field:'id',title:'编号',align:'center'},				
+			   {field:'cancel_reason',title:'订单取消原因',align:'left',width:200},				
+			   {field:'status',title:'状态',align:'left',width:120,
+				   formatter:function(value,row,index){
+					   if (row.status==0){
+						   return "<font color='red'>显示</font>";
+					   }else{
+						   return "<font color='red'>不显示</font>";
+					   }
+					}  
+			   },
+			   {field:'contactFlag',title:'是否需要联系',align:'left',width:120,
+				   formatter:function(value,row,index){
+					   if (row.contactFlag==0){
+						   return "<font color='red'>是</font>";
+					   }else{
+						   return "<font color='red'>否</font>";
+					   }
+					}  
+			   },
+			   {field:'reasonType',title:'取消原因类型',align:'left',width:120,
+				   formatter:function(value,row,index){
+					   if (row.reasonType==0){
+						   return "<font color='red'>客服</font>";
+					   }else{
+						   return "<font color='red'>物服</font>";
+					   }
+					}  
+			   },
+			   {field:'operateType',title:'操作类型',align:'left',width:120,
+				   formatter:function(value,row,index){
+					   if (value == 0){
+						   return "撤单";
+					   }else if(value == 1){
+						   return "验证订单";
+					   }else if(value == 2){
+						   return "仲裁订单";
+					   }else{
+						   return "--";
+					   }
+					}  
+			   },
+			   {field:'orderBelonging',title:'订单归属',align:'left',width:120,
+				   formatter:function(value,row,index){
+					   if (value == 1){
+						   return "c2c寄售";
+					   }else if(value == 2){
+						   return "c2c账号";
+					   }else if(value == 3){
+						   return "退游宝";
+					   }else{
+						   return "--";
+					   }
+					}  
+			   }
+			
+			 ] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '修改',
+				iconCls : 'icon-edit',
+				handler : function() {
+					edit();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+		
+			
+	  //双击事件
+	   onDblClickRow:function (rowIndex,rowData){
+		   $(this).datagrid('unselectAll');
+		   $(this).datagrid('selectRow', rowIndex);	
+		   edit();
+	   }
+		});
+		editForm = $('#editForm').form({
+			url : 'orderC2cCancelReason_save.do',
+			success : function(data) {
+				 var json = $.parseJSON(data);
+					if (json && json.success) {
+						$.messager.show({
+							title : '成功',
+							msg : json.msg
+						});
+						datagrid.datagrid('reload');
+						editDialog.dialog('close');
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : json.msg
+						});
+					}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '订单取消原因编辑',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					$.messager.confirm('请确认', '您要修改该订单取消原因信息?', function(r) {
+						if (r) {	
+					editForm.submit();
+						}
+					});
+				}
+			} ]
+		}); 
+		
+		addForm = $('#addForm').form({
+			url : 'orderC2cCancelReason_add.do',
+			success : function(data) {
+				 var json = $.parseJSON(data);
+					if (json && json.success) {
+						$.messager.show({
+							title : '成功',
+							msg : json.msg
+						});
+						datagrid.datagrid('reload');
+						addDialog.dialog('close');
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : json.msg
+						});
+					}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加订单取消原因',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					var name =$("#cancelReason_add").val();
+					var discretion =$("#status_add").val();
+					if(name==""){
+						$.messager.alert("提示","请输入订单取消原因");
+						return false;
+					}
+					if(discretion==""){
+						$.messager.alert("提示","请输入状态");
+						return false;
+					}
+					
+					$.messager.confirm('请确认', '您要添加订单取消原因吗?', function(r) {
+						if (r) {	
+					addForm.submit();
+					
+						}
+					});
+					
+				}
+			} ]
+		});
+
+});
+
+function add() {
+	addDialog.dialog('open');
+	addForm.find("input[type='text']").val("");
+	addForm.find("input[type='select']").val("-1");
+}
+function del() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].id);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'cancelReason_delete.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						//var d = JSON.parse(response);
+						
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	} 
+}
+function edit() {
+	var rows = datagrid.datagrid('getSelections');
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'orderC2cCancelReason_edit.do',
+			data : {
+				id : rows[0].id
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				editForm.form('clear');
+				editForm.form('load', response);
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		}); 
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+
+function _search(){
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	$('#searchForm select[name="orderBelonging"]').val(0);
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 80px;overflow: hidden;" align="left">
+	<form id="searchForm">
+	<table>
+	<tr><td>订单归属：</td><td><select name="orderBelonging">
+			<option value="0">请选择</option>
+			<option value="1">c2c寄售</option>
+			<option value="2">c2c账号</option>
+			<option value="3">退游宝</option>
+			</select></td>
+			<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">查询</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+	</tr>
+	</table>
+	</form>
+</div>
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<!--添加表单-->
+<div id="addDialog" style="display: none;width: 600px;height: 300px;" align="center">
+	<form id="addForm" method="post" style="padding: 5px 10px">
+	     
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		  	<tr>
+		    <td class="lable">订单取消失败原因：</td>
+		    <td><input type="text" name="cancelReason" id="cancelReason_add" size="20" maxlength="50"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写订单取消原因" /></td>
+		    </tr>
+		    <tr>
+		    <td class="lable">状态：</td>
+		    <td>
+		    <select name="status">
+				<option value="0">显示</option>
+				<option value="1">不显示 </option>
+		    </select>
+			</td>
+			</tr>
+		    <tr>
+		    <td class="lable">是否需要联系：</td>
+		    <td>
+		    <select name="contactFlag">
+				<option value="0">是</option>
+				<option value="1">否 </option>
+		    </select>
+			</td>
+			</tr>
+		     <tr>
+		    <td class="lable">取消原因类型：</td>
+		    <td>
+		    <select name="reasonType">
+				<option value="0">客服</option>
+				<option value="1">物服 </option>
+		    </select>
+			</td>
+			</tr>
+		     <tr>
+		    <td class="lable">操作类型：</td>
+		    <td>
+		    <select name="operateType">
+				<option value="-1">请选择</option>
+				<option value="0">撤单</option>
+				<option value="1">验证订单 </option>
+				<option value="2">仲裁订单 </option>
+		    </select>
+			</td>
+			</tr>
+		     <tr>
+		    <td class="lable">订单归属：</td>
+		    <td>
+		    <select name="orderBelonging">
+			<option value="0">请选择</option>
+			<option value="1">c2c寄售</option>
+			<option value="2">c2c账号</option>
+			<option value="3">退游宝</option>
+			</select>
+			</td>
+			</tr>
+		  </table> 
+	</form>
+</div>
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 600px;height: 300px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px" class="pageForm required-validate">
+		<input type="hidden" name="id" />
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+			<tr>
+		    <td class="lable">订单取消原因：</td>
+		    <td><input type="text" name="cancelReason" size="20" maxlength="50" /></td>
+		    </tr>
+		    <tr>
+		    <td class="lable">状态：</td>
+		    <td>
+		    <select name="status">
+            	<option value="0">显示</option>
+				<option value="1">不显示 </option>
+            </select>
+            </td>
+		    </tr>
+		    <tr>
+		    <td class="lable">是否需要联系：</td>
+		    <td>
+		    <select name="contactFlag" id="showType" >
+				<option value="0">是</option>
+				<option value="1">否 </option>
+		    </select>
+			</td>
+			</tr>
+			 <tr >
+		    <td class="lable">取消原因类型：</td>
+		    <td>
+		    <select name="reasonType" >
+				<option value="0">客服</option>
+				<option value="1">物服</option>
+		    </select>
+			</td>
+			</tr>
+			 <tr>
+		    <td class="lable">操作类型：</td>
+		    <td>
+		    <select name="operateType">
+				<option value="-1">请选择</option>
+				<option value="0">撤单</option>
+				<option value="1">验证订单 </option>
+				<option value="2">仲裁订单 </option>
+		    </select>
+			</td>
+			</tr>
+			<tr>
+		    <td class="lable">订单归属：</td>
+		    <td>
+		   	<select name="orderBelonging">
+			<option value="0">请选择</option>
+			<option value="1">c2c寄售</option>
+			<option value="2">c2c账号</option>
+			<option value="3">退游宝</option>
+			</select>
+			</td>
+			</tr> 
+		  </table> 
+	</form>
+</div>
+
+</body>
+</html>

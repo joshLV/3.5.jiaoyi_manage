@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>店铺审核列表</title>
+<#include "../common.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+var verifyDialog;
+var verifyForm;
+
+var refundDialog;
+var refundForm;
+
+var refundNoFeeDialog;
+var refundNoFeeForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'memberStoreListJson',
+			title : '店铺审核列表',
+			//iconCls : 'icon-save',
+			queryParams:{uid:${uuuuid!'0'}},
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : 'uid',
+			sortName : '',
+			sortOrder : 'desc',
+			columns : [ [ 
+					   {field:'uid',title:'用户UID',align:'center',sortable:true,
+						   formatter:function(value,row,index){
+							   return '<a href="javascript:void(0)" onclick="viewUser('+value+')">'+value+'</a>';
+						   }   
+					   },
+					   {field:'userLogin',title:'用户账号',align:'center',sortable:true},
+					   {field:'realName',title:'真实姓名',align:'center',sortable:true},
+					   {field:'createTime',title:'申请时间',align:'center',width:160},
+					   {field:'verifyStatus',title:'审核状态',align:'left',width:100,
+						   formatter:function(value,row,index){
+							   if(row.verifyStatus==1){
+								   return "待审核";
+							   }else if(row.verifyStatus==5){
+								   return "审核通过";
+							   }else if(row.verifyStatus==7){
+								   return "审核失败";
+							   }else{
+								   return "<font color=red> 未知状态 </font>";
+							   }
+							}  
+					   },
+					   {field:'storeStatus',title:'店铺状态',align:'left',width:100,
+						   formatter:function(value,row,index){
+							   if(row.storeStatus==1){
+								   return "暂无";
+							   }else if(row.storeStatus==5){
+								   return "正常";
+							   }else if(row.storeStatus==7){
+								   return "过期";
+							   }else{
+								   return "<font color=red> 未知状态 </font>";
+							   }
+							}  
+					   },
+					   {field:'beginTime',title:'开始时间',align:'center',width:160},
+					   {field:'endTime',title:'结束时间',align:'center',width:160},
+					  {field:'operate',title:'操作',align:'center',width:120,sortable:true,
+						   formatter:function(value,row,index){
+							    if(row.uid!=null || row.uid!=''){
+							    	var a='<a href="javascript:void(0)" onclick="edit(\''+row.uid+'\')">店铺审核</a>';
+							    	var b='<a href="javascript:void(0)" onclick="viewPayLog(\''+row.uid+'\')">缴费记录</a>';
+									return a +"||" + b;
+							    }
+							}
+					   	},
+					
+			
+			 ] ],
+		
+	
+			
+			  //双击事件
+			   onDblClickRow:function (rowIndex,rowData){
+				  
+				   edit(rowData.uid);
+			   }
+	          });
+		//转账操作			
+		verifyForm = $('#verifyForm').form({
+			url : 'transMoney',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				
+				if (json && json.success) {
+				
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					verifyDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+					verifyDialog.dialog('close');
+				}
+			},
+			error:function(XMLHttpRequest, textStatus, errorThrown){
+				alert(textStatus);
+			}
+		
+			
+		});
+		
+		//用户转账
+	    verifyDialog = $('#verifyDialog').show().dialog({
+			title : '用户转账',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '提交',
+				handler : function() {
+					var uid = $("#transuid").val();
+					var uremark =$("#remark_for_trans").val();
+			
+	                if(uremark==""){
+						$.messager.alert("提示","请填写备注!");
+						return false;
+					}
+					$.messager.confirm('确认框','您确认要给该用户的银行卡转账?',function(r){  
+					    if (r){  
+					verifyForm.submit();
+					            }  
+					         });
+				}
+			} ]
+		});	
+		
+		
+		editForm = $('#editForm').form({
+			url : 'updatetakemoneyStatus.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		
+		
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '资金提现详情',
+			modal : true,
+			closed : true,
+			maximizable : true,
+	
+		}); 
+		//退款 扣手续费
+		refundForm = $('#refundForm').form({
+			url : 'refundTakeMoney.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+				
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					refundDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+	});
+
+	refundDialog=$('#refundDialog').show().dialog({
+		title : '退款',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '提交',
+			handler : function() {
+				refundForm.submit();
+			}
+		} ]
+	}); 
+    //直接退款 不扣手续费
+	refundNoFeeForm = $('#refundNoFeeForm').form({
+		url : 'refundTakeMoneyNoFee.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				datagrid.datagrid('reload');
+				refundNoFeeDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+});
+
+	refundNoFeeDialog=$('#refundNoFeeDialog').show().dialog({
+		title : '直接退款(不扣手续费)',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '提交',
+			handler : function() {
+				refundNoFeeForm.submit();
+			}
+		} ]
+	}); 
+
+
+});
+
+
+
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	searchForm.find('select').val('0');
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+
+function edit(uid) {
+
+		$.ajax({
+			url : 'memberStoreJson.do',
+			data : {uid : uid},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+			  
+				var verifyStatus = response.verifyStatus;
+				$("#verify_status").show();
+				if(verifyStatus != 1){
+					$("#verify_status").hide();
+				}else{
+					$("#verify_status").show();
+				}
+				editForm.form('clear');
+				editForm.form('load', response);
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+	
+}
+
+function showRoleSelect(formName,value){
+	if (value == 0){
+		$("#"+formName+" .roleSelect").hide();
+	}else{
+		$("#"+formName+" .roleSelect").show();
+	}
+}
+
+function updateStatus(status){
+	var uid = $("#id_for_update").val();
+	var uremark =$("#remark_for_status").val();
+	if(uremark==""){
+		$.messager.alert("提示","请填写审核备注!");
+		return false;
+	}
+	if(uremark=="\\"){
+		$.messager.alert("提示","请不要输入非法字符!");
+		return false;
+	}
+	
+	$.messager.confirm("确认框","您确认要提交审核?", function(r) {
+		if (r) {
+	$.ajax({
+		url : 'updateMemberStoreStatus.do',
+		data : {
+			status2 :status,uid:uid,remark:uremark
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+		
+			if (response.success) {
+				$.messager.show({
+					title : '成功',
+					msg : response.msg
+				});
+				datagrid.datagrid('reload');
+				editDialog.dialog('close');
+				editForm.form('load', response);
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : response.msg
+				});
+			}
+		}
+	});
+	
+		}
+	});
+}
+
+
+
+
+//跳转到用户列表
+function viewUser(uid){
+	var link = "${request.contextPath}/member/memberList.do?uid="+uid;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"用户"+uid+"详情" 
+			};
+	parent.addTab(node);	
+}
+//跳转到缴费历史
+function viewPayLog(uid){
+	var link = "memberstore/memberPayCostList.do?uid="+uid;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"用户uid:"+uid+"的店铺缴费记录" 
+			};
+	parent.addTab(node);	
+}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>用户UID:<input name="uid" value="${uuuuid!'0'}" style="width:100px;" />&nbsp;</td>
+				
+                <td>店铺状态: 
+                <select name="storeStatus">
+                <option value="0">请选择</option>
+                <option value="1">暂无 </option>
+				<option value="5">正常</option>
+				<option value="7">过期</option>
+				   
+                </select>
+                &nbsp;&nbsp;审核状态: 
+                <select name="verifyStatus">
+                <option value="0">请选择</option>
+                <option value="1">待审核 </option>
+				<option value="5">审核通过</option>
+				<option value="7">审核失败</option>
+				   
+                </select>
+                </td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+
+	<div onclick="edit();" iconCls="icon-edit">查看详情</div>
+</div>
+
+
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 600px;height: 400px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="uid" id ="id_for_update"/>
+		<input type="hidden" name="verifyStatus" id="status_for_update" />
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" class="table_line" >
+		    <tr>
+		      <td class="lable">用户UID：</td>
+		      <td><input type="text" name="uid" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		     </tr>
+		     <tr> 
+		      
+		      <td class="lable">登录账号：</td>
+		      <td><input type="text" name="userLogin" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		    </tr>
+		     <tr> 
+		      <td class="lable">真实姓名：</td>
+		      <td><input type="text" name="realName" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		    </tr>
+		      <tr>
+		      <td class="lable">身份证号码：</td>
+		      <td><input type="text" name="idCard" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		    
+		     </tr>
+		     <!--  
+		      <tr>
+		      <td class="lable">缴纳费用：</td>
+		      <td><input type="text" name="amount" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		    
+		     </tr>
+		 
+		      <tr>
+		      <td class="lable">开通时长：</td>
+		      <td><input type="text" name="openingTime" size="20" maxlength="50" readonly style="border:thin;"/></td>
+		    
+		     </tr>
+		         -->
+		       <tr>
+		       <td>实名认证状态：</td>
+		      <td>
+		       <select name="realStatus"  style="color: red;border: thin;" disabled="disabled">
+                <option value="0">请选择</option>
+				<option value="1">待审核</option>
+				<option value="5">审核通过</option>
+				<option value="7">审核失败</option>
+                </select>
+                </td>
+		     <tr>
+		      <td class="lable">审核状态：</td>
+		      <td>
+		       <select name="verifyStatus"  style="color: red;border: thin;" disabled="disabled">
+                <option value="0">请选择</option>
+				<option value="1">待审核</option>
+				<option value="5">审核通过</option>
+				<option value="7">审核失败</option>
+                </select>
+		      </td>
+		    
+		     </tr>
+             <tr>
+		     
+		      <td>店铺状态：</td>
+		      <td>
+		       <select name="storeStatus"  style="color: red;border: thin;" disabled="disabled">
+                <option value="0">请选择</option>
+				<option value="1">待审核</option>
+				<option value="5">正常</option>
+				<option value="7">过期</option>
+                </select>
+                </td>
+		    </tr>
+		    <tr>
+		    <td class="lable">店铺开通时长</td>
+		    <td><input type="text" name="storeTime" style="border: thin;" readonly="readonly"/> </td>
+		    
+		    </tr>
+		    
+		     <tr>
+		     <td class="lable">开始时间：</td>
+		     
+		     <td><input type="text" name="storeBeginTime" style="border: thin;" readonly="readonly" /> </td>
+		    </tr>
+		    
+		    <tr>
+		    <td class="lable">过期时间： </td>
+		    <td> <input type="text" name="storeEndTime" style="border: thin;" readonly="readonly"/>  </td>
+		    </tr>
+		      <tr>
+		      <td class="lable">审核备注：</td>
+		      <td>
+		      <textarea name ="remark" rows="5" cols="40" id="remark_for_status"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写审核备注">
+		      
+		      </textarea>
+		      </td>
+		    
+		  <tr id="verify_status">
+		  <td colspan="2" style="text-align: right;">
+		 <a href="javascript:void(0);" class="easyui-linkbutton" onclick="updateStatus(5);">审核通过</a>
+		 <a href="javascript:void(0);" class="easyui-linkbutton" onclick="updateStatus(7);">审核不过</a>
+		  </td>
+		  </tr>
+		 
+		  </table> 
+	</form>
+</div>
+
+
+	<!--临时锁定账号备注-->
+	<div id="verifyDialog"
+		style="display: none; width: 500px; height: 205px;" align="center">
+		<form id="verifyForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<input type="hidden" name="id" id="transuid" />
+		
+				<tr>
+					<td class="lable">操作备注：</td>
+					<td>
+					<textarea rows="3" cols="30" class="easyui-validatebox" name="remark"   id="remark_for_trans" data-options="required:true" missingMessage="请填写转账备注" ></textarea>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	
+	<!--退款-->
+<div id="refundDialog" style="display: none;width: 550px;height: 180px;" align="center">
+	<form id="refundForm" method="post" style="padding: 5px 10px">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">提现单ID：</td>
+		      <td><input type="text" name="tid" id="take_Id" size="20" maxlength="50" readonly/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">退款说明：</td>
+		      <td><input type="text" name="userRemark" size="50" maxlength="50"/><font color="red">退款扣手续费</font></td>
+		    </tr>
+		  </table> 
+</form>
+</div>
+
+	<!--直接退款-->
+<div id="refundNoFeeDialog" style="display: none;width: 550px;height: 180px;" align="center">
+	<form id="refundNoFeeForm" method="post" style="padding: 5px 10px">
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">提现单ID：</td>
+		      <td><input type="text" name="tid" id="take_Id1" size="20" maxlength="50" readonly/></td>
+		    </tr>
+		    <tr>
+		      <td class="lable">退款说明：</td>
+		      <td><input type="text" name="userRemark" size="50" maxlength="50"/><font color="red">直接退款不扣手续费</font></td>
+		    </tr>
+		  </table> 
+</form>
+</div>
+
+</body>
+</html>

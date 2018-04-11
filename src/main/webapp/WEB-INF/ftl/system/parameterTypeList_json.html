@@ -1,0 +1,21 @@
+ <#if pageInfo.items??>
+{"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+{
+"id":${item.id},
+"paraType":"${item.paraType}",
+"dscr":"${item.dscr}",
+<#if item.createDate??>
+"createDate":"${item.createDate?string('yyyy-MM-dd HH:mm:ss')}"
+
+<#else>
+"createDate":""
+</#if>
+
+}<#t>
+<#if item_has_next>,</#if>
+</#list>
+]}
+  <#else>
+  {"total":0,"rows":[]}
+</#if>

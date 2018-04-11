@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<title>游戏渠道列表</title> <#include "../common.html"/>
+<script type="text/javascript">
+	var datagrid;
+	var addDialog;
+	var addForm;
+	var editDialog;
+	var editForm;
+	var searchForm;
+	function getQueryString(name) {
+		var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+		var r = window.location.search.substr(1).match(reg);
+		if (r != null) return unescape(r[2]); return null;
+		}
+	var gameId = getQueryString('gameId');
+	$(function() {
+		
+		datagrid = $('#datagrid').datagrid({
+			url : 'channelListSelect_json.do',
+			queryParams : {
+				qudaos: "${qudaos!''}"
+			},
+			title : '渠道列表',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'weight',
+			sortOrder : 'desc',
+			columns : [ [ {
+				field : 'ck',
+				checkbox : true,
+				checked:true,
+				formatter : function(value, row, index) {
+					return row.obid;
+				}
+			}, {
+				field : 'id',
+				title : '编号',
+				align : 'center'
+				
+			},
+// 			{
+// 				field : 'gameVersionId',
+// 				title : '游戏版本ID',
+// 				align : 'center'
+// 			}, 
+			{
+				field : 'name',
+				title : '渠道名称',
+				align : 'center'
+				
+			}, {
+				field : 'status',
+				title : '状态',
+				align : 'center'
+			}, {
+				field : 'weight',
+				title : '权重',
+				align : 'center',
+				sortable : true
+			}, {
+				field : 'rechargeType',
+				title : '充值方式',
+				align : 'center',
+				   formatter:function(value,row,index){
+					   var types = row.rechargeType;
+					   var tname ="";
+					   if(types.indexOf(",") >=0){
+						   var str = types.split(",");
+						   for(var i=0;i<str.length;i++){
+							   if(str[i] ==1){
+								   tname +="骏网卡," 
+							   }else  if(str[i] ==12){
+								   tname +="天下卡," 
+							   }else  if(str[i] ==13){
+								   tname +="QQ卡," 
+							   }else  if(str[i] ==2){
+								   tname +="支付宝自充," 
+							   }else  if(str[i] ==3){
+								   tname +="支付宝白名单," 
+							   }
+						   }
+						   return tname;
+					   }else{
+			 				 if (types==0){
+								   return "<font color='red'>暂无</font>";
+							   }else if(types==1){
+								   return "骏网卡";
+							   }else if(types==2){
+								   return "支付宝自充";
+							   }else if(types==3){
+								   return "支付宝白名单";
+							   }else if(types==12){
+								   return "天下卡";
+							   }else if(types==13){
+								   return "QQ卡";
+							   }else{
+								   return "--"
+							   }
+					   }
+					}   
+			}, {
+				field : 'channelHomeUrl',
+				title : '渠道官方网址',
+				align : 'left',
+				sortable : true
+			}
+
+			] ],
+			toolbar : [  {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			},
+			 onLoadSuccess: function (data) {
+	                $('#datagrid').datagrid('selectAll');
+	            } 
+// 			,
+
+// 			//双击事件
+// 			onDblClickRow : function(rowIndex, rowData) {
+// 				$(this).datagrid('unselectAll');
+// 				$(this).datagrid('selectRow', rowIndex);
+// 				edit();
+// 			}
+
+
+        
+        
+});
+		addForm = $('#addForm').form({
+			url : 'channel_add',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加游戏渠道',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					isChannelIdExist($('#addForm input[name="id"]').val());
+				}
+			} ]
+		});
+		editDialog = $('#editDialog').show().dialog({
+			title : '编辑游戏渠道信息',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					closeDialog('您确定要修改该游戏渠道信息吗?', 'editForm', 'editDialog');
+				}
+			} ]
+		});
+		editForm = $('#editForm').form({
+			url : 'channel_edit',
+			success : function(data) {
+				var json = $.parseJSON(data);
+
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+	});
+	function add() {
+		addDialog.dialog('open');
+		addForm.form('reset');
+		$('#addForm select[name="status"][value="0"]').attr("selected","selected");
+		$('#addForm input[type="hidden"][name="gameId"]').val(gameId);
+	}
+
+	function del() {
+		var rows = datagrid.datagrid('getSelections');
+		var ids = [];
+		if (rows.length > 0) {
+			$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+				if (r) {
+					for ( var i = 0; i < rows.length; i++) {
+						ids.push(rows[i].id);
+					}
+					console.log(ids.join(','));
+					$.ajax({
+						url : 'channel_delete',
+						data : {
+							ids : ids.join(',')
+						},
+						dataType : 'json',
+						success : function(response) {
+							datagrid.datagrid('load');
+							datagrid.datagrid('unselectAll');
+							$.messager.show({
+								title : '提示',
+								msg : response.msg
+							});
+
+						}
+					});
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		}
+	}
+
+	function edit() {
+		var rows = datagrid.datagrid('getSelections');
+		if (rows.length == 1) {
+			editForm.find("input[type='hidden'][name='id']").val(rows[0].id);
+			editForm.find("input[name='name']").val(rows[0].name);
+			editForm.find("input[name='weight']").val(rows[0].weight);
+			editForm.find("input[type='hidden'][name='weight']").val(rows[0].weight);
+			editForm.find('select[name="status"] option[value="'+rows[0].status+'"]').attr("selected","selected");
+			editForm.find('select[name="rechargeType"] option[value="'+rows[0].rechargeType+'"]').attr("selected","selected");
+			editForm.find('input[name="gameVersionId"]').val(rows[0].gameVersionId);
+			editForm.find('input[name="channelHomeUrl"]').val(rows[0].channelHomeUrl);
+			$('div.validatebox-tip').remove();
+			editDialog.dialog('open');
+		} else {
+			$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+		}
+	}
+	function isChannelIdExist(channelId){
+		if (channelId == null || channelId.length == 0) {
+			return $.messager.show({
+				title : '提示',
+				msg : '请输入游戏渠道Id'
+			});
+		}
+		$.ajax({
+			type : 'post',
+			url : 'channelIdIsExist',
+			data : {
+				id : channelId
+			},
+			dataType : 'json',
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+					isChannelNameExist($('#addForm input[name="name"]').val());
+				} else {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+				}
+			}
+		});
+	}
+	function isChannelNameExist(channelName) {
+		if (channelName == null || channelName.length == 0) {
+			return $.messager.show({
+				title : '提示',
+				msg : '请输入游戏渠道名称'
+			});
+		}
+		$.ajax({
+			type : 'post',
+			url : 'channelNameIsExist',
+			data : {
+				name : channelName
+			},
+			dataType : 'json',
+			success : function(response) {
+				if (response.success) {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+					closeDialog('您确定要添加该游戏渠道吗?', 'addForm', 'addDialog');
+				} else {
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+				}
+			}
+		});
+	}
+	function _search() {
+		datagrid.datagrid("unselectAll");
+		gameId = $('#searchForm input[name="gameId"]').val();
+		datagrid.datagrid({title:'游戏ID为' + gameId + '的渠道列表'});
+		datagrid.datagrid({
+			queryParams : {
+				gameId: gameId
+			}
+		});
+		datagrid.datagrid('reload');
+	}
+
+	function cleanSearch() {
+		datagrid.datagrid('load', {});
+		searchForm.find('input').val('');
+		datagrid.datagrid('reload');
+	}
+	
+	
+	//批量选择渠道
+	function selectAction() {
+		var rows = datagrid.datagrid('getSelections');
+		
+		if(rows.length == 1){
+			var pid = rows[0].id;
+			var name = rows[0].name;
+			
+			window.opener.selectActionCallBack(pid,name);
+			window.close();	
+		}else if (rows.length > 1) {
+					var ids = [];
+					var names = [];
+					for ( var i = 0; i < rows.length; i++) {
+						ids.push(rows[i].id);
+						names.push(rows[i].name);
+					}
+					window.opener.selectActionCallBack(ids,names);
+					window.close();	
+				
+		} else {
+			$.messager.alert('提示', '请选择要配置的游戏渠道！', 'error');
+		} 
+	}
+	
+
+
+
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div
+		region="north"
+		border="false"
+		title="搜索条件"
+		style="height: 65px; overflow: hidden;"
+		align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+<!-- 					<td>游戏ID:<input -->
+<!-- 						name="gameId" -->
+<!-- 						style="width: 100px;" />&nbsp; -->
+<!-- 					</td> -->
+<!-- 					<td><a -->
+<!-- 						href="javascript:void(0);" -->
+<!-- 						class="easyui-linkbutton" -->
+<!-- 						onclick="_search();">搜索</a> <a -->
+<!-- 						href="javascript:void(0);" -->
+<!-- 						class="easyui-linkbutton" -->
+<!-- 						onclick="cleanSearch();">取消</a></td> -->
+						<td> 
+						<input type="hidden" name="qudaos" value="${qudaos!''}"/>
+						
+						 <a href="javascript:void(0);" class="easyui-linkbutton" onclick="selectAction();">确认选择渠道</a>
+						 </td>
+				</tr>
+			</table>
+		</form>
+	</div>
+
+	<div
+		region="center"
+		border="false">
+		<table id="datagrid"></table>
+	</div>
+
+
+</body>
+</html>

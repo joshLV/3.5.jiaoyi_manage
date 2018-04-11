@@ -1,0 +1,39 @@
+[
+<#list parentModuleList as parentModule>
+{
+	"id":"mod_${parentModule.modId}",
+	"text":"${parentModule.moduleName}",
+	"value":"${parentModule.moduleCode}",
+	"children":[
+		<#assign idx = 0>
+		<#list moduleList as module>
+		<#if (module.parentId == parentModule.modId)>
+			<#if (idx>0)>,</#if>
+			{
+				"id":"mod_${module.modId}",
+				"text":"${module.moduleName}",
+				"value":"${module.moduleCode}",
+				"state":"closed",
+				"children":[
+					<#assign idx2 = 0>
+					<#list modulePermissions as permi>
+					<#if (permi.modId = module.modId)>
+					<#if (idx2>0)>,</#if>
+					{
+						"id":"per_${permi.pid}",
+						"text":"${permi.perName?js_string}",
+						"value":"${permi.pid}"
+					}
+					<#assign idx2=idx2+1>
+					</#if>
+					</#list>
+				]
+			}
+			<#assign idx=idx+1>
+		</#if>
+		</#list>
+	]
+}
+<#if parentModule_has_next>,</#if>
+</#list>
+]

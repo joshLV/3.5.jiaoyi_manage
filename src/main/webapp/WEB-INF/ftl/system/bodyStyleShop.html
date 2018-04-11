@@ -1,0 +1,75 @@
+<#macro bodyStyleShop><#t>
+<!DOCTYPE HTML>
+<html lang="zh">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+		<script type="text/javascript" src="${request.contextPath}/jquery-easyui-1.3.2/jquery-1.8.0.min.js"></script>
+		<script type="text/javascript" src="${request.contextPath}/js/pinyin.js"></script>
+		<link rel="stylesheet" type="text/css" href="${request.contextPath}/fontAwesome/css/font-awesome.min.css"/>
+		
+		<script type="text/javascript" src="${request.contextPath}/js/jPage/js/pager.js" ></script>
+		<link rel="stylesheet" href="${request.contextPath}/js/jPage/css/jPages.css" type="text/css" media="screen" title="no title" charset="utf-8"/>
+		
+		<link rel="stylesheet" href="${request.contextPath}/js/select/css/selectordie.css" type="text/css" charset="utf-8"/>
+		<link rel="stylesheet" href="${request.contextPath}/js/select/css/selectordie_theme_03.css" type="text/css" charset="utf-8"/>
+		<script type="text/javascript" src="${request.contextPath}/js/select/selectordie.js"></script>
+		<script type="text/javascript" src="${request.contextPath}/js/laydate/laydate.js"></script>
+		
+		<title>菜单访问统计</title>
+		<style type="text/css">
+			body, p, input, h1, h2, h3, h4, h5, h6, ul, li{ margin: 0; padding: 0; list-style: none; vertical-align: middle;}
+			img{ border:0; margin: 0; padding: 0;}
+			body{min-height: 500px;color: #000;-webkit-text-size-adjust: none;font:normal 14px/200% "微软雅黑", helvetica, arial;text-align:left;padding-top:1px;}
+			.header, section, .footer {display: block; margin: 0; padding: 0 }
+			a{text-decoration:none;}
+			.fl{float:left}
+			.fr{float:right;}
+			.cl{clear:both;}
+			.line_height_30{height:30px;line-height:30px;}
+			.line_height_60{height:60px;line-height:60px;}
+			.line_height_80{height:80px;line-height:80px;}
+			.line_height_100{height:100px;line-height:100px;}
+			/* 按钮美化 */
+			.button{display: inline-block;vertical-align: middle;padding: 0 20px;text-align: center;background: #FAFAFA;border: 1px solid #DDDDDD;cursor:pointer;height: 30px;line-height: 30px;}
+			.button:hover{background: white;}
+			.button_red{display: inline-block;vertical-align: middle;padding: 0 20px;text-align: center;color:white;background: red;border: 1px solid #F00;cursor:pointer;height: 30px;line-height: 30px;}
+			.button_red:hover{background: #FF5C5C;}
+			/* 列表样式 */
+			table.data_list_all{border-top: 1px solid #dee2ed;border-left: 1px solid #dee2ed;text-align: center;}
+			table.data_list_all thead{background: #EEEEEE;}
+			table.data_list_all td{padding: 6px 0;border-right: 1px solid #dee2ed;border-bottom: 1px solid #dee2ed;}
+			table.data_list_all>tbody>tr:nth-child(even)>td {background-color: #F5F5F5;}
+			table.data_list_all>tbody>tr:nth-child(odd)>td {background-color: #F9F9F9;}
+			table.data_list_all>tbody>tr:hover>td{background-color: white;}
+			/* 列表没数据样式 */
+			i.fa.no_record_data{vertical-align: middle;margin-right: 10px;font-size: 30px;font-weight: bold;}
+			/* 第三方插件样式美化 */
+			/* 下拉列表 (body不能去掉，加权重)*/
+			body .sod_select{padding: 9px 10px;width: 172px;vertical-align: middle;}
+			body .sod_select:before{top: 3px;}
+			body .sod_select:after{bottom: 3px;}
+			/* 日期选择框 (body不能去掉，加权重)*/
+			body .laydate-icon{display: inline-block;vertical-align: middle;height: 30px;line-height: 30px;border-color: #dbdbdb;text-align: left;padding-left: 10px;}
+			body .text_in_line{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+		</style>
+		<script type="text/javascript">
+		//将中文字转换成拼音首字母，并检查多音字，这里依赖pinyin.js
+		function getGameSearchChars(gameName,firstChar){
+			var searchChars = gameName;
+			try{
+				searchChars = pinyin.getCamelChars(gameName);
+			}catch(e){}
+			if(firstChar!=undefined && searchChars.indexOf(firstChar.toUpperCase()) != 0){
+				if(searchChars.length > 0){
+					searchChars = firstChar + searchChars.substring(1);
+				}else{
+					searchChars = firstChar;
+				}
+			}
+			return searchChars;
+		}
+		</script>
+	</head>
+	<body><#nested></body>
+</html>
+</#macro><#t>

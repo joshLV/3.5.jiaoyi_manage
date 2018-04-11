@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>转单客服/物服</title>
+<#include "../common.html"/>
+<style>
+.table_line tr td{
+ border-bottom:#999 1px dashed;
+ }
+</style>
+<script type="text/javascript">
+
+
+function resetshow() {
+	var order_id = $("#order_id").val();
+	
+	if(order_id==""){
+		$.messager.alert("错误提示","请填写订单号!");
+		return false;
+	}
+	searchForm.submit();
+}
+
+function reset(){
+
+var kefuid = check();
+var wufuid = check2();
+var type = ${updateType!'0'};
+if(typeof(kefuid)=='undefined' &&type == 1){
+	$.messager.alert("提示","请选择转单客服");
+	return;
+}
+
+if(typeof(wufuid)=='undefined' &&type == 2){
+	$.messager.alert("提示","请选择转单物服");
+	return;
+}
+var remark = $('#remark').val();
+if(remark == ""){
+	$.messager.alert("提示","请填写转单备注");
+	return;
+}
+
+$.messager.confirm('确认框','您确认要转单?',function(r){  
+   if (r){ 
+
+		$.ajax({
+			url : 'changerCustomer.do',
+			data : $("#form1").serialize(),
+			dataType : 'json',
+			success : function(response) {
+				$.messager.show({
+					title : '提示',
+					msg : response.msg
+				});
+				setTimeout("reload()",1000);
+				
+			}
+		});
+		   }
+		});
+}
+
+
+
+function   check()   
+{   
+var chkObjs = document.getElementsByName("kefuuid");
+for(i=0;i<chkObjs.length;i++)   
+if(chkObjs[i].checked)   {
+	return chkObjs[i].value;
+}
+}  
+
+
+function   check2()   
+{   
+var chkObjs = document.getElementsByName("wufuuid");
+for(i=0;i<chkObjs.length;i++)   
+if(chkObjs[i].checked)   {
+	return chkObjs[i].value;
+}
+}  
+
+
+function reload(){
+	location.reload();
+}
+
+function show() {
+	searchForm.submit();
+	
+}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="center" border="false" title="请输入订单号码" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm" action="changerCustomerShow" name="sform">
+		<table >
+			<tr>
+				<td >订单号:<input name="orderId" value="${orderId!''}" style="width:200px;" id="order_id"/>&nbsp;</td>
+	
+				
+				<td style="border-bottom:#999 1px dashed;">
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="resetshow()" >查询</a>
+				<#if updateType==1>
+				<input type="radio" name="updateType" value="1" checked="checked"  onclick="show()">转单客服
+				<input type="radio" name="updateType" value="2" onclick="show()">转单物服
+				<#elseif updateType==2>
+				<input type="radio" name="updateType" value="1" onclick="show()">转单客服
+				<input type="radio" name="updateType" value="2" checked="checked" onclick="show()">转单物服
+				</#if>
+				</td>
+		
+			</tr>
+		</table>
+	</form>
+	
+	<#if order??>
+			<table  class="table_line" >
+			<tr>
+			<td colspan="2" ><b>订单信息</b></td>
+			</tr>
+			<tr>
+				<td style="text-align: right">订单编号:</td>
+				<td>
+				<p id="order_id">${order.orderId!''}</p>
+				</td>
+			</tr>
+			
+			<tr>
+				<td style="text-align: right">商品名称:</td>
+				<td>
+				<p>${order.goodsName!''}</p>
+				</td>
+			</tr>
+			<tr>
+				<td style="text-align: right">游戏:</td>
+				<td>
+				<p>${order.gameName!''}/${order.gameAreaName!''}</p>
+				</td>
+			</tr>
+			
+			<tr>
+				<td style="text-align: right">订单金额:</td>
+				<td>
+				<p>${order.orderAmount!''}</p>
+				</td>
+			</tr>
+			
+			<tr>
+				<td style="text-align: right">卖家:</td>
+				<td>
+				<p>${order.orderSellUid!''}</p>
+				</td>
+			</tr>
+			
+						<tr>
+				<td style="text-align: right">买家:</td>
+				<td>
+				<p>${order.orderBuyUid!''}</p>
+				</td>
+			</tr>
+<!-- 			<tr> -->
+<!-- 				<td style="text-align: right">订单状态:</td> -->
+<!-- 				<td> -->
+<!-- 				<p>${order.orderStatus!''}</p> -->
+<!-- 				</td> -->
+<!-- 			</tr> -->
+			<#if orderc2c??>
+<!-- 			<tr> -->
+<!-- 				<td style="text-align: right">流程状态:</td> -->
+<!-- 				<td> -->
+<!-- 				<p>${orderc2c.orderC2cStatus!''} == ${flag!'p'}</p> -->
+<!-- 				</td> -->
+<!-- 			</tr> -->
+			
+			<tr>
+				<td style="text-align: right">客服ID:</td>
+				<td>
+				<p style="color: red">${orderc2c.customerServiceId!''}</p>
+				</td>
+			</tr>
+			
+			<tr>
+				<td style="text-align: right">物服ID:</td>
+				<td>
+				<p>${orderc2c.physicServiceId!''}</p>
+				</td>
+			</tr>
+            
+            </#if>
+            
+          <#if flag == 0>
+           <form action="" name="form1" id="form1" >
+             <input type="hidden" name="order_id_reset"  value="${order.orderId!''}"/>
+             <input type="hidden" name="order_kefuid_reset"  value="${orderc2c.customerServiceId!'0'}"/>
+             <input type="hidden" name="order_wufuid_reset"  value="${orderc2c.physicServiceId!'0'}"/>
+             <input type="hidden" name="updateType"  value="${updateType!'-1'}"/>
+         
+          <#if updateType==1>
+            <#if sys??>
+           <tr>
+           <td>当前已上班的客服</td>
+           <td>
+			<#list sys as list>
+           <input type="radio"  name="kefuuid" value="${list.userId}" >${list.userId}(${list.customerNickname!''})
+           </#list> 
+           </td>
+           </tr>
+           <#else>
+           <tr>
+           <td colspan="2"><p style="color: red">客服没有上班</p></td>
+           </tr>
+           
+           </#if>
+          <#elseif updateType==2>
+            <#if sys2??>
+           <tr>
+           <td>当前已上班的物服</td>
+           <td>
+			<#list sys2 as list>
+           <input type="radio"  name="wufuuid" value="${list.userId}" >${list.userId}(${list.customerNickname!''})
+           </#list> 
+           </td>
+           </tr>
+           
+             <#else>
+           <tr>
+           <td colspan="2"><p style="color: red">物服没有上班</p></td>
+           </tr>
+           </#if>
+           
+           <#else>
+           <tr>
+           <td colspan="2"><p style="color: red">该订单不需要转单</p></td>
+           </tr>
+          </#if>
+         
+           <tr>
+           <td>备注</td>
+           <td>
+           <textarea rows="5" cols="50" id="remark" name="remark"></textarea>  
+          	<a href="javascript:void(0);" class="easyui-linkbutton" onclick="reset();">确认转单</a>
+          	</form>
+           </td>
+		    </#if>
+     
+           <#else>
+           <tr>
+           <td colspan="2"><p style="color: red">该订单不需要转单</p></td>
+           </tr>
+           </#if>
+
+		</table>
+
+</div> 
+
+
+
+
+	
+</body>
+</html>

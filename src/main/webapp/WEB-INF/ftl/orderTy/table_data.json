@@ -1,0 +1,12 @@
+{
+	"dataSource":"default",
+	"tableName":"xxx",
+	"columns":[
+		"columnName":"xxx",
+		"columnText":"xxxx",
+		"columnType":"int",
+		"isSearch":true,
+		"formatter":"function(value,row){}"
+
+	]
+}

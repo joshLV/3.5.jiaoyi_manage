@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>角色列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'roleList_json.do',
+			title : '角色列表',
+			//iconCls : 'icon-save',
+			pagination : false,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'roleId',
+			sortName : 'roleId',
+			sortOrder : 'asc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.obid;
+						}
+					},
+			   {field:'roleId',title:'角色ID',align:'center',width:60,sortable:true},				
+			   {field:'roleName',title:'角色名称',align:'center',width:120,sortable:true},				
+			   {field:'roleCode',title:'角色代码',align:'center',width:120,sortable:true},
+			   {field:'createTime',title:'创建时间',align:'center',width:180,sortable:true}, 
+			   {field:'status',title:'状态',align:'center',width:100,sortable:true,
+				   formatter:function(value,row,index){
+					   if (row.status==0){
+						   return "<font color='red'>无效</font>";
+					   }else{
+						   return "有效";
+					   }
+					}   
+			   },
+			   {field:'isCustomerR',title:'是否客服',align:'center',width:100,sortable:true,
+				   formatter:function(value,row,index){
+					   if (row.isCustomerR==0){
+						   return "否";
+					   }else{
+						   return "是";
+					   }
+					} 
+			   }
+			 ] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '修改',
+				iconCls : 'icon-edit',
+				handler : function() {
+					edit();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			},
+			  //双击事件
+			   onDblClickRow:function (rowIndex,rowData){
+				   $(this).datagrid('unselectAll');
+				   $(this).datagrid('selectRow', rowIndex);	
+				   edit();
+			   }
+		});
+		editForm = $('#editForm').form({
+			url : 'role_edit.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+					$("#tt2").tree("reload");
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '角色信息编辑',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					var node = $('#tt2').tree('getChecked');  
+		            var cnodes='';  
+		            var pnodes='';  
+		            var result='';  
+		             var prevNode=''; //保存上一步所选父节点  
+		            for(var i=0;i<node.length;i++){  
+		                 
+		                if($('#tt2').tree('isLeaf',node[i].target)){  
+		                    cnodes+=node[i].id+',';    
+		                      
+		                    var pnode = $('#tt2').tree('getParent',node[i].target); //获取当前节点的父节点  
+		                   if(prevNode!=pnode.id) //保证当前父节点与上一次父节点不同  
+		                   {  
+		                        pnodes+=pnode.id+',';  
+		                        prevNode = pnode.id; //保存当前节点  
+		                   }
+		                    
+		                }  
+		            }  
+		            cnodes = cnodes.substring(0,cnodes.length-1);  
+		            pnodes = pnodes.substring(0,pnodes.length-1); 
+		            result =cnodes+","+pnodes;
+					editForm.find("input[name='pers']").val(result);
+				
+					editForm.submit();
+				}
+			} ]
+		}); 
+		
+		addForm = $('#addForm').form({
+			url : 'role_add.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+					$("#tt").tree("reload");
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加新角色',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					var nodes2 = $("#tt").find('.tree-checkbox2');
+					var nodes = $('#tt').tree('getChecked');
+					var s = '';
+					for(var i=0; i<nodes.length; i++){ 
+						if (s != '') s += ',';
+						s += nodes[i].id; 
+					}
+					if(nodes2.length>0){
+						for(var i=0;i<nodes2.length;i++){
+							var node=nodes2[i].parentNode;
+							if (s != '') s += ',';
+							s+=node.attributes[1].nodeValue;
+						}
+					}
+					if (s == "" ){
+						$.messager.alert('提示',"请选择角色的权限");  
+						return;
+					}
+					addForm.find("input[name='pers']").val(s);
+					addForm.submit();
+				}
+			} ]
+		});
+
+});
+ 
+function add() {
+	addDialog.dialog('open');
+	addForm.find("input[type='text']").val("");
+}
+function del() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].roleId);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'role_delete.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						//var d = JSON.parse(response);
+						
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	} 
+}
+function edit() {
+	var rows = datagrid.datagrid('getSelections');
+
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'role_json.do',
+			data : {
+				roleId : rows[0].roleId
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				editForm.form('clear');
+				editForm.form('load', response);
+				cleanTree();//清除
+				var perList = response.perList;
+				for(i=0;i<perList.length;i++){
+					var node = $("#tt2").tree("find","per_"+perList[i].pid	);
+					if(node!=null){
+						$("#tt2").tree("check",node.target);
+					}
+				}
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+				showRoleSelect('editForm',$("#editUserType").val());
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+
+function showRoleSelect(formName,value){
+	if (value == 0){
+		$("#"+formName+" .roleSelect").hide();
+	}else{
+		$("#"+formName+" .roleSelect").show();
+	}
+}
+
+function cleanTree(){
+	//获取所有选中的节点
+	var nodes=$("#tt2").tree('getChecked');
+	if(nodes!=null&&nodes.length>0){
+		for(var i=0;i<nodes.length;i++){
+			if(nodes[i]!=null){
+				$("#tt2").tree("uncheck",nodes[i].target);
+			}	
+		}	
+	}
+}
+</script>
+</head>
+
+<body class="easyui-layout">
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+	<div onclick="add();" iconCls="icon-add">增加</div>
+	<div onclick="del();" iconCls="icon-remove">删除</div>
+	<div onclick="edit();" iconCls="icon-edit">编辑</div>
+</div>
+
+<!--添加表单-->
+<div id="addDialog" style="display:none ;width: 600px;height: 300px;" align="center">
+	<form id="addForm" method="post" style="padding: 0">
+	  <table width="100%" border="0" cellpadding="1" cellspacing="1">
+	    <tr>
+	      <td width="50%" height="25" bgcolor="#eee"><span class="lable">**基本信息</span></td>
+	      <td bgcolor="#eee"><span class="lable">**权限设置</span></td>
+        </tr>
+	    <tr>
+	      <td valign="top"><table width="100%" border="0" cellspacing="1" cellpadding="1" >
+	        <tr>
+	          <td width="80" height="30" align="right" valign="middle" class="lable">*角色名称：</td>
+	          <td><input type="text" name="roleName" size="20" maxlength="50"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写角色名" id="roleName" /></td>
+            </tr>
+	        <tr>
+	          <td height="30" align="right" valign="middle" class="lable">*角色代码：</td>
+	          <td><input type="text" name="roleCode" size="20" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写角色代码" id="roleCode" /></td>
+            </tr>
+	        <tr>
+	          <td height="30" align="right" valign="middle" class="lable">状态：</td>
+	          <td><select name="status" id="allowUpdate">
+	            <option value="1">有效</option>
+	            <option value="0">无效</option>
+              </select></td>
+            </tr>
+            <!-- 
+	        <tr>
+	          <td height="30" align="right" valign="middle" class="lable">允许修改：</td>
+	          <td><select name="allowUpdate" id="obj_allowUpdate">
+	            <option value="1" selected="selected">允许修改</option>
+	            <option value="0">不允许修改</option>
+	            </select>
+	            <input type="hidden" name="pers" ></td>
+            </tr>
+             -->
+	        <tr>
+	          <td height="30" align="right" valign="middle" class="lable">角色说明：</td>
+	          <td><input type="text" name="roleDesc" size="20" maxlength="50" id="roleDesc"/>
+	           <input type="hidden" name="allowUpdate" value="1"/>
+	           <input type="hidden" name="pers" />
+	          </td>
+            </tr>
+            <tr>
+	          <td height="30" align="right" valign="middle" class="lable">是否客服：</td>
+	          <td><select name="isCustomerR" id="isCustomerR">
+	            <option value="1">是</option>
+	            <option value="0">否</option>
+              </select></td>
+            </tr>
+          </table></td>
+	      <td valign="top"><ul id="tt" class="easyui-tree" data-options="url:'permission_json',animate:true,checkbox:true"></ul></td>
+        </tr>
+      </table>
+	</form>
+</div>
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 600px;height: 300px;" align="center">
+	<form id="editForm" method="post" style="padding: 0">
+    <input type="hidden" name="roleId" >
+	  <table width="100%" border="0" cellpadding="1" cellspacing="1">
+	    <tr>
+	      <td width="50%" height="25" bgcolor="#eee"><span class="lable">**基本信息</span></td>
+	      <td bgcolor="#eee"><span class="lable">**权限设置</span></td>
+        </tr>
+	    <tr>
+	      <td valign="top"><table width="100%" border="0" cellspacing="1" cellpadding="1" >
+	        <tr>
+	          <td width="80" height="30" align="right" valign="middle" class="lable">*角色名称：</td>
+	          <td><input type="text" name="roleName" size="20" maxlength="50"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写角色名" readonly/></td>
+            </tr>
+	        <tr>
+	          <td height="30" align="right" valign="middle" class="lable">*角色代码：</td>
+	          <td><input type="text" name="roleCode" size="20" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写角色代码" readonly /></td>
+            </tr>
+	        <tr>
+	          <td height="30" align="right" valign="middle" class="lable">状态：</td>
+	          <td><select name="status" id="allowUpdate">
+	            <option value="1">有效</option>
+	            <option value="0">无效</option>
+              </select></td>
+            </tr>
+            <!-- 
+	        <tr>
+	          <td height="30" align="right" valign="middle" class="lable">允许修改：</td>
+	          <td><select name="allowUpdate" id="obj_allowUpdate">
+	            <option value="1" selected="selected">允许修改</option>
+	            <option value="0">不允许修改</option>
+	            </select>
+	            <input type="hidden" name="pers" >
+	            </td>
+            </tr>
+             -->
+	        <tr>
+	          <td height="30" align="right" valign="middle" class="lable">角色说明：</td>
+	          <td><input type="text" name="roleDesc" size="20" maxlength="5" id="roleDesc"/>
+	              <input type="hidden" name="allowUpdate" value="1"/>
+	              <input type="hidden" name="pers" />
+	          </td>
+            </tr>
+            <tr>
+	          <td height="30" align="right" valign="middle" class="lable">是否客服：</td>
+	          <td><select name="isCustomerR">
+	            <option value="1">是</option>
+	            <option value="0">否</option>
+              </select></td>
+            </tr>
+          </table></td>
+	      <td valign="top"><ul id="tt2" class="easyui-tree" data-options="url:'permission_json',animate:true,checkbox:true"></ul></td>
+        </tr>
+      </table>
+	</form>
+</div>
+
+</body>
+</html>

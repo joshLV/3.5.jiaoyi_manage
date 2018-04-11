@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>退游订单列表</title>
+<#include "../common_new.html"/>
+<style>
+body{
+margin:0px;
+padding:0px;
+} 
+</style>
+<script type="text/javascript" src="../js/order_helper.js"></script>
+<script type="text/javascript">
+var datagrid;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'getOrderTyList',
+			title : '退游订单列表',
+			pagination : true,
+			loadMsg:null,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 30,
+			pageList : [30, 40, 50, 100],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'order_id',
+			columns : [ [ 
+               {field:'ck',checkbox:true,
+					formatter:function(value,row,index){
+						return row.order_id;
+					}
+				},
+			   {field:'order_id',title:'订单ID',align:'left',width:100},
+			   {field:'order_model_name',title:'交易模式',align:'left',width:40},			
+			   {field:'goods_name',title:'商品名称',align:'left',width:120},
+			   {field:'game_name',title:'游戏名称',align:'left',width:80},
+			   {field:'order_status',title:'订单状态',align:'left',width:60,
+				   formatter:function(value,row,index){
+				   		if(row.order_model==10 || row.ty_material_submit==1){
+				   			return OrderHelper.getOrderStatusName(value);	
+				   		}
+				   		else 
+				   			//if(row.order_model==111)
+				   		{
+				   			if(row.order_status =="0"){
+				   				return "等待付款";
+				   			}else if(row.order_status=="2"){
+				   				return "等待发货";
+				   			}else if(row.order_status=="4"){
+				   				return "待确认收货";
+				   			}else if(row.order_status=="5"){
+				   				return "仲裁";
+				   			}else if(row.order_status=="6"){
+				   				return "交易成功";
+				   			}else if(row.order_status=="7"){
+				   				return "待转账";
+				   			}else if(row.order_status=="8"){
+				   				return "交易取消";
+				   			}else if(row.order_status=="10"){
+				   				return "己退费";
+				   			}else if(row.order_status=="-1"){
+				   				return "己删除";
+				   			}else{
+				   				return "--"+row.order_status
+				   			}
+				   		}
+// 				   			else{
+// 				   			return "<font color='#ff0000'>未完善资料</font>"+row.order_status +"==" + row.ty_material_submit;
+// 				   		}
+					}   
+			   },
+			   {field:'order_c2c_status',title:'流程状态',align:'left',width:60,
+				   formatter:function(value,row,index){
+				   		if (row.order_ispay != 1){
+				   			return "--";//未支付
+				   		}
+				   		if (value == 11){
+				   			return "资料未完善";
+				   		}else if(value ==  12){
+				   			return "待客服派单";
+				   		}else if(value ==  13){
+				   			return "物服审号中";
+				   		}else if(value ==  14){
+				   			return "物服审号完成（客服处理中）";
+				   		}else if(value ==  16){
+				   			return "待支付差价";
+				   		}else if(value ==  17){
+				   			return "账号回收中";
+				   		}else if(value ==  18){
+				   			return "等待发货";
+				   		}else if(value ==  4){
+				   			return "完成";
+				   		}else if(value ==  5){
+				   			return "撤销";
+				   		}
+				   		return value;
+					}   
+			   },
+			   {field:'order_buy_uid',title:'买家UID',align:'left',width:60}, 
+			   {field:'order_amount',title:'订单价格',align:'left',width:60},
+			   {field:'kefuFullName',title:'接手客服',align:'left',width:50},
+			   {field:'psFullName',title:'接手物服',align:'left',width:50},
+			   {field:'ty_amount',title:'支付退游值',align:'left',width:60,
+			   		formatter:function(value,row,index){
+			   			if (value){
+			   				return value/100;
+			   			}else{
+			   				return "0";
+			   			}
+			   		}
+				},
+				{field:'ty_amount_now',title:'当次退游值',align:'left',width:60,
+			   		formatter:function(value,row,index){
+			   			if (value){
+			   				return value/100;
+			   			}else{
+			   				return "0";
+			   			}
+			   		}
+				},
+			   {field:'ty_dikou_amount',title:'抵扣退游值',align:'left',width:60,
+			   		formatter:function(value,row,index){
+			   			if (value){
+			   				return value/100;
+			   			}else{
+			   				return "0";
+			   			}
+			   		}
+			   	},
+			   
+			   {field:'order_ispay',title:'支付状态',align:'left',width:60,
+				   formatter:function(value,row,index){
+						if (value == 0){
+							return "<font color='#ff0000'>未支付</font>";
+						}else{
+							return "已支付";
+						}				   
+					}
+			   },
+			   {field:'order_time',title:'订单时间',align:'left',width:120},
+			   {field:'son_channel_id',title:'子渠道ID',align:'left',width:120},
+			   {field:'operate',title:'操作',align:'left',width:80,
+				   formatter:function(value,row,index){
+					    var b='';
+					    var a =  "<a href='getOrderDetail?orderId=" + row["order_id"] + "'>订单处理</a>  ";
+					    var c ='';
+						if(row.customer_service_id > 0){
+							b = '<a href="javascript:void(0)" onclick="viewChatLog(\''+row.order_id+'\',\''+row.customer_service_id+'\')">聊天记录</a>';
+							
+						}
+						if(row.order_model==10){
+						   return a+b;
+						}else if(row.order_model==20){
+						   return a+b;
+						}else if(row.order_model==30){
+						   return a+b;
+						}else if(row.order_model==99){
+						   return "-- "+b;
+						}else if(row.order_model==101){
+							return a+b;
+						}else if(row.order_model==119){
+							if(row.kefuFullName==null||row.kefuFullName==""){
+								return '<a href="javascript:void(0)" onclick="assignKF(\''+row.order_id+'\')">派单客服</a>';
+							}else{
+								return a;
+							}
+							
+						}
+					}   
+			   }
+			 ] ]
+			 //双击事件
+// 			 onDblClickRow:function (rowIndex,rowData){
+// 					$(this).datagrid('unselectAll');
+// 					$(this).datagrid('selectRow', rowIndex);	
+// 					openDetail(rowData["order_id"]);
+// 			 }
+		});
+});
+
+//搜索
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+//取消
+function cleanSearch() {
+	searchForm.find('input').val('');
+	searchForm.find('select').val('');
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+//跳转到聊天记录
+function viewChatLog(orderid,kefuid){
+	var link = "${request.contextPath}/webDate/linktokefuchatlog.jsp?orderid="+orderid+"&kefuid="+kefuid;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"订单ID"+ orderid+"聊天记录"
+			};
+	parent.addTab(node);
+}
+
+
+	//详情
+	function openDetail(orderid) {
+		var link = "${request.contextPath}/orderTy/getOrderDetail?orderId="	+ orderid;
+		var node = {
+			"attributes" : {"url" : link},
+			"checked" : true,
+			"iconCls" : "",
+			"state" : "closed",
+			"text" : "退游订单详情"
+		};
+		if (parent.$('#centerTabs').tabs('exists', "退游订单详情")) {
+			parent.$('#centerTabs').tabs('close', "退游订单详情")
+		}
+		parent.addTab(node);
+
+	}
+	
+	
+	//派单
+	function assignKF(oid){
+		$.ajax({
+			url : 'assignKF.do',
+			data : {
+				order_id : oid
+			},
+			dataType : 'json',
+			success : function(response) {
+				datagrid.datagrid('load');
+				datagrid.datagrid('unselectAll');
+				//var d = JSON.parse(response);
+				$.messager.show({
+					title : '提示',
+					msg : response.msg
+				});
+				
+			}
+		});	
+	}
+</script>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height:100px;min-width:1280px;overflow:hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>订单ID:<input name="orderId" style="width:180px;" />&nbsp;</td>
+				<td>买家UID:<input name="buyUid" style="width:120px;" />&nbsp;</td>
+				<td>支付状态:
+					<select name="orderIspay">
+						<option value="-1">全部</option>
+						<option value="0">未支付</option>
+						<option value="1">已支付</option>
+					</select>&nbsp;
+				</td>
+				<td>商品ID：<input name="goodsId" style="width:180px;" />&nbsp;</td>
+				<td>交易模式：<select name="orderModel" class="easyui-combobox" style="width:80px;">
+						<option value="-1">请选择</option>
+						<option value="10">首充</option>
+						<option value="20">退游</option>
+						<option value="30">换游</option>
+						<option value="99">差价</option>
+						<option value="101">淘宝兑换码</option>
+						<option value="111">IOS(7881)</option>
+						<option value="112">IOS(8868)</option>
+						<option value="119">第三方寄售</option>
+					</select>&nbsp;</td>
+				</tr><tr>
+				<td>时间:<input name="startDate" style="width:100px;" class="easyui-datebox"/>-<input name="endDate" style="width:100px;" class="easyui-datebox"/>&nbsp;</td>
+				<td>订单状态：<select name="orderStatus" class="easyui-combobox" style="width:120px;">
+						<option value="-2">全部</option>
+						<option value="-1">已删除</option>
+						<option value="0">未付款</option>
+						<option value="2">等待发货</option>
+						<option value="4">待收货</option>
+						<option value="5">验货后申请仲裁</option>
+						<option value="6">订单成功</option>
+						<option value="7">确认收货</option>
+						<option value="8">交易失败</option>
+						<option value="10">已退费</option>
+					</select></td>
+				<td><select class="easyui-combobox" name="customer_service_id" style="width:120px;">
+							<option value="-1">--选择客服--</option>
+						  	<#list csList as item>
+							<option value="${item['USER_ID']!''}">${item['FULLNAME']!''}</option>
+							</#list>
+						</select>&nbsp;
+				</td>
+				<td><select class="easyui-combobox" name="physic_service_id" style="width:120px;">
+							<option value="-1">--选择物服--</option>
+						  	<#list psList as item>
+							<option value="${item['USER_ID']!''}">${item['FULLNAME']!''}</option>
+							</#list>
+						</select>&nbsp;
+				</td> 
+		     	<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+			
+		</table>
+	</form>
+</div> 
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+</body>
+</html>

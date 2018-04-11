@@ -1,0 +1,694 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>c2c账号交易订单列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var searchForm;
+var viewDialog;
+var editForm;
+$(function() {
+	showCustomAttributesWindow = $('#showCustomAttributesWindow');
+	showCustomAttributesWindow.dialog('close');
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url :'orderC2cAccountListJson',
+			title : '已完成账号交易订单',
+			queryParams:{
+	            uid:'${uid!''}',
+	            status : 0,
+            	beginTime:'${beginTime!''}',
+            	endTime:'${endTime!''}'
+			},
+			singleSelect:true,
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ ${pageList!'100'}, 150, 200],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'order_id',
+			sortName : '',
+			sortOrder : 'desc',
+			columns : [ [
+			   {field:'orderId',title:'订单号',align:'center',width:120,sortable:false,
+				   formatter:function(value,rowsendOrder,index){
+					   return '<a href="javascript:void(0)" onclick="showOrderInfo(\''+value+'\')">'+value+'</a>';
+				   } 
+			   },				
+			   {field:'goodsName',title:'订单商品',align:'center',width:100,sortable:false,
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="viewGoods(\''+row.goodsId+'\')">'+value+'</a>';
+				   }   
+			   },
+			   {field:'orderAmount',title:'订单金额',align:'center',sortable:false},		
+			   {field:'orderBuyUid',title:'买家',align:'center',width:40,sortable:false,
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="viewUser('+value+')">'+value+'</a>';
+				   }
+			   },
+			   {field:'orderSellUid',title:'卖家',align:'center',width:40,sortable:false,
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="viewUser('+value+')">'+value+'</a>';
+				   }   
+			   },
+			   {field:'orderSellName',title:'卖家名称',align:'center',width:50,sortable:false},
+			   {field:'gameName',title:'游戏',align:'center',width:80,sortable:false},
+			   {field:'qufu',title:'区/服',align:'center',width:80,
+					formatter:function(value,row,index){
+// 						if(row.gameAreaName!=""&&row.gameServerName!=""){
+// 							return row.gameAreaName+"/"+row.gameServerName
+// 						}
+// 						if(row.gameServerName!=""){
+// 							return row.gameServerName;
+// 						}
+						if(row.gameAreaName!=""){
+							return row.gameAreaName;
+						}
+					}
+			   },
+			   {field:'quickDeliverFlag',title:'快速发货',align:'center',width:50,
+					formatter:function(value,row,index){
+						return value==0?"不支持":"<font color='red'>支持</font>"
+					}
+			   },
+			   {field:'orderIsPay',title:'是否支付',align:'center',width:50,
+					formatter:function(value,row,index){
+						return row.orderIspay==0?"未支付":"<font color='red'>己支付</font>"
+					}   
+			   },
+			   {field:'orderStatus',title:'订单状态',align:'center',width:50,sortable:false,
+				   formatter:function(value,row,index){
+					   if (row.orderStatus==0){
+						   return "等待付款";
+					   }else if(row.orderStatus==2){
+						   return "等待发货";
+					   }else if(row.orderStatus==4){
+						   return "待确认收货";
+					   }else if(row.orderStatus==5){
+						   return "申请仲裁";
+					   }else if(row.orderStatus==6){
+						   return "交易成功";
+					   }else if(row.orderStatus==7){
+						   return "已发货";
+					   }else if(row.orderStatus==8){
+						   return "交易取消";
+					   }else if(row.orderStatus==10){
+						   return "己退费";
+					   }else if(row.orderStatus==-1){
+						   return "己删除";
+					   }
+					}   
+			   },
+			   {field:'orderC2cStatus',title:'流程状态',align:'center',width:50,sortable:false,
+					formatter:function(value,row,index){
+						if(value==1){
+							return "主管/系统分单";
+						}else if(value==2){
+							return "客服派单";
+						}else if(value==3){
+							return "物服发货";
+						}else if(value==4){
+							return "完成";
+						}else if(value==5){
+							return "撤销";
+						}else if(value==102){
+							return "物服处理中";
+						}else if(value==103){
+							return "客服处理中";
+						}else if(value==104){
+							return "待确认收货";
+						}else if(value==105){
+							return "仲裁中";
+						}
+					}
+			   },
+			   {field:'customerServiceName',title:'接手客服',align:'center',width:50,sortable:false},	
+			   {field:'physicServiceName',title:'接手物服',align:'center',width:50,sortable:false},	
+			   {field:'orderTime',title:'创建时间',align:'center',width:120,sortable:false},				
+			   {field:'getGoodsTime',title:'完成时间',align:'center',width:120,sortable:false},
+			   {field:'orderFr',title:'渠道',align:'center',width:30,sortable:false},
+			   {field:'customerServiceId',title:'操作',align:'center',width:50,sortable:false,
+				   formatter:function(value,row,index){
+// 					   if (row.gamechatflag==1){
+					   return '<a href="javascript:void(0)" onclick="viewChatLog(\''+row.orderId+'\',\''+row.customerServiceId+'\')">聊天记录</a>';
+// 					   }else{
+// 						   return "不支持聊天";
+// 					   }
+					}   
+			   },
+			 ] ],
+				//右键菜单 
+				onRowContextMenu : function(e, rowIndex, rowData) {
+					e.preventDefault();
+					$(this).datagrid('unselectAll');
+					$(this).datagrid('selectRow', rowIndex);
+					$('#menu').menu('show', {
+						left : e.pageX,
+						top : e.pageY
+					});
+				},
+				 //双击事件
+				 onDblClickRow:function (rowIndex,rowData){
+						$(this).datagrid('unselectAll');
+						$(this).datagrid('selectRow', rowIndex);	
+						view();
+				 }
+			});
+			editForm = $('#editForm').form({
+				url : '',
+				success : function(data) {
+					var json = $.parseJSON(data);
+					if (json && json.success) {
+						$.messager.show({
+							title : '成功',
+							msg : json.msg
+						});
+						editDialog.dialog('close');
+					} else {
+						$.messager.show({
+							title : '失败',
+							msg : json.msg
+						});
+					}
+				}
+			});
+			viewDialog = $('#viewDialog').show().dialog({
+				title : '订单详情',
+				modal : true,
+				closed : true,
+				maximizable : true,
+			});
+});
+
+//查询
+function _search() {
+	var  btime = searchForm.find("table >tbody> tr input[name='beginTime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='endTime']").val();
+	var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+//清除查询选项
+function cleanSearch() {
+	searchForm.find('input').val('');
+	searchForm.find('select').val('');
+	$("#uid").attr("value",'${uid!''}');
+	$("#status").attr("value",'0');
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+	
+}
+
+//显示订单信息
+function showOrderInfo(orderId){
+	var link = "${request.contextPath}/order/orderList.do?orderId="+orderId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"订单"+orderId+"详情" 
+			};
+	parent.addTab(node);	
+}
+
+//查看用户
+function viewUser(uid){
+	var link = "${request.contextPath}/member/memberList.do?uid="+uid;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"用户"+uid+"详情" 
+			};
+	parent.addTab(node);	
+}
+
+//查看商品
+function viewGoods(goodsId){
+	var link = "${request.contextPath}/product/productList.do?productno="+goodsId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"商品ID"+ goodsId+"详细信息"
+			};
+	parent.addTab(node);
+}
+
+//查看详情
+function view() {
+	var rows = datagrid.datagrid('getSelections');
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'showOrderC2cInfo',
+			type : 'POST',
+			data : {
+				orderId : rows[0].orderId,
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				viewDialogShow(response);
+				editForm.form('clear');
+				editForm.form('load', response);
+				viewRemarkLabel(response);
+				$.messager.progress('close');
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+
+//打开显示界面
+function viewDialogShow(response){
+	if(response.goodsType > 100){
+		$("#goodsSingleDiv").css("display","none");
+	}else{
+		$("#goodsSingleDiv").css("display","block");
+	}
+	viewDialog.dialog('open');
+}
+
+//显示备注信息
+function viewRemarkLabel(response){
+	var remarkLabel=response.remark;
+	if(remarkLabel!="" && remarkLabel!=null){
+		if(remarkLabel.indexOf("[账号]")!=-1){
+			remarkLabel="<br>"+remarkLabel;
+		}
+	}
+	$("#remarkLabel").html(remarkLabel);
+	$("#remarkLabel2").html(response.remark);
+}
+
+//更新区/服
+function areachange(){
+	var gameId = $("#g_id_receiver").val();
+	var checkValue=$("#g_id_area_receiver").val(); 
+	var server_select =  $("#g_id_serverid_receiver");
+
+
+	$.ajax({
+		url : '../game/selectGameAreaDetail',
+		data : {
+			gameId:gameId,partitionId:checkValue
+		},
+		dataType : 'json',
+		
+		cache : false,
+		success : function(data) {
+			if(typeof data.total!="undefined"){
+			//先清理上次服务器残留选项
+			var maxindex2=$("select[name='serverId']").find("option:last").index();
+			if(maxindex2>=1){
+				for(var j =1;j<=maxindex2;j++){
+					 $("#g_id_serverid_receiver option:last").remove(); 
+				}
+			}
+			for(var i = 0 ;i<data.total;i++){
+			
+				$("#server_sel").show();
+				server_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+				}
+			}else{
+				
+				$("#server_sel").hide();
+			}
+		}
+	});
+}
+
+//选择游戏
+function game_select() { 
+	window.open('../game/gameList_select','','width=1200,height=500,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+}
+
+//游戏选择回调游戏id和名称
+function selectGameCallBack(gameId,gameName){
+	$("#g_id_receiver").attr("value",gameId);
+	$("#g_name_receiver").html(gameName);
+    selectsub(gameId);
+}
+
+//选择游戏区/服
+function selectsub(gameId){
+	$("#server_sel").show();
+	$("#area_sel").show();
+	$.ajax({
+		url : '../game/selectGameAreaDetail',
+		data : {
+			gameId : gameId
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+		var area_select =  $("#g_id_area_receiver");
+		var server_select =  $("#g_id_serverid_receiver");
+		
+		var checkIndex=area_select.get(0).selectedIndex;
+		var checkIndex2=server_select.get(0).selectedIndex;
+		
+		//先清理上次分区残留选项
+		var maxindex=$("select[name='partitionId']").find("option:last").index();
+		if(maxindex>=1){
+			for(var j =1;j<=maxindex;j++){
+				 $("#g_id_area_receiver option:last").remove(); 
+			}
+		}
+		
+		//先清理上次服务器残留选项
+		var maxindex2=$("select[name='serverId']").find("option:last").index();
+		if(maxindex2>=1){
+			for(var j =1;j<=maxindex2;j++){
+				 $("#g_id_serverid_receiver option:last").remove(); 
+			}
+		}
+			//添加选项
+			if(typeof data.total!="undefined"){
+				
+				for(var i = 0 ;i<data.total;i++){
+				
+					var patition_id = data.rows[i].partitionId;
+					if((typeof patition_id=="undefined")){
+						//有分区 
+						$("#area_sel").show();
+						 area_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+					}else{
+						//没分区 隐藏分区
+						$("#area_sel").hide();
+						server_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+					}
+					
+					 
+				}
+				
+			}		
+		}
+	});
+}
+
+//显示商品信息
+function showProductProperty(){
+	var orderId = $("#orderIdForm").val();
+	$.ajax({
+		url : '${request.contextPath}/order/queryOrderProductProperty.do',
+		data : {
+			orderId : orderId
+		},
+		type : 'POST',
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			if(response != null){
+				showProperty(response);
+			}else{
+				alert("当前订单商品无相关自定义属性!");
+			}
+		}
+	});
+}
+
+//显示商品属性
+function showProperty(response){
+	var ppStr = "";
+	var pp = response.productProperty
+	if(pp != null && pp != ''){
+		for(var i=0;i<pp.length;i++){
+			ppStr+="<span style=\"display:inline-block;width:125px\">"+pp[i].key+"：</span>"+pp[i].value+"<br>";
+		}
+	}
+	var spStr="";
+	var sp=response.sellProperty;
+	if(sp != null && sp != ''){
+		for(var i=0;i<sp.length;i++){
+			spStr+="<span style=\"display:inline-block;width:125px\">"+sp[i].key+"：</span>"+sp[i].value+"<br>";
+		}
+	}
+	var bpStr="";
+	var bp = response.buyProperty;
+	if(bp != null && bp !=''){
+		for(var i=0;i<bp.length;i++){
+			bpStr+="<span style=\"display:inline-block;width:125px\">"+bp[i].key+"：</span>"+bp[i].value+"<br>";
+		}
+	}
+	$('#showCustomAttributesWindow').window({
+		title : "温馨提示：属性过多浏览不全时，请点击窗口最大话",
+		content : "【商品属性】: <div>"+ppStr+"</div><br>"+
+				  "【卖家属性】: <div>"+spStr+"</div><br>"+
+				  "【买家属性】: <div>"+bpStr+"</div>"
+	});
+	$('#showCustomAttributesWindow').css("display","");
+	$('#showCustomAttributesWindow').window('open');
+}
+
+//显示更多备注
+function showMoreRemark(){
+	var orderId=$("#orderIdForm").val();
+	var link = "${request.contextPath}/order/followOrder/"+orderId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"订单"+orderId+"操作详情"
+			};
+	parent.addTab(node);
+}
+
+//所有游戏【查询条件】
+$(function() {
+	var url = "../product/allgameList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='gameId'] option").remove();
+		var def =  "<option value=''>请选择</option>";
+		$("select[name='gameId']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='gameId']").append(options);
+		}
+
+	});
+	
+});
+
+//查找所有游戏
+function allgamesearch(){
+	var gameid = $("select[name='gameId']").val();
+	selectsub(gameid);
+}
+
+//跳转到聊天记录
+function viewChatLog(orderid,kefuid){
+	console.log("kefuid=="+ kefuid);
+	var link = "${request.contextPath}/webDate/linktokefuchatlog.jsp?orderid="+orderid+"&kefuid="+kefuid;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"订单ID"+ orderid+"聊天记录"
+			};
+	parent.addTab(node);
+}
+
+</script>
+</head>
+<body class="easyui-layout" style="line-height: 25px;">
+<div region="north" border="false" title="搜索条件" style="height: 100px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<input type="hidden" name="uid" id="uid" value="${uid!''}" />
+		<input type="hidden" name="status" id="status" value="0" />
+		<table>
+			<tr>
+				<td>订单号: <input name="orderId" style="width:150px;" /></td>
+				<td>流程状态:
+				<select id="orderC2cStatus" class="easyui-combobox" name="orderC2cStatus" style="width:100px;">
+					<option value="">所有状态</option>
+				    <option value="1">主管/系统分单</option>  
+				    <option value="102">物服处理中</option>  
+				    <option value="103">客服处理中</option>  
+				    <option value="104">待买家确认收货</option>  
+				    <option value="105">仲裁中</option>  
+				</select>
+				</td>
+				<td>订单时间:<input name="beginTime" id="beginTime" class="easyui-datebox" value="${beginTime}" type="text" style="width:100px;" />
+				—<input name="endTime" id="endTime" style="width:100px;" class="easyui-datebox" value="${endTime}" /></td>
+				<td>买家UID:<input name="buyId" style="width:100px;" /></td>
+				<td>是否支付:
+				<select id="orderIspay" class="easyui-combobox" name="orderIspay" style="width:100px;">
+					<option value="">所有状态</option>
+				    <option value="0">未支付</option>  
+				    <option value="1">己支付</option>   
+				</select>
+			</td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">复合查询</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+			<tr>
+			<td>卖家UID:<input name="sellId" style="width:100px;" /></td>
+			<td>商品编号:<input name="goodsId" style="width:100px;" /></td>
+		       <td colspan="3" style="width: 580px;">
+			游戏:<select id="g_id_receiver" name="gameId" onchange="javascript:allgamesearch();" style="width: 96px">
+		        </select>&nbsp;&nbsp;
+		        <b id = "area_sel">游戏分区： 
+			    <select name="partitionId" id ="g_id_area_receiver"   onchange="areachange()">
+                <option value="">请选择</option>
+                </select>&nbsp;&nbsp;
+                <font id="server_sel">     
+                                游戏服务器： <select name="serverId" id ="g_id_serverid_receiver"  >
+                <option value="">请选择</option>
+                </select>&nbsp;
+                </font>  
+		         </b>
+		       </td>
+			</tr>
+		</table>
+	</form>
+</div>
+ 
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+	<div onclick="view();" iconCls="icon-edit">查看详情</div>
+</div>
+
+<!--浏览页面-->
+<div id="viewDialog" style="display: none;width: 700px;height: 450px; background-color: #f2f2f2;text-align: left" align="center" >
+	<form id="editForm" method="post" style="padding: 5px 10px">
+	<div>
+		<b>【订单信息】</b><br/>
+		订单号：<input type="text" id="orderIdForm" name="orderId" size="25" maxlength="50" readonly style="border:thin; background-color: #f2f2f2"/>
+		订单总额：<input type="text" name="orderAmountForm" size="5" maxlength="50" readonly style="border:thin; background-color: #f2f2f2"/>
+		订单状态：
+		<select name="orderStatus" style="border: thin;size: 20px;" disabled="disabled">
+		      	 	<option value="0">等待付款</option>
+		      	 	<option value="2">等待发货</option>
+		      	 	<option value="4">待确认收货</option>
+		      	    <option value="5">申请仲裁</option>
+		      	 	<option value="6">订单成功</option>
+		      	 	<option value="8">交易取消</option>
+		      	 	<option value="7">已发货</option>
+		      	 	<option value="10">己退款</option>
+		      	 	<option value="-1">己删除</option>
+		 </select><br/>
+		 流程状态：
+		 <select name="orderC2cStatus" style="border: thin;size: 20px;" disabled="disabled">
+				    <option value="1">主管/系统分单</option>
+				    <option value="2">客服派单</option>
+				    <option value="3">物服发货</option>
+				    <option value="4">完成</option>
+				    <option value="5">撤销</option>
+				    <option value="102">物服处理中</option>  
+				    <option value="103">客服处理中</option>  
+				    <option value="104">待买家确认收货</option>  
+				    <option value="105">仲裁中</option>
+		 </select><span style="padding-left:50px">
+		 渠道：<input type="text" name="orderFr" size="20" maxlength="50" readonly style="border:thin; background-color: #f2f2f2"/></span>
+		<br/>
+		备注：<label id="remarkLabel"></label>
+	</div>
+	<div style="border-top:1px dashed #666; ">
+		<b>【游戏信息】</b><br/>
+		游戏名：<input type="text" name="gameName" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2 "/>
+		区服：<input type="text" name="gameAreaServer" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/><br/>
+		游戏渠道：<input type="text" name="gameChannelName" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2 "/>
+	</div>
+	<div style="border-top:1px dashed #666; ">
+		<b>【买家账号信息】</b><br/>
+		角色名称：<input type="text" name="orderBuyGameRoleName" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		角色id：<input type="text" name="orderBuyGameRoleId" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		角色等级：<input type="text" name="orderBuyGameRoleLevel" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+	</div>
+	<div style="border-top:1px dashed #666; ">
+		<b>【商品信息】</b><br/>
+		商品编号：<input type="text" name="goodsId" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/> 
+		商品名称：<input type="text" name="goodsName" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		<br/>
+		<div id="goodsSingleDiv" style="display: none">
+		单件数量：<input type="text" name="goodsSingleNumber" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		<span style="padding-left:90px">
+		单价：<input type="text" name="goodsSinglePrice" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		</span>
+		<span style="padding-left:30px">
+		商品总数：<input type="text" name="totalGoodsNumber" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		</span>
+		</div>
+		商品类型：<select name="goodsType" style="border: thin;size: 10px;" disabled="disabled">  		    
+				<#list productTypeList as typeList>
+					<option value="${typeList.id }" >${typeList.name}</option>
+				</#list>
+		 </select>
+		 <span style="padding-left:55px">
+		 商品备注：<input type="text" name="goodsRemark" size="20" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/></span>
+		 <span style="display: none">
+		 商品存放：<select name="goodsPosition" style="border: thin;size: 10px;" disabled="disabled">
+				    <option value="1">交易所</option>  
+				    <option value="2">仓库</option>  
+				    <option value="3">邮箱</option> 
+				    <option value="4">包裹</option> 
+		 </select>
+		 </span>
+		 <span style="padding-left:95px;"><a href="javascript:void()" onclick="showProductProperty();">商品属性</a></span>
+	</div>	
+	<div style="border-top:1px dashed #666; ">
+	    <b>【卖家信息】</b><br/>
+		卖家UID：<input type="text" name="orderSellUid" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		姓名：<input type="text" name="orderSellRealName" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		联系QQ：<input type="text" name="orderSellQq" size="8" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		手机号码：<input type="text" name="orderSellRealPhone" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+	</div>
+	<div style="border-top:1px dashed #666; ">	
+		<b>【买家信息】</b><br/>
+		买家UID：<input type="text" name="orderBuyUid" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		姓名：<input type="text" name="orderBuyRealName" size="5" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		联系QQ：<input type="text" name="orderBuyQq" size="8" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+		手机号码：<input type="text" name="orderBuyRealPhone" size="10" maxlength="50" readonly style="border:thin;background-color: #f2f2f2"/>
+	</div>
+	<!-- 历史备注信息 -->
+	<div style="border-top:1px dashed #666; ">
+		<b>【历史备注信息】</b>
+		<input type="button" value="查看更多" onclick="showMoreRemark();"/><br/>
+		<label id="remarkLabel2" style="color:red"></label>
+	</div>
+</form>
+</div>
+
+	<!-- 自定义属性详细窗口 -->
+<div id="showCustomAttributesWindow" class="easyui-window" title="自定义属性信息"
+		data-options="modal:true"
+		style="top: 10px; width: 800px; height: '550px'; padding: 10px; line-height:15px; display: none">详细信息内容</div>
+</body>
+</html>

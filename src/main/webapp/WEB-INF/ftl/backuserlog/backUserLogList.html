@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<title>后台操作日志</title> <#include "../common.html"/>
+<script type="text/javascript">
+	var datagrid;
+	var searchForm;
+	$(function() {
+		searchForm = $('#searchForm').form();//条件搜索框
+		datagrid = $('#datagrid').datagrid({
+			url : 'backUserLogList_json',
+			title : '后台操作日志列表',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'create_time',
+			sortOrder : 'desc',
+			columns : [ [ {
+				field : 'id',
+				title : 'ID',
+				align : 'center',
+			}, {
+				field : 'uid',
+				title : '访问用户(UID)',
+				align : 'center',
+				sortable : true
+			}, {
+				field : 'logIp',
+				title : '访问IP',
+				align : 'center',
+				width : 20,
+			}, {
+				field : 'logTypeName',
+				title : '日志类型',
+				align : 'center',
+			}, {
+				field : 'logRemark',
+				title : '事件',
+				align : 'left',
+				width : 80,
+			}, {
+				field : 'createTime',
+				title : '创建时间',
+				align : 'center',
+			}, ] ]
+		});
+		var url = "allBacklogType_json";
+		$.getJSON(url, function(result) {
+			searchForm.find("select[name='logType'] option").remove();
+			for ( var key in result) {
+				var options = "<option value='"+key+"'>" + result[key]
+						+ "</option>";
+				searchForm.find("select[name='logType']").append(options);
+			}
+		});
+		$('#beginTime').datebox({
+			validType : 'date[\'\']'
+		});
+		$('#endTime').datebox({
+			validType : 'date[\'\']'
+		});
+	});
+	function _search() {
+		datagrid.datagrid("unselectAll");
+		var beginTime = $('#beginTime').datebox('getValue');
+		var endTime = $('#endTime').datebox('getValue');
+		var  r = beginTime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+		var  r2= endTime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+		if(r==null && beginTime !=""){
+			$.messager.alert('提示', '请填写正确的开始时间', 'error');
+			return false;
+		}
+		if(r2==null && endTime !=""){
+			$.messager.alert('提示', '请填写正确的结束时间', 'error');
+			return false;
+		}
+		if (beginTime > endTime && beginTime != "" && endTime != "") {
+			$.messager.show({title:'提示', msg:'请选择正确的时间段'});
+			return false;
+		} else {
+			var uid = $('#uid').val();
+			var logIp = $('#logIp').val();
+			var logType = $('#searchForm select option:selected').val();
+			datagrid.datagrid({
+				queryParams : {
+					uid : uid,
+					logIp : logIp,
+					logType : logType,
+					beginTime : beginTime + "",
+					endTime : endTime + ""
+				}
+			});
+			datagrid.datagrid('reload');
+		}
+	}
+
+	function cleanSearch() {
+		datagrid.datagrid('reload');
+		$('#searchForm').form('clear');
+		searchForm.find('#logType').val('');
+		datagrid.datagrid({
+			queryParams : {}
+		});
+		datagrid.datagrid('reload');
+	}
+</script>
+</head>
+<body class="easyui-layout">
+	<div
+		region="north"
+		border="false"
+		title="搜索条件"
+		style="padding: 10px; height: 75px; overflow: hidden;"
+		align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+					<td>UID:<input
+						type="text"
+						id="uid"
+						name="uid"
+						size="20"
+						maxlength="50"
+						class="easyui-numberbox"
+						missingMessage="请填写访问用户（UID）,只能是数字" />&nbsp;
+					</td>
+					<td>访问IP:<input
+						type="text"
+						id="logIp"
+						name="logIp"
+						size="20"
+						missingMessage="请填写访问IP,格式如:127.0.0.1" />&nbsp;
+					</td>
+					<td>日志类型:<select
+						style="width: 155px"
+						name="logType"
+						id="logType">&nbsp; </td>
+					<td>起止时间: <input
+						id="beginTime"
+						type="text"
+						name="beginTime"
+						class="easyui-datebox"
+						style="width: 150px"> - <input
+						id="endTime"
+						type="text"
+						name="endTime"
+						class="easyui-datebox"
+						style="width: 150px">
+					</td>
+					<td><a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="_search();">搜索</a> <a
+						href="javascript:void(0);"
+						class="easyui-linkbutton"
+						onclick="cleanSearch();">取消</a></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<div
+		region="center"
+		border="false">
+		<table id="datagrid"></table>
+	</div>
+</body>
+</html>

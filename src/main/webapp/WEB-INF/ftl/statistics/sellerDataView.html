@@ -1,0 +1,260 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>卖家销售数据</title>
+<#include "../common.html"/>
+<style>
+.newsty {
+	background-color: #C6E2FF;
+	border: 1px solid #EEE9E9;
+}
+
+.sevensty {
+	background-color: #FFFACD;
+	border: 1px solid #EEE9E9;
+}
+
+.fifsty {
+	background-color: #F0FFF0;
+	border: 1px solid #EEE9E9;
+}
+
+.reg {
+	background-color: #FFC0CB;
+	border: 1px solid #EEE9E9;
+}
+</style>
+<script type="text/javascript">
+$(function() {
+	//日期校验
+	$('#fromDays').datebox({
+		validType : 'date[\'\']'   
+	});
+	$('#toDays').datebox({
+		validType : 'date[\'\']'
+	});
+});
+function _search() {
+	var fromDays = $('#fromDays').datebox('getValue');
+
+	var toDays = $('#toDays').datebox('getValue');
+	var type=new Array();
+	$('input[name="queryType"]:checked').each(function(){
+		type.push($(this).val());//向数组中添加元素
+	});
+	var type=type.join(',');//将数组元素连接起来以构建一个字符串
+	
+	if (fromDays > toDays && fromDays != "" && toDays != "") {
+		$.messager.show({title:'提示', msg:'请选择正确的时间段'});
+		return false;
+	}  else {
+		 $.ajax({
+			url : 'sellerDataList.do',
+			data : "type="+type+"&fromDays="+fromDays+"&toDays="+toDays,
+			dataType : 'json',
+			cache : false,
+			success : function(result) {
+				showResult(result);
+			}
+		}); 
+	}
+}
+
+
+function showResult(result){
+	var type=new Array();
+	$('input[name="queryType"]:checked').each(function(){
+		type.push($(this).val());//向数组中添加元素
+	});
+	
+	var content='';
+	var total=result.rows.length;
+	if(total <= 0) {
+		content+='<p align="center">您的查询没有对应的数据</p>';
+		$('#userdata').html(content); 
+		return ;
+	}
+		 
+	
+	var content ='<table  id="main-order-table" bgcolor="#EEEEEE" cellspacing="1"  cellpadding="5" align="center" style="border-collapse:collapse"><thead>'+
+	'<tr align="center" ><td class="reg">日期</td>' ;
+	if (type.indexOf("countUser") != -1){
+		content+=    '<td class="reg">新增注册用户数</td>' +
+					 '<td class="reg">实名认证用户数</td>' +
+					 '<td class="reg">累计注册用户数</td>' +
+					 '<td class="reg">累计实名认证总数</td>' ;
+					 }
+	if (type.indexOf("newBuyer") != -1){
+		content+=    '<td class="newsty">当日新增卖家数</td>' +
+					 '<td class="newsty">当日新增卖家数（有销售）</td>' +
+					/*  '<td class="newsty">当日新增卖家上架商品件数</td>' +
+					 '<td class="newsty">当日新增卖家人均上架商品件数</td>' +
+					 '<td class="newsty">当日新增卖家上架商品金额</td>' +
+					 '<td class="newsty">当日新增卖家人均上架商品金额</td>' + */
+					 '<td class="newsty">当日新增卖家销售商品件数</td>' +
+					 '<td class="newsty">当日新增卖家人均销售商品件数</td>' +
+					 '<td class="newsty">当日新增卖家销售商品金额</td>' +
+					 '<td class="newsty">当日新增卖家人均销售商品金额</td>' ;
+					 }
+	if (type.indexOf("7buyData") != -1){
+		content+=    '<td class="sevensty">7日内无销售记录人数</td>' +
+					 '<td class="sevensty">7日内有销售记录人数（1单）</td>' +
+					 '<td class="sevensty">7日内有销售记录人数（2~5单）</td>' +
+					 '<td class="sevensty">7日内有销售记录人数（6~10单）</td>' +
+					 '<td class="sevensty">7日内有销售记录人数（>10单）</td>' +
+					 '<td class="sevensty">7日内有销售记录人数占比</td>' +
+					 '<td class="sevensty">7日内人均销售笔数</td>' +
+					 '<td class="sevensty">7日内人均销售金额</td>' ;
+					 }
+	if (type.indexOf("15buyData") != -1){
+		content+=    '<td class="fifsty">15日内无销售记录人数</td>' +
+					 '<td class="fifsty">15日内有销售记录人数（1单）</td>' +
+					 '<td class="fifsty">15日内有销售记录人数（2~10单）</td>' +
+					 '<td class="fifsty">15日内有销售记录人数（11~20单）</td>' +
+					 '<td class="fifsty">15日内有销售记录人数（>20单）</td>' +
+					 '<td class="fifsty">15日内有销售记录人数占比</td>' +
+					 '<td class="fifsty">15日内人均销售笔数</td>' +
+					 '<td class="fifsty">15日内人均销售金额</td>' ;
+					 }
+	
+	content += "</tr></thead>";
+	content += "<tbody>";
+	
+	for(var i=0;i<total;i++){
+		content+='<tr align="center" bgcolor="';
+		if(i%2==0){
+			content+='white';
+		}else{
+			content+='#F6F7F8';
+		}   
+		content+='">';
+		content+='<td class="reg">'+(result.rows[i].dayUser.countDay?result.rows[i].dayUser.countDay.substring(0,10):"0")+'</td>';
+		if (type.indexOf("countUser") != -1){
+			content+='<td class="reg">'+(result.rows[i].dayUser.regNum?result.rows[i].dayUser.regNum:"0")+'</td>'+
+					 '<td class="reg">'+(result.rows[i].dayUser.realNum?+result.rows[i].dayUser.realNum:"0")+'</td>'+
+					 '<td class="reg">'+(result.rows[i].dayUser.totalNum?result.rows[i].dayUser.totalNum:"0")+'</td>'+
+					 '<td class="reg">'+(result.rows[i].dayUser.realTotal?result.rows[i].dayUser.realTotal:"0")+'</td>';
+		}
+		if (type.indexOf("newBuyer") != -1){
+			if (result.rows[i].sellData){
+				content+=
+				 '<td class="newsty">'+(result.rows[i].sellData.newsSalerDayCount?result.rows[i].sellData.newsSalerDayCount:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].sellData.newsSalerSellCount?result.rows[i].sellData.newsSalerSellCount:"0")+'</td>'+
+				 /* '<td class="newsty">'+(result.rows[i].sellData.onProductTotal?result.rows[i].sellData.onProductTotal:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].sellData.avgOnSaleProduct?result.rows[i].sellData.avgOnSaleProduct:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].sellData.onSaleProAmount?result.rows[i].sellData.onSaleProAmount:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].sellData.avgOnSaleProAmount?result.rows[i].sellData.avgOnSaleProAmount:"0")+'</td>'+ */
+				 '<td class="newsty">'+(result.rows[i].sellData.sellProTotal?result.rows[i].sellData.sellProTotal:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].sellData.avgSellProTotal?result.rows[i].sellData.avgSellProTotal:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].sellData.sellProAmount?result.rows[i].sellData.sellProAmount:"0")+'</td>'+
+				 '<td class="newsty">'+(result.rows[i].sellData.avgSellProAmount?result.rows[i].sellData.avgSellProAmount:"0")+'</td>';
+			}else{
+				content+= '<td class="newsty">0</td>'+
+	//			'<td class="newsty">0</td><td class="newsty">0</td><td class="newsty">0</td><td class="newsty">0</td>'+
+				'<td class="newsty">0</td><td class="newsty">0</td><td class="newsty">0</td><td class="newsty">0</td><td class="newsty">0</td>';
+			}
+		}
+		if (type.indexOf("7buyData") != -1){
+			if (result.rows[i].sellData){
+				content+=
+				 '<td class="sevensty">'+(result.rows[i].sellData.d7ZeroSellItems?result.rows[i].sellData.d7ZeroSellItems:"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].sellData.d7AsellItem?result.rows[i].sellData.d7AsellItem:"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].sellData.d7TwoToFiveSellItems?result.rows[i].sellData.d7TwoToFiveSellItems:"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].sellData.d7sixToTenSellItems?+result.rows[i].sellData.d7sixToTenSellItems:"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].sellData.d7LargeTenSellItems?result.rows[i].sellData.d7LargeTenSellItems:"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].sellData.d7SellRate?(((result.rows[i].sellData.d7SellRate)*100).toFixed(2)+"%"):"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].sellData.d7AvgSellItems?result.rows[i].sellData.d7AvgSellItems:"0")+'</td>'+
+				 '<td class="sevensty">'+(result.rows[i].sellData.d7AvgSellAmount?result.rows[i].sellData.d7AvgSellAmount:"0")+'</td>';
+			}else{
+				content+= '<td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td><td class="sevensty">0</td>';
+			}
+		}
+		if (type.indexOf("15buyData") != -1){
+			if (result.rows[i].sellData){
+				content+=
+				 '<td class="fifsty">'+(result.rows[i].sellData.d15ZeroSellItems?result.rows[i].sellData.d15ZeroSellItems:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].sellData.d15Aselltems?result.rows[i].sellData.d15Aselltems:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].sellData.d15TwoToTenSellItems?result.rows[i].sellData.d15TwoToTenSellItems:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].sellData.d15EleToTwentySellItems?result.rows[i].sellData.d15EleToTwentySellItems:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].sellData.d15LargeTwentySellItems?result.rows[i].sellData.d15LargeTwentySellItems:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].sellData.d15SellRate?(((result.rows[i].sellData.d15SellRate)*100).toFixed(2)+"%"):"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].sellData.d15AvgSellItems?result.rows[i].sellData.d15AvgSellItems:"0")+'</td>'+
+				 '<td class="fifsty">'+(result.rows[i].sellData.d15AvgSellAmount?+result.rows[i].sellData.d15AvgSellAmount:"0")+'</td>';
+			}else{
+				content+= '<td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td><td class="fifsty">0</td>';
+			}
+		}
+		
+		content+='</tr>';
+	}
+	content+='</tbody></table>';
+	$('#userdata').html(content); 
+}
+
+function cleanSearch() {
+	$('#searchForm').form('reset');
+	$('#searchForm input').val('');
+	 
+}
+
+function _exportStatisticsSellerData(){
+	var fromDays = $('#fromDays').datebox('getValue');
+
+	var toDays = $('#toDays').datebox('getValue');
+	var type=new Array();
+	$('input[name="queryType"]:checked').each(function(){
+		type.push($(this).val());//向数组中添加元素
+	});
+	var type=type.join(',');//将数组元素连接起来以构建一个字符串
+	var qdata="fromDays="+fromDays+"&toDays="+toDays+"&type="+type;
+	
+	if(fromDays != "" && toDays != "" ){
+		$.messager.confirm('', '确定要导出数据吗？', function(r){
+			if (r){
+				$.ajax({
+					type:'POST',
+					url : 'exportSellerDataStatisticsExcel.do',
+					success: function(data){
+							window.open(
+									'${request.contextPath}/statistics/exportSellerDataStatisticsExcel.do?'+qdata,
+									'',
+									'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+							window.close();
+					}
+				});
+			}
+		});
+	}else{
+		$.messager.alert("提示","日期不能为空！");
+	}
+	
+}
+
+</script>
+</head>
+<body class="easyui-layout">
+	<div region="north" border="false" title="搜索条件" style="padding: 5px; height: 115px; overflow: hidden; "align="left">
+		<form id="searchForm">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+				<tr>
+					<td class="lable">统计时间:</td>
+					<td colspan="3">从 <input id="fromDays" type="text" name="fromDays" class="easyui-datebox" style="width: 130px" />
+									到 <input id="toDays" type="text" name="toDays" class="easyui-datebox" style="width: 130px" />
+					</td>
+					<td><input type="checkBox" name="queryType" value="countUser" checked="checked">注册认证数据</input></td>
+					<td><input type="checkBox" name="queryType" value="newBuyer" checked="checked">当日卖家上架销售数据</input></td>
+					<td><input type="checkBox" name="queryType" value="7buyData" checked="checked">7日内卖家销售数据</input></td>
+					<td><input type="checkBox" name="queryType" value="15buyData" checked="checked">15日内卖家销售数据</input></td>
+					<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a> 
+						<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a></td>
+					<td><a href="javascript:void(0);" class="easyui-linkbutton" onclick="_exportStatisticsSellerData();">导出统计数据</a></td></tr>
+			</table>
+		</form>
+	</div>
+	<div region="center">
+		<div id="userdata">
+		</div> 
+	</div>
+</body>
+</html>

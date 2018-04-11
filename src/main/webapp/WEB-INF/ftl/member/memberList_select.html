@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>会员列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'memberList_json.do',
+			title : '会员列表',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 20,
+			pageList : [ 20, 40, 60, 80 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'uid',
+			sortName : 'uid',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.obid;
+						}
+					},
+			   {field:'uid',title:'用户UID',align:'center',sortable:true},				
+			   {field:'loginName',title:'用户账号',align:'center',width:100},
+			   {field:'qq',title:'用户QQ',align:'center',width:100},	
+			   {field:'mobile',title:'用户手机',align:'center',width:100},	
+			   {field:'emile',title:'用户邮箱',align:'center',width:100},
+			   {field:'createTime',title:'注册时间',align:'center',width:100},	
+			   {field:'lastTime',title:'最后登录时间',align:'center',width:100},	
+			   {field:'status',title:'账号状态',align:'center',width:100,
+				   formatter:function(value,row,index){
+						  
+					   if (row.status==2){
+						   return "<a href='#' id= 'm_status"+row.uid+"' onclick='updateMemStatus("+row.uid+")'><font color='red' >锁定</font></a>";
+					   }else{
+						   return "<a href='#' id= 'm_status"+row.uid+"' onclick='updateMemStatus("+row.uid+")'>正常</a>";
+					   }
+					}  
+				   
+				   },		
+			 ] ],
+			toolbar : [ {
+				text : '确认选择',
+				iconCls : 'icon-edit',
+				handler : function() {
+					select();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+			//右键菜单 
+			onRowContextMenu : function(e, rowIndex, rowData) {
+				e.preventDefault();
+				$(this).datagrid('unselectAll');
+				$(this).datagrid('selectRow', rowIndex);
+				$('#menu').menu('show', {
+					left : e.pageX,
+					top : e.pageY
+				});
+			}
+		});
+		editForm = $('#editForm').form({
+			url : 'member_edit.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '会员信息详情',
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					editForm.submit();
+				}
+			} ],
+			modal : true,
+			closed : true,
+			maximizable : true,
+		
+		}); 
+		
+		addForm = $('#addForm').form({
+			url : 'member_add.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加新游戏',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					addForm.submit();
+				}
+			} ]
+		});
+
+});
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+function select(){
+	try{
+		var rows = datagrid.datagrid('getSelections');
+		var memberIds="";
+		if (rows.length>0) {
+				for(var i=0;i<rows.length;i++){
+					if(i==rows.length-1){
+						memberIds=memberIds+rows[i].uid;
+					}else{
+						memberIds=memberIds+rows[i].uid+",";
+					}
+				}	
+			//将参数回调到页面
+			window.opener.selectUidCallBack(memberIds);
+			window.close();
+		} else {
+			$.messager.alert('提示', '请选择一条记录！', 'error');
+		}
+	}catch(e){
+		alert(e);
+	}
+}
+
+function edit() {
+	var rows = datagrid.datagrid('getSelections');
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'member_json.do',
+			data : {
+				uid : rows[0].uid
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				editForm.form('clear');
+				editForm.form('load', response);
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+
+function showRoleSelect(formName,value){
+	if (value == 0){
+		$("#"+formName+" .roleSelect").hide();
+	}else{
+		$("#"+formName+" .roleSelect").show();
+	}
+}
+
+
+function updateMemStatus(uid) {
+	$.ajax({
+		url : 'updateMemStatus.do',
+		data : {
+			uid : uid
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+		    var new_status = response.msg;
+			if(new_status.indexOf("锁定")>0){
+				$("#"+"m_status"+uid).html("<font color=red>锁定</font>");
+			}else{
+				$("#"+"m_status"+uid).html("正常");
+			}
+			$.messager.show({
+				title : '修改成功!',
+				msg : response.msg
+			});
+
+		}
+	});
+}
+
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>用户UID:<input name="uid" style="width:100px;" />&nbsp;</td>
+				<td>用户账号:<input name="loginname" style="width:100px;" />&nbsp;</td>
+				<td>电话号码:<input name="telephone" style="width:100px;" />&nbsp;</td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+<!--  
+	<div onclick="add();" iconCls="icon-add">增加</div>
+	
+	<div onclick="del();" iconCls="icon-remove">bianji</div>
+	-->
+	<div onclick="edit();" iconCls="icon-edit">查看详情</div>
+</div>
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 600px;height: 600px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="uid" />
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		 
+		   <tr>
+		      <td >用户UID：</td>
+		      <td><input type="text" name="uid" size="20" maxlength="50"    /></td>
+		   </tr>
+		   <tr> 
+		      <td class="lable">账号：</td>
+		      <td><input type="text" name="loginName" size="20" maxlength="50"   /></td>
+		        </tr>
+		           <tr> 
+		       <td class="lable">真实姓名：</td>
+		      <td><input type="text" name="real_name" size="20" maxlength="50"   /></td>
+		      </tr>  
+		  
+		   <tr>
+		       <td class="lable">昵称：</td>
+		      <td><input type="text" name="nickName" size="20" maxlength="50"  /></td>
+		       </tr>
+		     
+		   <tr> 
+		       <td class="lable">生日：</td>
+		      <td><input type="text" name="birthday" size="20" maxlength="50"  class="easyui-datebox"/></td>
+		    </tr>  
+		  
+		    <tr> 
+		       <td class="lable">QQ：</td>
+		      <td><input type="text" name="qq" size="20" maxlength="50"   /></td>
+		        </tr>
+		          <tr> 
+		       <td class="lable">手机号码：</td>
+		      <td><input type="text" name="mobile" size="20" maxlength="50"   /></td>
+		        </tr>
+		
+		      
+		      	   <tr> 
+		       <td class="lable">电子邮箱：</td>
+		      <td><input type="text" name="email" size="20" maxlength="50"   /></td>
+		      </tr>
+		         
+		      <tr>
+		       <td class="lable">注册时间：</td>
+		      <td><input type="text" name="createTime" size="20" maxlength="50" class="easyui-datebox" /></td>
+		       </tr>
+		 
+		   <tr>  
+		       <td class="lable">最后登录时间：${m.createTime}</td>
+		      <td><input type="text" name="lastTime" size="20" maxlength="50" class="easyui-datebox"   /></td>
+		      
+		    </tr>
+		     <tr>  
+		       <td class="lable">实名认证：</td>
+		      <td><input type="text" name="status_mse" size="20" maxlength="50"  /></td>
+		      
+		    </tr>
+		   <!--  
+		     <tr>  
+		       <td class="lable">账户金额：</td>
+		      <td><input type="text" name="status_mse" size="20" maxlength="50"  /></td>
+		      
+		    </tr>
+		     <tr>  
+		       <td class="lable">可用金额：</td>
+		      <td><input type="text" name="status_mse" size="20" maxlength="50"  /></td>
+		      
+		    </tr>
+		     <tr>  
+		       <td class="lable">保证金额：</td>
+		      <td><input type="text" name="status_mse" size="20" maxlength="50"  /></td>
+		      
+		    </tr>
+		    -->
+	
+		  </table> 
+	</form>
+</div>
+</body>
+</html>

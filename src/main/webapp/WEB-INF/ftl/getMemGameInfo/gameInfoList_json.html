@@ -1,0 +1,16 @@
+<#if list??>
+{"total":${count},"rows":
+[ <#list list as item> 
+{ "id":${item.id},
+"uid":${item.uid}, 
+"gameName":"${item.gameName}",
+"gameId":${item.gameId}, 
+"gameUid":"${item.gameUid}",
+"nickname":"${item.nickname!''}",
+"createTime":"${item.createTime?string('yyyy-MM-dd HH:mm:ss')}",
+"operation":"${item.operation!''}" } <#if item_has_next>,
+</#if> </#list>
+]}
+<#else>
+  {"total":0,"rows":[]}
+</#if>

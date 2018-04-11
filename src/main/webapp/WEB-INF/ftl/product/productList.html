@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>商品列表</title> <#include "../common_new.html"/>
+
+<style>
+.table_line tr td {
+	border-bottom: #999 1px dashed;
+}
+</style>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+var picForm;
+var picDialog;
+
+var showCustomAttributesWindow;
+
+$(function() {
+	showCustomAttributesWindow = $('#showCustomAttributesWindow');
+	showCustomAttributesWindow.dialog('close');
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'productList_json.do',
+			title : '商品列表',
+			//iconCls : 'icon-save',
+				queryParams:{
+				productno:"${productno!''}",userid:${userid!'0'}
+			},
+			pagination : true,
+			loadMsg:null,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 25,
+			pageList : [ ${pageList!'25'}, 30, 40, 100 ],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : 'productId',
+			sortName : 'create_time',
+			sortOrder : 'desc',
+			columns : [ [ 
+			             
+              {field:'ck',checkbox:true,
+					formatter:function(value,row,index){
+						return row.productId;
+					}
+				},
+			             
+			   {field:'productId',title:'商品编号',align:'center',
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="viewProductLog(\''+row.productId+'\')">'+value+'</a>';
+				   }    
+			   
+			   },	
+			   {field:'productOnsaleModel',title:'交易模式',align:'center',
+				   formatter:function(value,row,index){
+					  /*  if(row.productOnsaleModel==1){
+							  return "寄售";
+						  }else if(row.productOnsaleModel==2){
+							  return "API";
+						  }else if(row.productOnsaleModel==3){
+							  return "担保"
+						  }else if(row.productOnsaleModel==10){
+							  return "首冲"
+						  }else if(row.productOnsaleModel==20){
+							  return "退游"
+						  }else if(row.productOnsaleModel==30){
+							  return "换游"
+						  }else if(row.productOnsaleModel==99){
+							  return "差价"
+						  }else{
+							  return "未知"
+						  } */
+						  return row.productModelName;
+					  
+				   }
+			   },
+			   {field:'productTypeName',title:'商品类型',align:'center'
+			   },				
+			   {field:'productName',title:'商品名称',align:'left',width:150},
+			   {field:'productSingleNumber',title:'单件数量',align:'center',width:55},				
+			   {field:'productStock',title:'库存',align:'center',width:30	},				
+			   {field:'productSinglePrice',title:'单价',align:'center',width:30},
+			   {field:'productOriginalPrice',title:'原价',align:'center',width:30},
+			   {field:'gameNameShow',title:'游戏',align:'left',width:120},
+			   {field:'gameAreaAndServerName',title:'区/服',align:'left',width:120},
+			   {field:'productStatus',title:'商品状态',align:'left',width:80,
+				   formatter:function(value,row,index){
+						if(row.productStatus==1){
+							return "暂存中";
+						}else if(row.productStatus==3){
+							return "待审核";
+						}else if(row.productStatus==4){
+							return "审核中";
+						}else if(row.productStatus==5){
+							return "审核失败";
+						}
+					    else if (row.productStatus==7){
+							   return "<font color='red' >上架</font>";
+						   }else if(row.productStatus==8){
+							   return "用户下架";
+						   }else if(row.productStatus==9){
+							   return "已售完";
+						   }else if(row.productStatus==10){
+							   return "游戏下架";
+						   }
+						   else if(row.productStatus==11){
+							   return "已过期";
+						   }else if(row.productStatus==12){
+							   return "管理员下架";
+						   }else if(row.productStatus==13){
+							   return "下架失败";
+						   }else if(row.productStatus==-1){
+							   return "用户删除";
+						   }else{
+							   return "暂存中";
+						   }
+						}  
+			   },
+			   {field:'userId',title:'卖家UID',align:'center',
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="viewUser('+value+')">'+value+'</a>';
+				   }
+				   
+			   },
+			   //{field:'userNickname',title:'卖家昵称',align:'center'},
+			   {field:'onSaleTime',title:'上架时间',align:'center',width:160},
+			   {field:'offShelvesTime',title:'下架时间',align:'center',width:160},
+			   {field:'sonChannelId',title:'子渠道编号',align:'center',width:100},
+			   {field:'operate',title:'操作',align:'left',width:160,
+				   formatter:function(value,row,index){
+					    if(row.operate==null || row.operate==''){
+					    	var a='<a href="javascript:void(0)" onclick="viewProductLog(\''+row.productId+'\')">日志</a>';
+                            var b = '<a href="javascript:void(0)" onclick="viewProductLockStatus(\''+row.sellPid+'\',\''+row.gameId+'\',\''+row.gameAreaId+'\',\''+row.gameServerId+'\')">锁定情况</a>';
+					    	if(row.sellPid!=null && row.sellPid!=''){
+					    		
+								return a+" || "+b;
+					    	}else{
+					    		return a+" || -------"
+					    	}
+					    }
+					}
+			   	}
+				  
+			   
+			 ] ],
+
+
+			
+			  //双击事件
+			   onDblClickRow:function (rowIndex,rowData){
+				   //$(this).datagrid('unselectAll');
+				   //$(this).datagrid('selectRow', rowIndex);	
+				   edit(rowData.productId);
+			   }
+		});
+		editForm = $('#editForm').form({
+			url : 'product_edit.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '商品信息详情',
+			modal : true,
+			closed : true,
+			maximizable : true
+		//	buttons : [ {
+		//		text : '下架',
+		//		handler : function() {
+					//editForm.submit();
+		//			updateStatus(12);
+		//		}
+		 //	}]
+		}); 
+		
+		   //图片显示页面
+		picForm = $('#picForm').form({
+			url : 'updateMemStatus',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					verifyDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+					verifyDialog.dialog('close');
+				}
+			},
+			error:function(XMLHttpRequest, textStatus, errorThrown){
+				alert(textStatus);
+			}
+		});
+        
+		//图片显示页面
+	    picDialog = $('#picDialog').show().dialog({
+			title : '商品图片',
+			modal : true,
+			closed : true,
+			maximizable : true
+
+		});
+		
+		
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加新商品',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					addForm.submit();
+				}
+			} ]
+		});
+
+});
+function _search() {
+	var  btime = searchForm.find("table >tbody> tr input[name='btime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='etime']").val();
+	var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+	datagrid.datagrid("unselectAll");
+	$('#searchFlag_search').val(1);
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {searchFlag:1});
+	searchForm.find('input').val('');
+	searchForm.find('select').val('0');
+	$("#g_name_receiver").html("--");
+	 jQuery("#g_id_area_receiver").empty();
+	 jQuery("#g_id_serverid_receiver").empty();
+	 $("#g_id_area_receiver").prepend("<option value='0'>请选择</option>"); 
+	 $("#g_id_serverid_receiver").prepend("<option value='0'>请选择</option>"); 
+}
+
+
+function del() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].userId);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'product_delete.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						//var d = JSON.parse(response);
+						
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	} 
+}
+function edit(pid) {
+		$.ajax({
+			url : 'product_json.do',
+			data : {
+				productId : pid
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				var pStatus = response.productStatus;
+				//显示图片查看按钮
+				var existimg = response.existimg;
+				$("#offsale_show").show();
+				$('#show_pic_edit').show();
+				if(existimg == 0){
+					$('#show_pic_edit').hide();
+				}else{
+					$('#show_pic_edit').show();
+				}
+				if(pStatus==7){
+					$("#offsale_show").show();
+				}else{
+					$("#offsale_show").hide();
+				}
+				
+				if(pStatus==13){
+					$("#offsalefail_show").show();
+				}else{
+					$("#offsalefail_show").hide();
+				}
+				editForm.form('clear');
+				editForm.form('load', response);
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+	
+}
+
+function showRoleSelect(formName,value){
+	if (value == 0){
+		$("#"+formName+" .roleSelect").hide();
+	}else{
+		$("#"+formName+" .roleSelect").show();
+	}
+}
+
+//跳转到商品日志viewProductLockStatus
+function viewProductLog(productno){
+	var link = "product/productLogList.do?productno="+productno;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"商品:"+productno+"的日志" 
+			};
+	parent.addTab(node);	
+}
+
+//选择游戏
+function game_select() { 
+	window.open(
+					'../game/gameList_select',
+					'',
+					'width=1200,height=500,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+}
+
+//游戏选择回调游戏id和名称
+// function selectGameCallBack(gameId,gameName){
+// 	$("#g_id_receiver").attr("value",gameId);
+// 	$("#g_name_receiver").html(gameName);
+//     selectsub(gameId);
+// }
+
+//选择游戏后
+function gamechange(){
+	var gameid = $("#g_id_receiver").val();
+	$.ajax({
+		url : '../game/selectVesion',
+		data : {
+			gameId : gameid
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+	    var version_select = $("#g_id_version_receiver");
+		var area_select =  $("#g_id_area_receiver");
+		var server_select =  $("#g_id_serverid_receiver");
+		
+        version_select.empty();
+        version_select.append("<option value=\'-1'>请选择</option>"); 
+        
+        area_select.empty();
+        area_select.append("<option value=\'-1'>请选择</option>"); 
+        
+        server_select.empty();
+        server_select.append("<option value=\'-1'>请选择</option>"); 
+
+		//添加选项
+		if(data.length > 0){
+			for(var i = 0 ;i<data.length;i++){
+				var ver_id = data[i].id;
+				console.log(ver_id);
+				//有版本
+				$("#version_sel").show();
+				version_select.append("<option value=\'"+data[i].id+"\'>"+data[i].name+"</option>"); 
+			}
+		}
+		}
+	});
+	
+}
+
+
+
+//选择版本
+function allgamesearch(){
+	var gameid = $("#g_id_receiver").val();
+	var verid = $("#g_id_version_receiver").val();
+	selectsub(gameid,verid);
+}
+
+function selectsub(gameId,verid){
+	$("#server_sel").show();
+	$("#area_sel").show();
+	$.ajax({
+		url : '../game/selectPatition',
+		data : {
+			gameId : gameId,
+			verId:verid
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+		var area_select =  $("#g_id_area_receiver");
+		var server_select =  $("#g_id_serverid_receiver");
+		
+        area_select.empty();
+        area_select.append("<option value=\'-1'>请选择</option>"); 
+        
+        server_select.empty();
+        server_select.append("<option value=\'-1'>请选择</option>"); 
+        
+        console.log(" == " + data.length);
+			//添加选项
+				for(var i = 0 ;i<data.length;i++){
+					var p_id = data[i].id;
+					console.log("pid == " + p_id);
+					if(p_id > 0){
+						//有分区 
+						$("#area_sel").show();
+						 area_select.append("<option value=\'"+data[i].id+"\'>"+data[i].name+"</option>"); 
+					}
+				}
+		}
+	});
+}
+
+function areachange(){
+		var gameId = $("#g_id_receiver").val();
+		var verId = $("#g_id_version_receiver").val();
+		var checkValue=$("#g_id_area_receiver").val(); 
+		var server_select =  $("#g_id_serverid_receiver");
+	
+    
+		$.ajax({
+			url : '../game/selectGameAreaDetail',
+			data : {
+				gameId:gameId,partitionId:checkValue
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(data) {
+				if(typeof data.total!="undefined"){
+				//先清理上次服务器残留选项
+				var maxindex2=$("select[name='serverId']").find("option:last").index();
+				if(maxindex2>=1){
+					for(var j =1;j<=maxindex2;j++){
+						 $("#g_id_serverid_receiver option:last").remove(); 
+					}
+				}
+				for(var i = 0 ;i<data.total;i++){
+				
+					$("#server_sel").show();
+					server_select.append("<option value=\'"+data.rows[i].id+"\'>"+data.rows[i].name+"</option>"); 
+					}
+				}else{
+					
+					$("#server_sel").hide();
+				}
+			}
+		});
+}
+
+//商品下架
+function updateStatus(status){
+	var pid = $("#id_for_update").val();
+	var uremark =$("#remark_for_status").val();
+	//alert(pid);
+	//alert(uremark)
+	//alert(status);
+	if(uremark==""){
+		$.messager.alert("提示","请填写下架备注!");
+		return false;
+	}
+	$.messager.confirm('确认框','您确认要给该商品下架?',function(r){  
+	    if (r){  
+	    	$.ajax({
+	    		url : 'product_edit.do',
+	    		type : 'POST',
+	    		data : {
+	    			status2 :status,pid:pid,remark:uremark
+	    		},
+	    		dataType : 'json',
+	    		cache : false,
+	    		success : function(response) {
+	    			if (response.success) {
+	    				$.messager.show({
+	    					title : '成功',
+	    					msg : response.msg
+	    				});
+	    				datagrid.datagrid('reload');
+	    				editDialog.dialog('close');
+	    				editForm.form('load', response);
+	    			} else {
+	    				$.messager.show({
+	    					title : '失败',
+	    					msg : response.msg
+	    				});
+	    			}
+	    		}
+	    	});
+	    	
+	    }  
+	});
+	
+
+
+}
+
+
+//解冻金币 商品下架
+function updateStatus2(status){
+	var pid = $("#id_for_update").val();
+	var uremark =$("#remark_for_status").val();
+	//alert(pid);
+	//alert(uremark)
+	//alert(status);
+	if(uremark==""){
+		$.messager.alert("提示","请填写下架备注!");
+		return false;
+	}
+	$.messager.confirm('确认框','您确认要给该商品解冻金币下架?',function(r){  
+	    if (r){  
+	    	$.ajax({
+	    		url : 'productFailOff.do',
+	    		type : 'POST',
+	    		data : {
+	    			status2 :status,pid:pid,remark:uremark
+	    		},
+	    		dataType : 'json',
+	    		cache : false,
+	    		success : function(response) {
+	    			if (response.success) {
+	    				$.messager.show({
+	    					title : '成功',
+	    					msg : response.msg
+	    				});
+	    				datagrid.datagrid('reload');
+	    				editDialog.dialog('close');
+	    				editForm.form('load', response);
+	    			} else {
+	    				$.messager.show({
+	    					title : '失败',
+	    					msg : response.msg
+	    				});
+	    			}
+	    		}
+	    	});
+	    	
+	    }  
+	});
+	
+
+
+}
+//跳转到查询商品锁定情况页面
+function viewProductLockStatus(sellPid,gameId,areaId,serverId){
+	//alert(sellPid);
+	//alert(gameId);
+	var link = "product/productIsLockedShow?gameId="+gameId+"&sellPid="+sellPid+"&areaId="+areaId+"&serverId="+serverId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"上架号:"+sellPid+"的锁定情况查询" 
+			};
+	parent.addTab(node);	
+}
+
+//卖家用户信息
+function viewUser(uid){
+	var link = "${request.contextPath}/member/memberList.do?uid="+uid;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"用户"+uid+"详情" 
+			};
+	parent.addTab(node);	
+}
+//商品类型
+$(function() {
+	var url = "../customerduty/allproducttypeList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='role_product_type'] option").remove();
+		var def =  "<option value='-1'>请选择</option>";
+		$("select[name='role_product_type']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='role_product_type']").append(options);
+		}
+
+	});
+	
+});
+
+//详情商品图片
+function showpic(){
+	var product_id_for_pic = $('#id_for_update').val();
+    $('#tobody').html("");	
+	$.ajax({
+		url : '../productverify/productPicShow.do',
+		data : {
+			productId :product_id_for_pic
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+		 picDialog.dialog('open');
+		 if(null != data){
+			 fillTr(data); 
+		 }else{
+			 var html =""
+					html+='<tr>';
+					html+='<td class="lable">该商品卖家暂未上传图片</td>';
+					html+='</tr>';
+				 $("#tobody").html(html);
+			 }
+		}
+	});
+}
+
+//列表商品图片
+function showpic_list(pid){
+	//var product_id_for_pic = $('#id_for_update').val();
+    $('#tobody').html("");	
+	$.ajax({
+		url : 'productPicShow.do',
+		data : {
+			productId :pid
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(data) {
+		 picDialog.dialog('open');
+		 if(null != data){
+			 fillTr(data); 
+		 }else{
+			 var html =""
+				html+='<tr>';
+				html+='<td class="lable">该商品卖家暂未上传图片</td>';
+				html+='</tr>';
+			 $("#tobody").html(html);
+		 }
+		
+		}
+	});
+}
+
+function fillTr(data){
+	var html=""
+	$.each(data,function(i,item)
+	{   
+		//
+		var newurl = item.picUrl.replace('_small.','.');
+		html+='<tr>';
+		html+='<td class="lable">商品图片'+item.picid+'</td>';
+		html+='<td class="lable"><img alt="" height="200" width="200"  src="'+ newurl +'" ></td>';
+		html+='<td class="lable"><a href="javascript:void(0)" onclick="viewProductBigImg('+item.picid+')">查看大图</a></td>';
+		html+='</tr>';
+	});
+	$("#tobody").html(html);
+}
+
+//跳转到查看图片大图
+function viewProductBigImg(id){
+	var link = "${request.contextPath}/productverify/productPicShowBig.do?imgId="+id;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"商品图片:"+id 
+			};
+	parent.addTab(node);	
+}
+
+function areaServerChange(){
+	var productStatus=$("#productStatus option:selected").val();
+	console.log(productStatus);
+	if(productStatus!=7){
+		$.messager.alert("提示：","商品状态请选择上架");
+	}
+	else{
+		
+	var gameId=$("select[name='gameId']").val();
+	var partitionId;
+	var serverId;
+	var partitionRealId;
+	var gameName;
+	
+	gameName=$("#g_name_receiver").html();
+	if(gameId=="-1"){
+		$.messager.alert("提示：","请选择游戏");
+	}else{
+		partitionRealId=$("#g_id_area_receiver option:selected").val();
+		if(partitionRealId==-1){
+			$.messager.alert("提示：","请选择游戏分区");
+		}else{
+			
+			partitionId=$("#g_id_area_receiver option:selected").text();
+			
+			if($("#g_id_serverid_receiver option:selected").val()==-1){
+				 serverId="--";
+			}else{
+				serverId=$("#g_id_serverid_receiver option:selected").text();
+			}
+			
+			beforeChange(gameId,partitionId,serverId,partitionRealId);
+		}
+	}
+ }
+}
+
+function beforeChange(gameId,partitionId,serverId,partitionRealId){
+	var link="product/areaServerChange?gameId="+gameId+"&partitionId="+partitionId+"&serverId="+serverId+"&partitionRealId="+partitionRealId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"更改游戏ID："+gameId+"区/服:"+partitionRealId
+			};
+	parent.addTab(node);	
+}
+//批量下架功能
+function productSelectOff() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要将当前所选上架商品下架？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].productId);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'productSelectOff.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						//var d = JSON.parse(response);
+						
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要下架的商品！', 'error');
+	} 
+}
+
+function showCustomAttributes(customAttributes){
+	console.log(customAttributes);
+	if(customAttributes == "无自定义属性"){
+		$.messager.alert('提示', '该商品未填写自定义属性信息');
+		return false;
+	}
+	var json = $.parseJSON(customAttributes);
+	console.log(json.productProperty.length);
+	var ppStr="";
+	var pp=json.productProperty;
+	for(var i=0;i<json.productProperty.length;i++){
+		ppStr+="<span style=\"display:inline-block;width:125px\">"+pp[i].key+": </span>"+pp[i].value+"<br>";
+	}
+	var spStr="";
+	var sp=json.sellProperty;
+	for(var i=0;i<json.sellProperty.length;i++){
+		spStr+="<span style=\"display:inline-block;width:75px\">"+sp[i].key+": </span>"+sp[i].value+"<br>";
+	}
+	$('#showCustomAttributesWindow').window({
+		title : "温馨提示：属性过多浏览不全时，请点击窗口最大化",
+		content : "商品属性: <div>"+ppStr+"</div><br>"+
+				  "卖家属性: <div>"+spStr+"</div>"
+	});
+	$('#showCustomAttributesWindow').window('open');
+}
+
+//所有游戏
+$(function() {
+	var url = "allgameList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='gameId'] option").remove();
+		var def =  "<option value='-1'>请选择</option>";
+		$("select[name='gameId']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='gameId']").append(options);
+		}
+
+	});
+	
+});
+
+
+
+
+//批量上架功能
+function productSelectON() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您确认要将当前所选商品上架？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].productId);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'productSelectOnsale.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						//var d = JSON.parse(response);
+						
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要上架的商品！', 'error');
+	} 
+}
+
+
+function outXlsFile(){
+	//先判断是否能导数据
+	if(confirm("确定导出数据?")){
+		var param= $("#searchForm").serialize();
+		$.ajax({
+			type:'POST',
+			url:'validateDownXls.do',
+			data:param,//序列化表单里所有的内容
+			success: function(data){
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					window.open(
+							'${request.contextPath}/product/productOutXls.do?'+param,
+							'',
+							'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+	}
+}
+
+
+//批量配置购买规则
+function productfiter() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	var names = [];
+	
+	if(rows.length == 1){
+		var pid = rows[0].productId;
+		var name = rows[0].productName;
+		var link="productbuyfilter/productBuyFilter.do?ids="+pid+"&names="+name;
+		var node = {
+				"attributes":{ "url":link}, 
+				"checked":false,
+				"iconCls":"",
+				"state":"closed",
+				"text":"商品购买规则"+pid
+				};
+		parent.addTab(node);	
+	}else if (rows.length > 1) {
+		$.messager.confirm('请确认', '您要将当前所选商品配置购买规则？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].productId);
+					names.push(rows[i].productName);
+				}
+				var link="productbuyfilter/productBuyFilterBatch.do?ids="+ids+"&names="+names;
+				var node = {
+						"attributes":{ "url":link}, 
+						"checked":false,
+						"iconCls":"",
+						"state":"closed",
+						"text":"批量配置商品购买规则"
+						};
+				parent.addTab(node);	
+
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要配置购买规则的商品！', 'error');
+	} 
+}
+
+
+
+</script>
+</head>
+
+<body class="easyui-layout">
+	<div region="north" border="false" title="搜索条件"
+		style="height: 125px; overflow: hidden;" align="left">
+		<form id="searchForm">
+			<table>
+				<tr>
+
+					<td>商品编号:<input name="productno" value="${productno!''}"
+						style="width: 160px;" />&nbsp;
+					</td>
+
+
+					<td>卖家UID:<input name="userid" value="${userid!'0'}"
+						style="width: 80px;" />&nbsp;
+					</td>
+
+					<td>创建时间:<input name="btime" value="${btime!''}" type="text"
+						class="easyui-datebox" style="width: 90px;" /> - <input
+						name="etime" value="${etime!''}" type="text"
+						class="easyui-datebox" style="width: 90px;" /> <input
+						type="hidden" name="searchFlag" value="1" id="searchFlag_search" />
+                          子渠道编号：<input name="sonqudaoid" value="${sonqudaoid!''}"  style="width:80px;" />&nbsp;
+					</td>
+
+					<td><a href="javascript:void(0);" class="easyui-linkbutton"
+						onclick="_search();">搜索</a> <a href="javascript:void(0);"
+						class="easyui-linkbutton" onclick="cleanSearch();">取消</a> <a
+						href="javascript:void(0);" class="easyui-linkbutton"
+						onclick="outXlsFile();">导出数据</a></td>
+				</tr>
+				<tr>
+					<td>商品状态: <select name="p_status" id="productStatus">
+							<option value="0">未选择</option>
+							<option value="1">暂存中</option>
+							<option value="3">待审核</option>
+							<option value="4">审核中</option>
+							<option value="5">审核失败</option>
+							<option value="7">上架</option>
+							<option value="8">用户下架</option>
+							<option value="9">已售完</option>
+							<option value="10">游戏下架</option>
+							<option value="11">已过期</option>
+							<option value="12">管理员下架</option>
+							<option value="13">下架失败</option>
+							<option value="-1">用户删除</option>
+					</select></td>
+					<!-- 
+			<td>游戏ID：&nbsp;<input name="gameId2" style="width:100px;display: none" id="g_id_receiver" /> <span id="g_name_receiver">--</span> <a href="javascript:void(0);" class="easyui-linkbutton" onclick="game_select();">选择游戏</a> </td>
+			<td id = "area_sel">游戏分区： 
+			    <select name="partitionId" id ="g_id_area_receiver"   onchange="areachange()">
+                <option value="-1">请选择</option>
+                </select>
+                <font id="server_sel">     
+                                游戏服务器： <select name="serverId" id ="g_id_serverid_receiver"  >
+                <option value="-1">请选择</option>
+				  
+                </select>&nbsp;
+                </font>        
+                </td>
+		      -->
+					<td colspan="3">游戏:<select id="g_id_receiver" name="gameId" onchange="gamechange();" style="width: 96px">
+					</select>&nbsp;&nbsp; 
+					<b id="version_sel">游戏版本： <select name="gversionId" id="g_id_version_receiver" onchange="allgamesearch()">
+								<option value="-1">请选择</option>
+						</select>&nbsp;&nbsp; 
+						<b id="area_sel">游戏分区： <select name="partitionId" id="g_id_area_receiver" >
+									<option value="-1">请选择</option>
+							</select>&nbsp;&nbsp; 
+							
+<!-- 							<font id="server_sel"> 游戏服务器： <select 	name="serverId" id="g_id_serverid_receiver"> -->
+<!-- 										<option value="-1">请选择</option> -->
+
+<!-- 								</select>&nbsp; -->
+<!-- 							</font> -->
+						</b>	
+						商品分类： <select name="pro_typeGroup">
+							<option value="0">请选择</option> <#if (tList?? && tList?size>0)>
+							 <#list tList as item>
+							<option value="${item.id}">${item.name!''}</option>
+							</#list> </#if></td>
+						
+					</select>
+				</tr>
+				<tr>
+					<td>交易模式： <select name="pro_model">
+							<option value="0">请选择</option> <#if (modelList?? &&
+							modelList?size>0)> <#list modelList as item>
+							<option value="${item.modelId}">${item.modelName!''}</option>
+							</#list> </#if>
+					</select></td>
+					<td>商品类型:<select id="role_product_type_search"
+						name="role_product_type"
+						nonchange="javascript:showproducttypesearch();"
+						style="width: 96px">
+					</select>
+					</td>
+					<td><a href="javascript:void(0);" class="easyui-linkbutton"
+						onclick="areaServerChange();">更改上架商品游戏区/服</a> &nbsp;&nbsp;<a
+						href="javascript:void(0);" class="easyui-linkbutton"
+						onclick="productSelectOff();">寄售商品批量下架</a> &nbsp;&nbsp;<a
+						href="javascript:void(0);" class="easyui-linkbutton"
+						onclick="productSelectON();">寄售商品批量上架</a></td>
+				</tr>
+
+			</table>
+		</form>
+	</div>
+
+	<div region="center" border="false">
+		<table id="datagrid"></table>
+	</div>
+
+	<!-- 
+<div id="menu" class="easyui-menu" style="width:120px;display: none;">
+
+	<div onclick="edit();" iconCls="icon-edit">查看详情/商品下架</div>
+</div>
+ -->
+	<!--添加表单-->
+	<div id="addDialog" style="display: none; width: 600px; height: 300px;"
+		align="center">
+		<form id="addForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1">
+
+
+
+			</table>
+		</form>
+	</div>
+	<!--编辑表单-->
+	<div id="editDialog"
+		style="display: none; width: 750px; height: 510px;" align="center">
+		<form id="editForm" method="post" style="padding: 5px 10px">
+			<input type="hidden" name="gameId" />
+			<table width="100%" border="0" cellspacing="1" cellpadding="1"
+				class="table_line">
+
+				<tr>
+					<td colspan="2"><b>【游戏信息】</b></td>
+				</tr>
+
+				<tr>
+					<td colspan="2">所属游戏：<input type="text" name="gameName"
+						size="15" readonly="readonly" style="border: thin;" /> 所属分区： <input
+						type="text" name="gameArea" size="8" readonly="readonly"
+						style="border: thin;" /> 所属服务器：<input type="text"
+						name="gameServer" size="8" readonly="readonly"
+						style="border: thin;" />
+
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2"><b>【商品信息】</b></td>
+				</tr>
+				<tr>
+					<td>商品编号：<input type="text" name="productId"
+						id="id_for_update" size="50" readonly="readonly"
+						style="border: thin;" />
+					</td>
+					<td>商品状态： <select name="productStatus"
+						style="border: thin; color: red" disabled="disabled">
+							<option value="0">未选择</option>
+							<option value="1">暂存中</option>
+							<option value="3">审核中</option>
+							<option value="5">审核失败</option>
+							<option value="7">上架</option>
+							<option value="8">用户下架</option>
+							<option value="9">已售完</option>
+							<option value="10">游戏下架</option>
+							<option value="11">已过期</option>
+							<option value="12">管理员下架</option>
+							<option value="13">下架失败</option>
+							<option value="-1">用户删除</option>
+					</select>
+					</td>
+				</tr>
+				<tr>
+					<td>商品名称：<input type="text" name="productName" size="30"
+						readonly="readonly" style="border: thin;" />
+
+					</td>
+					<td>上架号：<input type="text" name="sellPid" size="30"
+						maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+
+				</tr>
+
+				<tr>
+					<td>单价：<input type="text" name="productSinglePrice" size="2"
+						readonly="readonly" style="border: thin; text-align: right" />元
+					</td>
+					<td>单件数量： <input type="text" name="productSingleNumber"
+						size="2" readonly="readonly"
+						style="border: thin; text-align: right" />
+					</td>
+				</tr>
+
+				<tr>
+					<td>原价：<input type="text" name="productOriginalPrice"
+						size="2" readonly="readonly"
+						style="border: thin; text-align: right" />元
+					</td>
+					<td>库存：<input type="text" name="productStock" size="2"
+						readonly="readonly" style="border: thin; text-align: right" />件
+					</td>
+				</tr>
+
+				<tr>
+					<td>已卖件数：<input type="text" name="productSoldoutNumber"
+						size="2" readonly="readonly"
+						style="border: thin; text-align: right" />件
+
+					</td>
+
+					<td>是否无货赔付： <select name="noProductFlag"
+						style="border: thin; color: red" disabled="disabled">
+							<option value="2">否</option>
+							<option value="1">是</option>
+							<option value="0">未选择</option>
+					</select>
+					</td>
+				</tr>
+				<tr>
+					<td>存放位置： <select name="goodposition"
+						style="border: thin; color: red" disabled="disabled">
+							<option value="0">未选择</option>
+							<option value="1">交易所</option>
+							<option value="2">仓库</option>
+							<option value="3">邮箱</option>
+							<option value="4">包裹</option>
+					</select>
+
+					</td>
+					<td>售卖模式： <select name="productOnsaleModel"
+						style="border: thin; color: red" disabled="disabled">
+							<option value="0">请选择</option> <#if (modelList?? &&
+							modelList?size>0)> <#list modelList as item>
+							<option value="${item.modelId}">${item.modelName!''}</option>
+							</#list> </#if>
+					</select>
+					</td>
+				</tr>
+				<tr>
+					<td>申请时间：<input type="text" name="conCreatetime" size="20"
+						maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+					<td>修改时间：<input type="text" name="conModifytime" size="20"
+						maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+				</tr>
+
+				<tr>
+					<td>有效时间： <input type="text" name="productValidityTime"
+						size="20" maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+					<td>最后成交时间： <input type="text" name="conLastdealtime"
+						size="20" maxlength="50" readonly="readonly" style="border: thin;" /></td>
+				</tr>
+
+				<tr>
+					<td>上架时间：<input type="text" name="conOnsaletime" size="20"
+						maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+
+
+					<td>下架时间：<input type="text" name="conOffsaletime" size="20"
+						maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+				</tr>
+				<tr>
+					<td>子渠道：<input type="text" name="sonChannelId" size="20" maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+
+
+					<td>&nbsp;
+					</td>
+				
+				</tr>
+
+
+				<tr>
+					<td colspan="2"><b>【卖家信息】</b></td>
+				</tr>
+				<tr>
+					<td>卖家UID：<input type="text" name="userId" size="20"
+						maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+					<td>游戏中用户账号ID：<input type="text" name="gameUid" size="20"
+						maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+				</tr>
+				<tr>
+					<td>游戏角色ID：<input type="text" name="gameRoleId" size="20"
+						maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+					<td>游戏角色名：<input type="text" name="gameRoleName" size="20"
+						maxlength="50" readonly="readonly" style="border: thin;" /></td>
+				</tr>
+				<tr>
+					<td>卖家QQ：<input type="text" name="contactQQ" size="20"
+						maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+					<td>游戏渠道：<input type="text" name="gameChanalName" size="20"
+						maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+
+				</tr>
+
+				<tr>
+					<td>是否支持快速发货: <select name="quickDeliverFlag"
+						style="border: thin; color: red" disabled="disabled">
+							<option value="1">支持</option>
+							<option value="0">不支持</option>
+					</select>
+					</td>
+					<td>卖家昵称: <input type="text" name="userNickname" size="20"
+						maxlength="50" readonly="readonly" style="border: thin;" />
+					</td>
+				</tr>
+				<tr id="show_pic_edit">
+					<td>商品图片： <a href="javascript:void(0);"
+						class="easyui-linkbutton" onclick="showpic()">查看图片</a>
+					</td>
+				</tr>
+				<!--  
+		    <tr>
+		      <td  >最后成交时间：</td>
+		      <td><input type="text" name="conLastdealtime" size="20" maxlength="50" readonly="readonly" style="border: thin;"/></td>
+		    </tr>
+		 
+		    <tr>
+		      <td  >审核时间：</td>
+		      <td><input type="text" name="conVerifytime" size="20" maxlength="50" readonly="readonly"  style="border: thin;"/></td>
+		    </tr>
+		  
+		      <tr>
+		      <td  >售完时间：</td>
+		      <td><input type="text" name="conSoldoutTime" size="20" maxlength="50" readonly="readonly"  style="border: thin;"/></td>
+		    </tr>
+		        -->
+				<tr>
+					<td colspan="2">商品属性：<textarea name="productInfo" cols="50"
+							rows="3" readonly="readonly" style="border: thin;">
+		      </textarea>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2">自定义属性：<input type="hidden"
+						name="customAttributes" id="customAttributesDetail"><a
+						href="javascript:showCustomAttributes($('#customAttributesDetail').val());">显示自定义属性详情</a>
+						<!-- 		      <textarea  name="customAttributes" cols="50" rows="3" readonly="readonly" style="border: thin;"> -->
+						<!-- 		      </textarea> -->
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2">操作备注： <textarea name="productRemark" cols="50"
+							rows="3" id="remark_for_status" class="easyui-validatebox"
+							data-options="required:true" missingMessage="请填写游戏下架备注">
+		      </textarea>
+					</td>
+				</tr>
+
+				<tr id="offsale_show" style="text-align: right;">
+					<td colspan="2"><a href="javascript:void(0);"
+						class="easyui-linkbutton" onclick="updateStatus(12);">下架</a></td>
+				</tr>
+
+				<tr id="offsalefail_show" style="text-align: right;">
+					<td colspan="2"><a href="javascript:void(0);"
+						class="easyui-linkbutton" onclick="updateStatus2(12);">解冻金币下架</a>
+					</td>
+				</tr>
+
+			</table>
+		</form>
+	</div>
+
+
+	<!--图片信息-->
+	<div id="picDialog" style="display: none; width: 500px; height: 405px;"
+		align="center">
+		<form id="picForm" method="post" style="padding: 5px 10px">
+			<table width="100%" border="0" cellspacing="1" cellpadding="1"
+				class="table_line">
+				<tbody id="tobody">
+				</tbody>
+			</table>
+		</form>
+	</div>
+
+	<!-- 自定义属性详细窗口 -->
+	<div id="showCustomAttributesWindow" class="easyui-window"
+		title="自定义属性信息" data-options="modal:true"
+		style="width: 800px; height: '550px'; padding: 10px">详细信息内容</div>
+</body>
+</html>

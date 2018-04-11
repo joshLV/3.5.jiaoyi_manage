@@ -1,0 +1,44 @@
+[
+
+{
+	"id":"5",
+	"text":"游戏[商品类型]",
+	"value":"5",
+	"children":[
+	
+		<#assign idx = 0>
+		<#list gameList as gl>
+	
+			<#if (idx>0)>,</#if>
+			{
+				"id":"mod_${gl.gameId}",
+				"text":"${gl.gameName}",
+				"value":"${gl.gameId}",
+				"state":"closed",
+				"children":[
+				
+					
+					<#assign idx2 = 0>
+					
+					<#list gameproductTypeList as gpt>
+					<#if (gpt.gameId = gl.gameId)>
+					<#if (idx2>0)>,</#if>
+					{
+						"id":"per_${gpt.id}",
+						"text":"${gpt.productTypeName!''}",
+						"value":"${gpt.id}"
+					}
+					<#assign idx2=idx2+1>
+					</#if>
+					</#list>
+					
+				]
+			}
+			<#assign idx=idx+1>
+		
+		</#list>
+		
+	]
+}
+
+]

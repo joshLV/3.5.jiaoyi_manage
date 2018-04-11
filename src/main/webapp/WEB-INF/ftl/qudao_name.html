@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<#assign qudaoid="0"/>
+
+<#if order??>
+<#if order.son_channel_id??>
+<#assign qudaoid=order.son_channel_id/>
+</#if>
+</#if>
+
+<#if son_channel_id??>
+<#assign qudaoid=son_channel_id/>
+</#if>
+
+<#if orderC2cForm??>
+<#if orderC2cForm.sonChannelId??>
+<#assign qudaoid=orderC2cForm.sonChannelId/>
+</#if>
+</#if>
+<script type="text/javascript" src="http://122.13.150.180:8048/channel/getQudaoName.do?qudaoId=${qudaoid!'0'}" >   </script>
+<!-- <script type="text/javascript"  src="http://192.168.0.222:8081/interface/test.jsp?qudaoId=${qudaoid!'0'}" > </script>-->
+

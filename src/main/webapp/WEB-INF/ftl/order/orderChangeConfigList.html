@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta
+	http-equiv="Content-Type"
+	content="text/html; charset=utf-8" />
+<title>转单规则管理</title>
+<#include "../common.html"/>
+
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+$(function(){
+	datagrid = $('#datagrid').datagrid({
+		url :'orderChangeConfigList_json',
+		title : '转单规则管理',
+		pagination : true,
+		pagePosition : 'bottom',
+		rownumbers : true,
+		pageSize : 100,
+		pageList : [ 100, 120, 140, 160 ],
+		fit : true,
+		fitColumns : true,
+		nowrap : true,
+		border : false,
+		idField : 'id',
+		sortName : 'id',
+		sortOrder : 'asc',
+		columns : [ [ {
+			field : 'ck',
+			checkbox : true,
+			formatter : function(value, row, index) {
+				return row.obid;
+			}
+		}, {
+			field : 'id',
+			title : 'ID',
+			align : 'center',
+		}, {
+			field : 'productType',
+			title : '商品类型',
+			align : 'center',
+		}, {
+			field : 'normalPercent',
+			title : '充许转单标准比率',
+			align : 'center',
+		}, {
+			field : 'maxPercent',
+			title : '充许转单最高比例',
+			align : 'center',
+		}, {
+			field : 'maxMoney',
+			title : '允许转单最高金额',
+			align : 'center',
+			}
+		] ],
+		toolbar : [ {
+			text : '增加',
+			iconCls : 'icon-add',
+			handler : function() {
+				add();
+			}
+		}, '-', {
+			text : '删除',
+			iconCls : 'icon-remove',
+			handler : function() {
+				del();
+			}
+		}, '-', {
+			text : '修改',
+			iconCls : 'icon-edit',
+			handler : function() {
+				edit();
+			}
+		}, '-', {
+			text : '取消选中',
+			iconCls : 'icon-undo',
+			handler : function() {
+				datagrid.datagrid('unselectAll');
+			}
+		}, '-' ],
+		 //双击事件
+	   onDblClickRow:function (rowIndex,rowData){
+		   $(this).datagrid('unselectAll');
+		   $(this).datagrid('selectRow', rowIndex);	
+		   edit();
+	   }
+	});
+	
+	addForm = $('#addForm').form({
+		url : 'orderChangeConfig_add',
+		success : function(data) {
+			 var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+		}
+	});
+	
+	addDialog = $('#addDialog').show().dialog({
+		title : '添加转单规则',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '添加',
+			handler : function() {
+				var type = $("#type_add").val();
+				var normalPercent = $("#normalPer_add").val();
+				var maxPercent = $("#maxPer_add").val();
+				var maxMoney = $("#money_add").val();
+				
+				if(type ==""){
+					$.messager.alert("提示","请输入商品类型");
+					return false;
+				}
+				if(normalPercent == ""){
+					$.messager.alert("提示","请输入允许转单标准比率");
+					return false;
+				}
+				if(maxPercent == ""){
+					$.messager.alert("提示","请输入允许转单最高比例");
+					return false;
+				}
+				if(maxMoney == ""){
+					$.messager.alert("提示","请输入允许转单最高金额");
+					return false;
+				}
+				
+				$.messager.confirm('请确认', '您要添加转单规则吗?', function(r) {
+					if (r) {	
+				addForm.submit();
+					}
+				});
+				
+			}
+		} ]
+	}); 
+	
+	editForm = $('#editForm').form({
+		url : 'orderChangeConfig_update',
+		success : function(data) {
+			 var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+		}
+	});
+
+	editDialog = $('#editDialog').show().dialog({
+		title : '转单规则编辑',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '保存',
+			handler : function() {
+				$.messager.confirm('请确认', '您要修改转单规则吗?', function(r) {
+					if (r) {	
+				editForm.submit();
+					}
+				});
+			}
+		} ]
+	}); 
+	
+});
+	function add(){
+		addDialog.dialog('open');
+		addForm.find("input[type='text']").val("");
+	}
+	
+	function edit(){
+		var rows = datagrid.datagrid('getSelections');
+
+		if (rows.length == 1) {
+			$.messager.progress({
+				text : '数据加载中....',
+				interval : 100
+			});
+			$.ajax({
+				url : 'orderChangeConfig_edit',
+				data : {
+					id : rows[0].id
+				},
+				dataType : 'json',
+				cache : false,
+				success : function(response) {
+					editForm.form('clear');
+					editForm.form('load', response);
+					$('div.validatebox-tip').remove();
+					$.messager.progress('close');
+					editDialog.dialog('open');
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+		}
+	}
+	
+	function del(){
+		var rows = datagrid.datagrid('getSelections');
+		var ids = [];
+		if (rows.length > 0) {
+			$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+				if (r) {
+					for ( var i = 0; i < rows.length; i++) {
+						ids.push(rows[i].id);
+					}
+					console.log(ids.join(','));
+					$.ajax({
+						url : 'orderChangeConfig_del',
+						data : {
+							ids : ids.join(',')
+						},
+						dataType : 'json',
+						success : function(response) {
+							datagrid.datagrid('load');
+							datagrid.datagrid('unselectAll');
+							//var d = JSON.parse(response);
+							$.messager.show({
+								title : '提示',
+								msg : response.msg
+							});
+							
+						}
+					});
+				}
+			});
+		} else {
+			$.messager.alert('提示', '请选择要删除的记录！', 'error');
+		} 
+	}
+	
+</script>
+</head>
+<body class="easyui-layout">
+	<div region="center" border="false">
+		<table id="datagrid"></table>
+	</div>
+	<!--添加表单-->
+	<div id="addDialog" style="display: none;width: 500px;height: 240px;" align="center">
+		<form id="addForm" method="post" style="padding: 5px 10px">
+		     
+			  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+			  	<tr>
+				    <td class="lable">商品类型：</td>
+				    <td><input type="text" name="productType" id="type_add" size="20" maxlength="30"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写商品类型" /></td>
+			    </tr>
+			    <tr>
+				    <td class="lable">允许转单标准比率：</td>
+				    <td><input type="text" name="normalPercent" id="normalPer_add" size="20" maxlength="30"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写允许转单标准比率" /></td>
+				</tr>
+			    <tr>
+				    <td class="lable">允许转单最高比例：</td>
+				    <td><input type="text" name="maxPercent" id="maxPer_add" size="20" maxlength="30"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写允许转单最高比例" /></td>
+
+				</tr>
+			    <tr>
+				    <td class="lable">允许转单最高金额：</td>
+				   	<td><input type="text" name="maxMoney" id="money_add" size="20" maxlength="30"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写允许转单最高金额" /></td>
+				</tr>
+			  </table> 
+		</form>
+	</div>
+	<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 500px;height: 240px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px" class="pageForm required-validate">
+		<input type="hidden" name="id" />
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+			  	<tr>
+				    <td class="lable">商品类型：</td>
+				    <td><input type="text" name="productType" id="type_add" size="20" maxlength="30"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写商品类型" /></td>
+			    </tr>
+			    <tr>
+				    <td class="lable">允许转单标准比率：</td>
+				    <td><input type="text" name="normalPercent" id="normalPer_add" size="20" maxlength="30"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写允许转单标准比率" /></td>
+				</tr>
+			    <tr>
+				    <td class="lable">允许转单最高比例：</td>
+				    <td><input type="text" name="maxPercent" id="maxPer_add" size="20" maxlength="30"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写允许转单最高比例" /></td>
+
+				</tr>
+			    <tr>
+				    <td class="lable">允许转单最高金额：</td>
+				   	<td><input type="text" name="maxMoney" id="money_add" size="20" maxlength="30"  class="easyui-validatebox" data-options="required:true" missingMessage="请填写允许转单最高金额" /></td>
+				</tr>
+			  </table> 
+	</form>
+</div>
+</body>
+</html>

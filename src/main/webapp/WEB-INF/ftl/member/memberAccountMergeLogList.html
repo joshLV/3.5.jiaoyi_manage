@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>资金流水（账户通）列表</title>
+<#include "../common.html"/>
+
+<script type="text/javascript">
+var searchForm;
+var datagrid;
+
+$(function(){
+	searchForm=$('#searchForm').form();
+	datagrid=$('#datagrid').datagrid({
+		url:'memberAccountMergeLog_json',
+		title:'资金流水(账户通)列表',
+		singleSelect:true,
+		loadMsg:null,
+		pagination:true,
+		pagePosition:'bottom',
+		rowNumbers:true,
+		pageSize:100,
+		pageList : [ ${pageList!'100'}, 120, 140, 160 ],
+		fit : true,
+		fitColumns : true,
+		nowrap : true,
+		border : false,
+		idField : 'id',
+		sortName : 'create_time',
+		sortOrder : 'desc',
+		columns:[[
+			{field:'id',title:'ID',align:'center'},
+			{field:'uid',title:'用户UID',align:'center',width:120,sortable:true},
+// 			{field:'operatorType',title:'操作类型',align:'center',width:100,
+// 				formatter:function(value,row,index){
+// 		    		if(row.operatorType==1){
+// 				    	return "<font color='blue'>充值</font>";
+// 				    	}
+// 				    if(row.operatorType==5){
+// 				    	return "<font color='blue'>支付</font>";
+// 				    }
+// 				    if(row.operatorType==10){
+// 				    	return "<font color='blue'>收入</font>";
+// 				    }
+// 				    if(row.operatorType==12){
+// 				    	return "<font color='blue'>冻结押金</font>";
+// 				    }
+// 				    if(row.operatorType==13){
+// 				    	return "<font color='blue'>解冻押金</font>";
+// 				    }
+// 				    if(row.operatorType==15){
+// 				    	return "<font color='blue'>提现</font>";
+// 				    }
+// 				    if(row.operatorType==20){
+// 				    	return "<font color='blue'>退费</font>";
+// 				    } 
+// 				    if(row.operatorType==21){
+// 				    	return "<font color='blue'>提现失败退费</font>";
+// 				    }
+// 				}
+// 			},
+			{field:'showOperatorType',title:'显示操作类型',align:'center',width:100,
+				formatter:function(value,row,index){
+		    		if(row.showOperatorType==1){
+				    	return "<font color='blue'>充值</font>";
+				    	}
+				    if(row.showOperatorType==5){
+				    	return "<font color='blue'>支付</font>";
+				    }
+				    if(row.showOperatorType==10){
+				    	return "<font color='blue'>收入</font>";
+				    }
+				    if(row.showOperatorType==12){
+				    	return "<font color='blue'>冻结押金</font>";
+				    }
+				    if(row.showOperatorType==13){
+				    	return "<font color='blue'>解冻押金</font>";
+				    }
+				    if(row.showOperatorType==15){
+				    	return "<font color='blue'>提现</font>";
+				    }
+				    if(row.showOperatorType==20){
+				    	return "<font color='blue'>退费</font>";
+				    } 
+				    if(row.showOperatorType==21){
+				    	return "<font color='blue'>提现失败退费</font>";
+				    }
+				}
+			},
+			{field:'payType',title:'支付渠道',align:'center',width:100,
+				 formatter:function(value,row,index){
+					    if(row.payType==0){
+					    	return "<font color='blue'>聚好玩（充值）</font>";
+					    }else if(row.payType==1){
+					    	return "<font color='blue'>易宝</font>";
+					    }else if(row.payType==2){
+					    	return "<font color='blue'>银联</font>";
+					    }else if(row.payType==3){
+					    	return "<font color='blue'>易宝/信用卡支付</font>";
+					    }else if(row.payType==4){
+					    	return "<font color='blue'>支付宝</font>";
+					    }else if(row.payType==5){
+					    	return "<font color='blue'>超时赔付</font>";
+					    }else if(row.payType==6){
+					    	return "<font color='blue'>聚好玩（平台转账）</font>";
+					    }else if(row.payType==99){
+					    	return "<font color='blue'>聚好玩后台充值</font>";
+					    }else{
+					    	return row.payType;
+					    }
+				 }
+			},
+			{field:'bankId',title:'提现银行ID',align:'center',width:140},
+			{field:'bankCardNo',title:'提现银行卡号',align:'center',width:140},
+			{field:'cardNo',title:'充值卡卡号',align:'center',width:140},
+			{field:'amountCash',title:'可提现金额',align:'center',width:120},
+			{field:'amountNoCash',title:'不可提现金额',align:'center',width:120},
+			{field:'amountTotal',title:'总金额',align:'center',width:120},
+			{field:'fee',title:'手续费',align:'center',width:140},
+			{field:'totalBalance',title:'总余额=现金金额+非现金金额',align:'center',width:240},
+			{field:'orderId',title:'订单号',align:'center',width:160},
+			{field:'completeTime',title:'订单完成时间',align:'center',width:180},
+			{field:'createTime',title:'创建时间',align:'center',width:180},
+			{field:'externalId',title:'账户通充值订单号',align:'center',width:140},
+			{field:'requestId',title:'8868平台流水号',align:'center',width:140},
+			{field:'remark',title:'备注',align:'center',width:180},
+			{field:'syncStatus',title:'同步状态',align:'center',width:100,
+				formatter:function(value,row,index){
+					if(row.syncStatus==0){
+						return "<font color='blue'>待同步</font>";
+					}else if(row.syncStatus==1){
+						return "<font color='blue'>已同步</font>";
+					}else if(row.syncStatus==10){
+						return "<font color='blue'>不需同步</font>";
+					}
+					
+				}}
+		          ]]
+	});
+})
+	function _search() {
+		var  btime = searchForm.find("table >tbody> tr input[name='btime']").val();
+		var  etime = searchForm.find("table >tbody> tr input[name='etime']").val();
+	
+		var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+		var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+		if(r==null && btime !=""){
+			$.messager.alert('提示', '请填写正确的开始时间', 'error');
+			return false;
+		}
+		if(r2==null && etime !=""){
+			$.messager.alert('提示', '请填写正确的结束时间', 'error');
+			return false;
+		}
+		if(btime > etime && btime !="" && etime !=""){
+			$.messager.alert('提示', '请选择正确的时间段', 'error');
+			return false;
+		}
+		datagrid.datagrid("unselectAll");
+		datagrid.datagrid('load', sy.serializeObject(searchForm));
+	}
+	function cleanSearch() {
+		datagrid.datagrid('load', {});
+		searchForm.find('input').val('');
+	}
+</script>
+</head>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 70px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>用户UID：<input name="uid" style="width:100px;" />&nbsp;</td>
+				<td>开始时间：<input name="btime"   type="text"  class="easyui-datebox" style="width:100px;"/>&nbsp;&nbsp;结束时间:
+                <input name="etime"  type="text" class="easyui-datebox" style="width:100px;"/>
+               	<input type="hidden" name="searchFlag" value="1" id="searchFlag_search" />
+
+               &nbsp; </td>
+                 <td>操作类型:
+                <select name="p_type">
+                <option value="0">未选择</option>
+				    <option value="1">充值 </option>
+				    <option value="5">支付</option>
+				    <option value="10">收入</option>
+				    <option value="12">冻结押金</option>
+				    <option value="13">解冻押金</option>
+				    <option value="15">提现 </option>
+				    <option value="20">退费</option>
+				    <option value="21">提现失败退费</option>
+				    
+                </select> &nbsp;</td>
+               <td>账户通充值订单号：<input type="text" name="externalId" size="30" maxlength="50"/></td>
+			<td>&nbsp;<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a> 
+			    <a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a> 
+			</td>
+			</tr>
+			
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+</body>
+</html>

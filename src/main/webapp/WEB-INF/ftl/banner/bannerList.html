@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>幻灯片列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'bannerListJson',
+			title : '幻灯片列表',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'create_time',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.obid;
+						}
+					},
+					 {field:'id',title:'ID',align:'center'},				
+					 {field:'name',title:'幻灯片名称',align:'left',width:80},
+					 {field:'tag',title:'标签',align:'left',width:80},
+					 {field:'remark',title:'备注',align:'left',width:50},
+					 {field:'createTime',title:'创建时间',align:'center',width:40},	
+					// {field:'modifyTime',title:'修改时间',align:'center',width:40},
+					
+					 {field:'status',title:'状态',align:'center',width:35,
+						   formatter:function(value,row,index){
+								  
+		                      if(row.status==0){
+								   return "未审核";
+							   }else if(row.status == 1){
+								   return "<font color=red>上线</font>";
+							   }else if(row.status == 9){
+								   return "下线";
+							   }else{
+								   return "已删除";
+							   }
+							}  
+						   
+						   },
+					 //{field:'weight',title:'权重',align:'center',width:26},
+					   {field:'operate',title:'操作',align:'left',width:60,
+						   formatter:function(value,row,index){
+							    if(row.operate==null || row.operate==''){
+							    	var b = '<a href="javascript:void(0)" onclick="viewBannerImg(\''+row.id+'\')">详情/编辑</a>';
+							    	if(row.status == 100){
+							    		  b = '<a href="javascript:void(0)" onclick="viewDelBannerImg(\''+row.id+'\')">已删除列表</a>';
+							    	}
+		                           
+							    
+							    	return b;
+							    }
+							}
+					   	}
+			 ] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-remove',
+				handler : function() {
+					addBannerImg();
+				}
+			},{
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ],
+		
+		
+		});
+
+
+	
+		
+	
+
+
+});
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+
+function del() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除所选,和幻灯片所属图片？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].id);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'bannerDelete.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						//var d = JSON.parse(response);
+						
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	} 
+}
+
+//跳转到幻灯片图片列表页面
+function viewBannerImg(bannerid){
+	var link = "banner/bannerImgList.do?bannerId="+bannerid;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"幻灯片:"+bannerid+"的图片列表" 
+			};
+	parent.addTab(node);	
+}
+//显示已删除列表
+function viewDelBannerImg(bannerid){
+	var link = "banner/bannerImgList.do?bannerId="+bannerid+"&status_type=100";
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"幻灯片ID："+bannerid+"已删除的图片列表"
+			};
+	parent.addTab(node);
+}
+
+
+//跳转到幻灯片图片列表页面
+function addBannerImg(){
+	var link = "banner/bannerImgList.do";
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"添加幻灯片"
+			};
+	parent.addTab(node);	
+}
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件${sessionBanId!''}" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>幻灯片名称:<input name="bannerName" style="width:100px;" value="${bannerName!''}" />&nbsp;</td>
+				<!--  <td>真实名称:<input name="fullname" style="width:100px;" />&nbsp;</td>-->
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+
+
+
+
+</body>
+</html>

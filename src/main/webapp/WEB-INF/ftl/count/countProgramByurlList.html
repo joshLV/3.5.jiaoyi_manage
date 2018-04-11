@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>页面URL访问统计</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var searchForm;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url :'countProgramByurlList_json',
+		    queryParams:{
+	            viewUrl:"${viewUrl!''}",
+            	beginTime:'${beginTime!''}',
+            	endTime:'${endTime!''}',
+			},
+			title : '访问URL统计',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'count_time',
+			sortOrder : 'desc',
+			columns : [ [
+			  		   {field:'count_time',title:'统计时间',align:'center',width:40,sortable:false},				
+					   {field:'view_url',title:'访问URL',align:'left',width:400,sortable:false},
+					   {field:'program_name',title:'栏目名称',align:'center',width:40,sortable:false}, 
+					   {field:'login_pv',title:'登录PV',align:'center',width:40,sortable:false}, 
+					   {field:'login_uv',title:'登录UV',align:'center',width:40,sortable:false},
+					   {field:'noLogin_pv',title:'未登录PV',align:'center',width:40,sortable:false}, 
+					   {field:'noLogin_uv',title:'未登录UV',align:'center',width:40,sortable:false},
+			 ] ],
+			 //双击事件
+			 onDblClickRow:function (rowIndex,rowData){
+					$(this).datagrid('unselectAll');
+					$(this).datagrid('selectRow', rowIndex);
+					if(rowData.program_name==""){
+						add(rowData.url);
+					}else{
+						edit(rowData.programId);
+					}
+					
+			 }
+			});
+	addForm = $('#addForm').form({
+		url : '${request.contextPath}/program/addCountProgram.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				$('#datagrid').datagrid('reload'); // 重新加截
+				addDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+	});
+	
+	addDialog = $('#addDialog').show().dialog({
+		title : '新增栏目',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '添加',
+			handler : function() {
+				addForm.submit();
+			}
+		} ]
+	});
+	editForm = $('#editForm').form({
+		url : '${request.contextPath}/program/editCountProgram.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				$('#datagrid').datagrid('reload'); // 重新加截
+				editDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+	});
+
+	editDialog = $('#editDialog').show().dialog({
+		title : '栏目信息编辑',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '保存',
+			handler : function() {
+				editForm.submit();
+			}
+		} ]
+	});
+	
+});
+function add(param){
+	addDialog.dialog('open');
+	$("#programUrl").attr("value",param);
+}
+
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+function edit(modId) {
+	$.messager.progress({
+		text : '数据加载中....',
+		interval : 100
+	});
+	$.ajax({
+		url : '${request.contextPath}/program/countProgramInfo.do',
+		data : {
+			id : modId
+		},
+		dataType : 'json',
+		cache : false,
+		success : function(response) {
+			editForm.form('clear');
+			editForm.form('load', response);
+			editDialog.dialog('open');
+			$.messager.progress('close');
+		}
+	});
+}
+</script>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>统计时间:<input name="beginTime" id="beginTime" class="easyui-datebox" value="${beginTime}" type="text" style="width:100px;" />
+				—<input name="endTime" id="endTime" style="width:100px;" value="${endTime}" class="easyui-datebox"   /></td>
+				<td>栏目URL:<input name="viewUrl" style="width:200px;" value="${viewUrl}"/></td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">复合查询</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div>
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+<!--添加表单-->
+<div id="addDialog" style="display: none;width: 600px;height: 300px;" align="center">
+	<form id="addForm" method="post" style="padding: 5px 10px">
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">父栏目：</td>
+		      <td>
+		      	<select id="parentProgram" name="parentProgram">
+		      	<option value="0">----</option>
+		      	<#list parentProgram as item>
+		      		<option value="${item.id}">${item.programName}</option>
+		      	</#list> 
+		      	</select>
+		      </td>
+  		    </tr>
+		    <tr>
+		      <td class="lable">栏目名称：</td>
+		      <td><input type="text" name="programName" id="programName" size="20" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写模块名称" />
+		      </td>
+		    </tr>
+		    <tr>
+		      <td class="lable" valign="top">栏目URL：</td>
+		      <td>
+		      	<input type="text" name="programUrl" id="programUrl" size="50" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写模块首页" /></td>
+		    </tr>
+		    <tr>
+		     <td class="lable">状态：</td>
+		      <td>
+		      	<select style="width:50px;" id="status" name="status">
+		      		<option value="1" selected="selected">正常</option>
+		      		<option value="0">隐蒇</option>
+		      	</select>
+		      </td>
+		    </tr>
+		    <tr>
+		    	<td class="lable">备注：</td>
+		    	<td colspan="3"><textarea name="remark"></textarea></td>
+		    </tr>
+		  </table> 
+	</form>
+</div>
+
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 600px;height: 300px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="id" />
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">父栏目：</td>
+		      <td>
+		      	<select id="parentProgram" name="parentProgram"">
+		      	<option value="0">----</option>
+		      	<#list parentProgram as item>
+		      		<option value="${item.id}">${item.programName}</option>
+		      	</#list> 
+		      	</select>
+		      </td>
+  		    </tr>
+		    <tr>
+		      <td class="lable">栏目名称：</td>
+		      <td><input type="text" name="programName" id="programName" size="20" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写模块名称" />
+		      </td>
+		    </tr>
+		    <tr>
+		      <td class="lable" valign="top">栏目URL：</td>
+		      <td>
+		      	<input type="text" name="programUrl" id="programUrl" size="50" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写模块首页" /></td>
+		    </tr>
+		    <tr>
+		     <td class="lable">状态：</td>
+		      <td>
+		      	<select style="width:50px;" id="status" name="status">
+		      		<option value="1" selected="selected">正常</option>
+		      		<option value="0">隐蒇</option>
+		      	</select>
+		      </td>
+		    </tr>
+		    <tr>
+		    	<td class="lable">备注：</td>
+		    	<td colspan="3"><textarea name="remark"></textarea></td>
+		    </tr>
+		  </table> 
+	</form>
+</div>
+</body>
+</html>

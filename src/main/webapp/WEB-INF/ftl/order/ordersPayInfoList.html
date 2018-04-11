@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>订单列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var datagrid;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url :'ordersPayInfoList_json',
+		    queryParams:{
+	            orderId:'${orderId!''}',
+            	beginTime:'${beginTime!''}',
+            	endTime:'${endTime!''}'
+			},
+			title : '支付单列表',
+			//iconCls : 'icon-save',
+			singleSelect:true,
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ ${pageList!'100'}, 150, 200],
+			fit : true,
+			fitColumns : false,
+			nowrap : true,
+			border : false,
+			idField : 'payId',
+			sortName : '',
+			sortOrder : 'desc',
+			columns : [ [
+			   {field:'payId',title:'支付单号',align:'center',width:150,sortable:true,
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="showOrderInfo(\''+value+'\')">'+value+'</a>';
+				   }
+			   },				
+			   {field:'payType',title:'支付类型',align:'center',width:100,sortable:true,
+				   formatter:function(value,row,index){
+					   if (row.payType==1){
+						   return "订单支付";
+					   }else if(row.payType==2){
+						   return "用户充值";
+					   }
+				   }   
+			   },				
+			   {field:'payWay',title:'支付方式',align:'center',width:100,sortable:true,
+				   formatter:function(value,row,index){
+					   if (value==1){
+						   return "账户余额";
+					   }else if(value==2){
+						   return "卡类支付";
+					   }else if(value==3){
+						   return "手机WAP支付";
+					   }else if(value==4){
+						   return "信用卡支付";
+					   }else if(value==5){
+						   return "PC网银支付";
+					   }else if(value==6){
+						   return "支付宝支付";
+					   }else if(value==7){
+						   return "银联支付";
+					   }
+				   }
+			   },
+			   {field:'payUserUid',title:'支付人',align:'center',width:50,sortable:true,
+				   formatter:function(value,row,index){
+					   return '<a href="javascript:void(0)" onclick="viewUser('+value+')">'+value+'</a>';
+				   }   
+			   },
+			   {field:'orderPayAmount',title:'支付金额',align:'center',sortable:true},	
+			   {field:'createTime',title:'创建时间',align:'center',width:150,sortable:true},		
+			   {field:'orderPayTime',title:'支付时间',align:'center',width:150,sortable:true},				
+			   {field:'orderIsPay',title:'是否支付',align:'center',width:80,
+					formatter:function(value,row,index){
+						   if (value==0){
+							   return "未支付";
+						   }else if(value==1){
+							   return "<font color='red'>己支付</font>";
+						   }else if(value==2){
+							   return "支付失败";
+						   }
+					}   
+			   },
+			   {field:'payQudao',title:'支付渠道',align:'center',width:100,sortable:true},
+			   {field:'payClientType',title:'支付终端',align:'center',width:100,sortable:true},
+			   {field:'payRemark',title:'备注',align:'center',width:480,sortable:true},
+			 ] ],
+			});
+
+});
+function _search() {
+	var  btime = searchForm.find("table >tbody> tr input[name='beginTime']").val();
+	var  etime = searchForm.find("table >tbody> tr input[name='endTime']").val();
+	var  r = btime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	var  r2= etime.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+
+	if(r==null && btime !=""){
+		$.messager.alert('提示', '请填写正确的开始时间', 'error');
+		return false;
+	}
+	if(r2==null && etime !=""){
+		$.messager.alert('提示', '请填写正确的结束时间', 'error');
+		return false;
+	}
+	if(btime > etime && btime !="" && etime !=""){
+		$.messager.alert('提示', '请选择正确的时间段', 'error');
+		return false;
+	}
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+}
+
+function showOrderInfo(payId){
+	var link = "${request.contextPath}/order/orderList.do?payId="+payId;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"支付单"+payId+"订单详情"
+			};
+	parent.addTab(node);
+}
+
+function viewUser(uid){
+	var link = "${request.contextPath}/member/memberList.do?uid="+uid;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"用户"+uid+"详情" 
+			};
+	parent.addTab(node);	
+}
+function outXlsFile(){
+	//先判断是否能导数据
+	if(confirm("确定导出数据?")){
+		var param= $("#searchForm").serialize();
+		$.ajax({
+			type:'POST',
+			url:'validateDownXls.do',
+			data:param,//序列化表单里所有的内容
+			success: function(data){
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					window.open(
+							'${request.contextPath}/payInfo/ordersPayInfoListXls.do?'+param,
+							'',
+							'width=400,height=50,top=200,left=300,toolbar=no, status=no, menubar=no, resizable=yes, scrollbars=yes');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+	}
+}
+
+</script>
+</head>
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 95px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>支付单号: <input name="payId" style="width:150px;" /></td>
+				<td>支付状态:
+				<select id="orderIsPay" class="easyui-combobox" name="orderIsPay" style="width:100px;">
+					<option value="">所有状态</option>
+				    <option value="0">未支付</option>  
+				    <option value="1">己支付</option>
+				    <option value="2">支付失败</option>   
+				</select>
+				</td>
+				<td>支付类型:
+					<select id="payType" class="easyui-combobox" name="payType" style="width:100px;">
+						<option value="">所有类型</option>
+					    <option value="1">订单支付</option>  
+					    <option value="2">用户充值</option>   
+					</select>				
+				</td>
+				<td>订单时间：<input name="beginTime" id="beginTime" class="easyui-datebox" value="${beginTime}" type="text" style="width:100px;" />
+				—<input name="endTime" id="endTime" style="width:100px;" value="${endTime}" class="easyui-datebox"   /></td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">复合查询</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="outXlsFile();">导出数据</a>
+				</td>
+			</tr>
+			<tr>
+				<td>订单号：<input name="orderId" style="width:150px;" value="${orderId}" /></td>
+				<td>支付用户：<input name="payUserUid" style="width:100px;" /></td>
+				<td>支付方式:
+					<select id="payWay" class="easyui-combobox" name="payWay" style="width:100px;">
+						<option value="">所有方式</option>
+					    <option value="1">账户余额</option>  
+					    <option value="2">卡类支付</option>
+					    <option value="3">手机WAP</option>   
+					    <option value="4">信用卡</option>   
+					    <option value="5">PC网银</option> 
+					    <option value="6">支付宝</option>
+					    <option value="7">银联</option>     
+					</select>				
+				</td>
+				<td>支付渠道：<input name="payQudao" style="width:100px;" /></td>
+			</tr>
+		</table>
+	</form>
+</div>
+ 
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+</body>
+</html>

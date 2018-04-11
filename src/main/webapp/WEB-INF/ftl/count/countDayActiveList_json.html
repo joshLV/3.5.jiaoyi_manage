@@ -1,0 +1,26 @@
+<#if pageInfo.items??>
+{"total":${pageInfo.recordCount},"rows":[
+<#list pageInfo.items as item>
+
+{
+
+"id":${item.id},
+"regUv":${item.regUv!'0'},
+"noRegUv":${item.noRegUv!'0'},
+"regPv":${item.regPv!'0'},
+"noRegPv":${item.noRegPv!'0'},
+"pvUvRate":${item.pvUvRate!'0'},
+<#if item.countDay??>
+"countDay":"${item.countDay?string('yyyy-MM-dd')!''}"
+<#else>
+"countDay":""
+</#if>
+
+}
+<#t>
+<#if item_has_next>,</#if>
+</#list>
+]}
+  <#else>
+  {"total":0,"rows":[]}
+</#if>

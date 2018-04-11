@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>模块列表</title>
+<#include "../common.html"/>
+<script type="text/javascript">
+var treegrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+
+$(function() {
+	treegrid = $('#treegrid').treegrid({
+		url : 'countProgramList_json',
+		title : '栏目列表',
+		//iconCls : 'icon-save',
+		pagination : false, 
+		treeField:"programName",
+		rownumbers : true,
+		fit : true,
+		fitColumns : true,
+		nowrap : true,
+		border : false,
+		idField : 'id',
+		sortName : 'id',
+		sortOrder : 'asc',
+		columns : [ [  
+		   {field:'programName',title:'栏目名称',align:'left',width:100,sortable:false},				
+		   {field:'programUrl',title:'栏目URL',align:'center',width:200,sortable:false},				
+		   {field:'remark',title:'备注',align:'center',width:50,sortable:false}, 
+		   {field:'status',title:'状态',align:'center',width:50,sortable:false,
+			   formatter:function(value,row,index){
+				   	if (value == 1){
+						return "正常";
+					}else{
+						return "<font color='#ff0000'>隐藏</font>"
+					}
+				}   
+		   },
+		   {field:'id',title:'操作',align:'center',width:100,sortable:false,
+			   formatter:function(value,row,index){
+				   	var e = '<a href="javascript:void(0)" onclick="edit('+row.id+')">编辑</a> ';
+					var f = " -- ";
+					var d = '<a href="javascript:void(0)" onclick="deleterow('+row.id+','+row._parentId+')">删除</a>';
+					var g= '<a href="javascript:void(0)" onclick="showView(\''+row.programUrl+'\')">栏目访问记录</a>';
+					return e+f+d+f+g;
+				}   
+		   }
+		 ] ],
+		toolbar : [ {
+			text : '增加',
+			iconCls : 'icon-add',
+			handler : function() {
+				add();
+			}
+		} ],
+	})
+	
+	addForm = $('#addForm').form({
+		url : 'addCountProgram.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				$('#treegrid').treegrid('reload'); // 重新加截
+				addDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+	});
+	
+	addDialog = $('#addDialog').show().dialog({
+		title : '新增栏目',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '添加',
+			handler : function() {
+				addForm.submit();
+			}
+		} ]
+	});
+
+	editForm = $('#editForm').form({
+		url : 'editCountProgram.do',
+		success : function(data) {
+			var json = $.parseJSON(data);
+			if (json && json.success) {
+				$.messager.show({
+					title : '成功',
+					msg : json.msg
+				});
+				$('#treegrid').treegrid('reload'); // 重新加截
+				editDialog.dialog('close');
+			} else {
+				$.messager.show({
+					title : '失败',
+					msg : json.msg
+				});
+			}
+		}
+	});
+
+	editDialog = $('#editDialog').show().dialog({
+		title : '栏目信息编辑',
+		modal : true,
+		closed : true,
+		maximizable : true,
+		buttons : [ {
+			text : '保存',
+			handler : function() {
+				editForm.submit();
+			}
+		} ]
+	});
+});
+
+function deleterow(modId,parentId){
+	$.messager.confirm('请确认', '您要删除当前栏目?', function(r) {
+		if (r) {
+			$.ajax({
+				url : 'deleteCountProgram.do',
+				data : {
+					id : modId,
+					parentId:parentId,
+				},
+				dataType : 'json',
+				success : function(response) {
+					$('#treegrid').treegrid('reload'); // 重新加截
+					$.messager.show({
+						title : '提示',
+						msg : response.msg
+					});
+					
+				}
+			});
+		}
+	});
+}
+
+function add() { 
+	addDialog.dialog('open');
+    $("#parentProgram_add").val(0);
+    $("#status_add").val(1);
+	addForm.find("input[type='text']").val("");
+	addForm.find("textarea[name ='remark']").val("");
+}
+
+function edit(modId) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'countProgramInfo.do',
+			data : {
+				id : modId
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				editForm.form('clear');
+				editForm.form('load', response);
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+}
+
+function showView(url){
+	var link = "${request.contextPath}/count/countProgramByurlList.do?viewUrl="+url;
+	var node = {
+			"attributes":{ "url":link}, 
+			"checked":false,
+			"iconCls":"",
+			"state":"closed",
+			"text":"栏目访问记录" 
+			};
+	parent.addTab(node);
+}
+
+</script>
+<body class="easyui-layout">
+
+<div region="center" border="false">
+ 	<table id="treegrid" ></table>
+</div>
+<!--添加表单-->
+<div id="addDialog" style="display: none;width: 600px;height: 300px;" align="center">
+	<form id="addForm" method="post" style="padding: 5px 10px">
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">父栏目：</td>
+		      <td>
+		      	<select id="parentProgram_add" name="parentProgram">
+		      	<option value="0">----</option>
+		      	<#list parentProgram as item>
+		      		<option value="${item.id}">${item.programName}</option>
+		      	</#list> 
+		      	</select>
+		      </td>
+  		    </tr>
+		    <tr>
+		      <td class="lable">栏目名称：</td>
+		      <td><input type="text" name="programName" id="programName_add" size="20" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写模块名称" />
+		      </td>
+		    </tr>
+		    <tr>
+		      <td class="lable" valign="top">栏目URL：</td>
+		      <td>
+		      	<input type="text" name="programUrl" id="programUrl_add" size="50" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写模块首页" /></td>
+		    </tr>
+		    <tr>
+		     <td class="lable">状态：</td>
+		      <td>
+		      	<select style="width:50px;" id="status_add" name="status">
+		      		<option value="1" selected="selected">正常</option>
+		      		<option value="0">隐蒇</option>
+		      	</select>
+		      </td>
+		    </tr>
+		    <tr>
+		    	<td class="lable">备注：</td>
+		    	<td colspan="3"><textarea name="remark"></textarea></td>
+		    </tr>
+		  </table> 
+	</form>
+</div>
+
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 600px;height: 300px;" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="id" />
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">父栏目：</td>
+		      <td>
+		      	<select id="parentProgram" name="parentProgram">
+		      	<option value="0">----</option>
+		      	<#list parentProgram as item>
+		      		<option value="${item.id}">${item.programName}</option>
+		      	</#list> 
+		      	</select>
+		      </td>
+  		    </tr>
+		    <tr>
+		      <td class="lable">栏目名称：</td>
+		      <td><input type="text" name="programName" id="programName" size="20" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写模块名称" />
+		      </td>
+		    </tr>
+		    <tr>
+		      <td class="lable" valign="top">栏目URL：</td>
+		      <td>
+		      	<input type="text" name="programUrl" id="programUrl" size="50" maxlength="50" class="easyui-validatebox"  data-options="required:true" missingMessage="请填写模块首页" /></td>
+		    </tr>
+		    <tr>
+		     <td class="lable">状态：</td>
+		      <td>
+		      	<select style="width:50px;" id="status" name="status">
+		      		<option value="1" selected="selected">正常</option>
+		      		<option value="0">隐蒇</option>
+		      	</select>
+		      </td>
+		    </tr>
+		    <tr>
+		    	<td class="lable">备注：</td>
+		    	<td colspan="3"><textarea name="remark"></textarea></td>
+		    </tr>
+		  </table> 
+	</form>
+</div>
+</body>
+</html>

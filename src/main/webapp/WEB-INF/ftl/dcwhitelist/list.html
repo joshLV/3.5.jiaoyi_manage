@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>代充白名单列表</title>
+<#include "../common_new.html"/>
+<script type="text/javascript">
+var datagrid;
+var addDialog;
+var addForm;
+var editDialog;
+var editForm;
+var searchForm;
+
+$(function() {
+	searchForm = $('#searchForm').form();//条件搜索框
+	datagrid = $('#datagrid').datagrid({
+			url : 'dcwhitelist_json',
+			title : '代充白名单列表',
+			//iconCls : 'icon-save',
+			pagination : true,
+			pagePosition : 'bottom',
+			rownumbers : true,
+			pageSize : 100,
+			pageList : [ 100, 120, 140, 160 ],
+			fit : true,
+			fitColumns : true,
+			nowrap : true,
+			border : false,
+			idField : 'id',
+			sortName : 'id',
+			sortOrder : 'desc',
+			columns : [ [ 
+			   {field:'ck',checkbox:true,
+						formatter:function(value,row,index){
+							return row.id;
+						}
+					},
+			   {field:'gameId',title:'游戏编号',align:'center'},				
+			   {field:'gameName',title:'游戏名称',align:'center',width:100},				
+			   {field:'channelId',title:'渠道编号',align:'center',width:120},
+			   {field:'channelName',title:'渠道名称',align:'center',width:160},
+			   {field:'account',title:'游戏账号',align:'center',width:100},				
+			   {field:'createTime',title:'创建时间',align:'center',width:180},
+			   {field:'remark',title:'备注',align:'center',width:180}
+
+			 ] ],
+			toolbar : [ {
+				text : '增加',
+				iconCls : 'icon-add',
+				handler : function() {
+					add();
+				}
+			}, '-', {
+				text : '删除',
+				iconCls : 'icon-remove',
+				handler : function() {
+					del();
+				}
+			}, '-', {
+				text : '取消选中',
+				iconCls : 'icon-undo',
+				handler : function() {
+					datagrid.datagrid('unselectAll');
+				}
+			}, '-' ]
+
+// 			  //双击事件
+// 			   onDblClickRow:function (rowIndex,rowData){
+// 				   $(this).datagrid('unselectAll');
+// 				   $(this).datagrid('selectRow', rowIndex);	
+// 				   edit();
+// 			   }
+		});
+		editForm = $('#editForm').form({
+			url : 'white_edit.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					editDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+
+		editDialog = $('#editDialog').show().dialog({
+			title : '编辑',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '保存',
+				handler : function() {
+					editForm.submit();
+				}
+			} ]
+		}); 
+		
+		addForm = $('#addForm').form({
+			url : 'white_add.do',
+			success : function(data) {
+				var json = $.parseJSON(data);
+				if (json && json.success) {
+					$.messager.show({
+						title : '成功',
+						msg : json.msg
+					});
+					datagrid.datagrid('reload');
+					addDialog.dialog('close');
+				} else {
+					$.messager.show({
+						title : '失败',
+						msg : json.msg
+					});
+				}
+			}
+		});
+		addDialog = $('#addDialog').show().dialog({
+			title : '添加新账号到代充白名单',
+			modal : true,
+			closed : true,
+			maximizable : true,
+			buttons : [ {
+				text : '添加',
+				handler : function() {
+					addForm.submit();
+				}
+			} ]
+		});
+
+});
+function _search() {
+	datagrid.datagrid("unselectAll");
+	datagrid.datagrid('load', sy.serializeObject(searchForm));
+}
+
+function cleanSearch() {
+	datagrid.datagrid('load', {});
+	searchForm.find('input').val('');
+	searchForm.find('select').val('');
+}
+
+function add() {
+	addDialog.dialog('open');
+	addForm.form('reset');
+	addForm.find("input[type='text']").val("");
+}
+function del() {
+	var rows = datagrid.datagrid('getSelections');
+	var ids = [];
+	console.log("length=="+rows.length);
+	if (rows.length > 0) {
+		$.messager.confirm('请确认', '您要删除当前所选项目？', function(r) {
+			if (r) {
+				for ( var i = 0; i < rows.length; i++) {
+					ids.push(rows[i].id);
+				}
+				console.log(ids.join(','));
+				$.ajax({
+					url : 'white_delete.do',
+					data : {
+						ids : ids.join(',')
+					},
+					dataType : 'json',
+					success : function(response) {
+						datagrid.datagrid('load');
+						datagrid.datagrid('unselectAll');
+						//var d = JSON.parse(response);
+						
+						$.messager.show({
+							title : '提示',
+							msg : response.msg
+						});
+						
+					}
+				});
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择要删除的记录！', 'error');
+	} 
+}
+function edit() {
+	var rows = datagrid.datagrid('getSelections');
+	if (rows.length == 1) {
+		$.messager.progress({
+			text : '数据加载中....',
+			interval : 100
+		});
+		$.ajax({
+			url : 'white_json.do',
+			data : {
+				userId : rows[0].userId
+			},
+			dataType : 'json',
+			cache : false,
+			success : function(response) {
+				editForm.form('clear');
+				editForm.form('load', response);
+				$('div.validatebox-tip').remove();
+				editDialog.dialog('open');
+				$.messager.progress('close');
+			}
+		});
+	} else {
+		$.messager.alert('提示', '请选择一项要编辑的记录！', 'error');
+	}
+}
+
+
+
+//所有游戏
+$(function() {
+	var url = "../product/allgameList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='gameId'] option").remove();
+		var def =  "<option value='0'>请选择</option>";
+		$("select[name='gameId']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='gameId']").append(options);
+			
+			$("#game").append(options);
+		}
+
+	});
+	
+	var url = "../product/allChannelList_json";
+	$.getJSON(url, function(result) {
+		var categoryCount = result.total;
+		$("select[name='channelId'] option").remove();
+		var def =  "<option value='0'>请选择</option>";
+		$("select[name='channelId']").append(def);
+		for ( var i = 0; i < categoryCount; i++) {
+			var options = "<option value='"+result.rows[i].id+"'>"+ result.rows[i].name + "</option>";
+			$("select[name='channelId']").append(options);
+		}
+
+	});
+	
+	
+	
+	
+});
+
+</script>
+</head>
+
+<body class="easyui-layout">
+<div region="north" border="false" title="搜索条件" style="height: 65px;overflow: hidden;" align="left">
+	<form id="searchForm">
+		<table>
+			<tr>
+				<td>用户账号:<input name="account" style="width:100px;" />&nbsp;</td>
+				<td>游戏名称:
+				<select id="game" name="game_id" style="width: 96px">
+					<option value="-1">请选择</option>
+				</select>&nbsp;</td>
+				<td>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="_search();">搜索</a>
+				<a href="javascript:void(0);" class="easyui-linkbutton" onclick="cleanSearch();">取消</a>
+				</td>
+			</tr>
+		</table>
+	</form>
+</div> 
+
+<div region="center" border="false">
+	<table id="datagrid"></table>
+</div>
+
+
+
+<!--添加表单-->
+<div id="addDialog" style="display: none;width: 900px;height: 'auto';" align="center">
+	<form id="addForm" method="post" style="padding: 5px 10px">
+		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		    <tr>
+		      <td class="lable">账号：</td>
+		      <td><input type="text" name="account" size="20" maxlength="50"  /></td>
+		    </tr>
+		    
+		    <tr>
+		      <td class="lable">游戏：</td>
+		      <td>
+		       <select id="g_id_receiver" name="gameId" ></select>
+		      </td>
+		    </tr>
+		    
+		     <tr>
+		      <td class="lable">渠道：</td>
+		      <td>
+		      <select id="g_cid_receiver" name="channelId"  ></select>
+		      </td>
+		    </tr>
+		    
+		    <tr>
+		    	<td class="lable">买家UID</td>
+		    	<td><input type="text" name="buyUid" size="20" maxlength="50"  /></td>
+		    </tr>
+		    
+		    <tr>
+		    	<td class="lable">卖家UID</td>
+		    	<td><input type="text" name="sellUid" size="20" maxlength="50"  /></td>
+		    </tr>
+		    
+		    <tr>
+		      <td class="lable">备注：</td>
+		      <td> <textarea rows="" cols="" name="remark"></textarea></td>
+		    </tr>
+		  
+
+		  </table> 
+	</form>
+</div>
+<!--编辑表单-->
+<div id="editDialog" style="display: none;width: 720px;height: 'auto';" align="center">
+	<form id="editForm" method="post" style="padding: 5px 10px">
+		<input type="hidden" name="userId" />
+		<table width="100%" border="0" cellspacing="1" cellpadding="1" >
+		</table>
+	</form>
+</div>
+
+</body>
+</html>
