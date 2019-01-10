@@ -24,7 +24,6 @@ for(int i=0;i<modList.size();i++){
 	SysViewRoleModule module = modList.get(i); 
 	//System.out.println(module.getModuleName());
 	if(module.getParentId() == id){
-		if (module.getIsMenu()==0) continue;
 		if (idx > 0) out.println(",");
 		idx ++ ;	
 	
@@ -32,6 +31,8 @@ for(int i=0;i<modList.size();i++){
 {"attributes":{
 <%if(module.getIsExternal() == 1){ %>
 "url":"SSOAuth/SSOAuth?mod_id=<%= module.getModId()%>"},
+<% }else if("rent".equals(module.getModuleCode())){ %>
+"url":"<%= module.getFirstPage()%>&userId=<%= userinfo.getUserId()%>&name=<%= userinfo.getFullname()%>"},
 <% }else{ %>
 "url":"<%= module.getFirstPage()%>"},
 <%} %>

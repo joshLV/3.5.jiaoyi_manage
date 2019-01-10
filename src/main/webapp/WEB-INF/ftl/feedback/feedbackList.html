@@ -98,9 +98,11 @@
 				align : 'left',
 				width : 40,formatter:function(value,row,index){  
 			       if(row.source=="0"){
-				   return "8868";
-				   }else{
+						return "8868";
+				   }else if(row.source=="1"){
 				   return "<font color='red' >充值助手</font>";   
+				   }else{
+					   return "<font color='blue' >租号</font>";   
 				   }
 			   },
 			}, {
@@ -285,8 +287,10 @@
 				
 				if(source ==0){
 					sourcename ="8868";
-				}else{
+				}else if(source ==1){
 					sourcename ="充值助手";
+				}else{
+					sourcename ="租号";
 				}
 				
 				$('#showDetail').window(
@@ -359,7 +363,9 @@
 							<option value="-1">所有</option>
 							<option value="1">优化建议</option>
 							<option value="2">问题错误</option>
+							<option value="5">游戏反馈</option>
 							<option value="4">VIP礼包申请</option>
+							<option value="5">游戏反馈</option>
 							<option value="3">其他反馈</option>
 
 					</select>&nbsp;
@@ -385,6 +391,7 @@
 							<option value="-1">所有</option>
 							<option value="0">8868</option>
 							<option value="1">充值助手</option>
+							<option value="2">租号</option>
 					</select>&nbsp;
 					</td>
 					<td><a href="javascript:void(0);" class="easyui-linkbutton"
@@ -420,6 +427,7 @@
 					<td colspan="3"><select name="categoryId" style="width: 155px">
 							<option value="1">优化建议</option>
 							<option value="2">问题错误</option>
+							<option value="5">游戏反馈</option>
 							<option value="4">VIP礼包申请</option>
 							<option value="3">其他反馈</option>
 					</select>&nbsp;</td>

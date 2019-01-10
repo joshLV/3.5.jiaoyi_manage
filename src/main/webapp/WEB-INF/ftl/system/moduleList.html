@@ -202,7 +202,7 @@ function showRole(modId) {
  	<table id="treegrid" ></table>
 </div>
 <!--添加表单-->
-<div id="addDialog" style="display: none;width: 600px;height: 300px;" align="center">
+<div id="addDialog" style="display: none;width: 800px;height: 550px;" align="center">
 	<form id="addForm" method="post" style="padding: 5px 10px">
 		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
 		    <tr>
@@ -218,8 +218,8 @@ function showRole(modId) {
 		      <td class="lable">层次：</td>
 		      <td>
 		      	<select id="levelSeq" name="levelSeq" style="width:50px;">
-					<option value="1" selected="selected">1</option>
-				    <option value="2">2</option>   
+					<option value="1">1</option>
+				    <option value="2" selected="selected">2</option>   
 				</select>
 		      </td>
   		    </tr>
@@ -237,8 +237,8 @@ function showRole(modId) {
 		      <td class="lable">是否菜单</td>
 		      <td>
 		      	<select style="width:50px;" id="isMenu" name="isMenu" >
-		      		<option value="1" selected="selected">是</option>
-		      		<option value="0">否</option>
+		      		<option value="1">是</option>
+		      		<option value="0" selected="selected">否</option>
 		      	</select>
 		      </td>
 		    </tr>
@@ -264,8 +264,8 @@ function showRole(modId) {
 		      <td class="lable">是否外部模块：</td>
 		      <td>
 		      	<select style="width:50px;" id="isExternal" name="isExternal">
-		      		<option value="0" selected="selected">否</option>
-		      		<option value="1">是</option>
+		      		<option value="0">否</option>
+		      		<option value="1" selected="selected">是</option>
 		      	</select>
 		      </td>
 		    </tr>
@@ -277,14 +277,14 @@ function showRole(modId) {
 		     -->
 		    <tr>
 		    	<td class="lable">备注：</td>
-		    	<td colspan="3"><textarea name="remark"></textarea></td>
+		    	<td colspan="3"><textarea name="remark" style="width: 600px;height: 300px;"></textarea></td>
 		    </tr>
 		  </table> 
 	</form>
 </div>
 
 <!--编辑表单-->
-<div id="editDialog" style="display: none;width: 600px;height: 300px;" align="center">
+<div id="editDialog" style="display: none;width: 800px;height: 550px;" align="center">
 	<form id="editForm" method="post" style="padding: 5px 10px">
 		<input type="hidden" name="modId" />
 		  <table width="100%" border="0" cellspacing="1" cellpadding="1" >
@@ -301,8 +301,8 @@ function showRole(modId) {
 		      <td class="lable">层次：</td>
 		      <td>
 		      	<select id="levelSeq" name="levelSeq" style="width:50px;">
-					<option value="1" selected="selected">1</option>
-				    <option value="2">2</option>   
+					<option value="1">1</option>
+				    <option value="2" selected="selected">2</option>   
 				</select>
 		      </td>
   		    </tr>
@@ -320,8 +320,8 @@ function showRole(modId) {
 		      <td class="lable">是否菜单</td>
 		      <td>
 		      	<select style="width:50px;" id="isMenu" name="isMenu" >
-		      		<option value="1" selected="selected">是</option>
-		      		<option value="0">否</option>
+		      		<option value="1">是</option>
+		      		<option value="0" selected="selected">否</option>
 		      	</select>
 		      </td>
 		    </tr>
@@ -347,8 +347,8 @@ function showRole(modId) {
 		      <td class="lable">是否外部模块：</td>
 		      <td>
 		      	<select style="width:50px;" id="isExternal" name="isExternal">
-		      		<option value="0" selected="selected">否</option>
-		      		<option value="1">是</option>
+		      		<option value="0">否</option>
+		      		<option value="1" selected="selected">是</option>
 		      	</select>
 		      </td>
 		    </tr>
@@ -360,7 +360,7 @@ function showRole(modId) {
 		   -->
 		    <tr>
 		    	<td class="lable">备注：</td>
-		    	<td colspan="3"><textarea name="remark"></textarea></td>
+		    	<td colspan="3"><textarea name="remark" style="width: 600px;height: 300px;"></textarea></td>
 		    </tr>
 		  </table> 
 	</form>

@@ -10,9 +10,8 @@
 <script type="text/javascript" src="${public_8868_url}/jquery-easyui-1.3.2/extendvalidate.js"></script>
 
 <link rel="stylesheet" href="${public_8868_url}/kindeditor/themes/default/default.css" />
-<script charset="utf-8" src="${public_8868_url}/kindeditor/kindeditor-min.js"></script>
-<script charset="utf-8" src="${public_8868_url}/kindeditor/lang/zh_CN.js"></script>
-<script charset="utf-8" src="${public_8868_url}/kindeditor/config.js"></script>
+<script charset="utf-8" src="${public_8868_url}/kindeditor/kindeditor-all.js"></script>
+<script charset="utf-8" src="${public_8868_url}/kindeditor/lang/zh-CN.js"></script>
 
 <script type="text/javascript" src="${public_8868_url}/js/jquery.cookie.js"></script>
 <script type="text/javascript" src="${public_8868_url}/js/syUtil.js"></script>
@@ -132,4 +131,23 @@ input {
 	    }
 	    return result;
 	}
+	
+	 /**************************************时间格式化处理************************************/
+	 function dateFtt(fmt,date){ //author: meizz   
+	   var o = {   
+	     "M+" : date.getMonth()+1,                 //月份   
+	     "d+" : date.getDate(),                    //日   
+	     "h+" : date.getHours(),                   //小时   
+	     "m+" : date.getMinutes(),                 //分   
+	     "s+" : date.getSeconds(),                 //秒   
+	     "q+" : Math.floor((date.getMonth()+3)/3), //季度   
+	     "S"  : date.getMilliseconds()             //毫秒   
+	   };   
+	   if(/(y+)/.test(fmt))   
+	     fmt=fmt.replace(RegExp.$1, (date.getFullYear()+"").substr(4 - RegExp.$1.length));   
+	   for(var k in o)   
+	     if(new RegExp("("+ k +")").test(fmt))   
+	   fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));   
+	   return fmt;   
+	 } 
 </script>

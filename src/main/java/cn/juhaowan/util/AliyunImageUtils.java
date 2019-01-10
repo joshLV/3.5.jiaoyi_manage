@@ -79,7 +79,7 @@ public class AliyunImageUtils {
 	 * @return
 	 */
 	public static String getUploadedImgUrl(String key, int sizeRate,int qualityRate) {
-		return "http://" +  imgEndpoint + "/" + key+ "?x-oss-process=style/watermark.jpg";
+		return "https://" +  imgEndpoint + "/" + key+ "?x-oss-process=style/watermark.jpg";
 	}
 
 	public static String getUploadedImgUrl(String key) {

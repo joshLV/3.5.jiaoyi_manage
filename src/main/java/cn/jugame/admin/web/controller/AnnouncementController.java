@@ -83,14 +83,21 @@ public class AnnouncementController {
 		int pageSize = RequestUtils.getParameterInt(request, "rows", 100); // 每页多少条记录
 		String sort = RequestUtils.getParameter(request, "sort", "createtime"); // 排序字段
 		String order = RequestUtils.getParameter(request, "order", "desc"); // asc
-																			
+		//增加前端url模糊查询
+		String url = RequestUtils.getParameter(request, "url", "");
+		//开始时间
+		String startTime = RequestUtils.getParameter(request, "startTime", "");
+		//结束时间
+		String endTime = RequestUtils.getParameter(request, "endTime", "");
+																				
 		if (!"createtime".equals(sort)) {
 			return "";
 		}
 		
 		String title = RequestUtils.getParameter(request, "title", "");
-		
-		PageInfo<Announcement> pageInfo = announcementService.queryAnnouncementList(title,status, pageSize, pageNo,sort, order);
+		//发布平台
+		int platform = RequestUtils.getParameterInt(request, "platform", 3);
+		PageInfo<Announcement> pageInfo = announcementService.queryAnnouncementList(title,status, pageSize, pageNo,sort, order,url,startTime,endTime,platform);
 		model.addAttribute("pageInfo", pageInfo);
 		return "announcement/announcementList";
 	}
@@ -120,8 +127,16 @@ public class AnnouncementController {
 		}
 		//增加标题模糊查询
 		String title = RequestUtils.getParameter(request, "title", "");
+		//增加前端url模糊查询
+		String url = RequestUtils.getParameter(request, "url", "");
+		//开始时间
+		String startTime = RequestUtils.getParameter(request, "startTime", "");
+		//结束时间
+		String endTime = RequestUtils.getParameter(request, "endTime", "");
+		//发布平台
+		int platform = RequestUtils.getParameterInt(request, "platform", 3);
 		
-		PageInfo<Announcement> pageInfo = announcementService.queryAnnouncementList(title,status, pageSize, pageNo,sort, order);
+		PageInfo<Announcement> pageInfo = announcementService.queryAnnouncementList(title,status, pageSize, pageNo,sort, order,url,startTime,endTime,platform);
 		List<Announcement> annoList = pageInfo.getItems();
 		data.put("total", pageInfo.getRecordCount());
 		List<AnnouncementCategory> announcementCategoryList = announcementService.queryCategoryList("weight", "desc");
@@ -133,6 +148,9 @@ public class AnnouncementController {
 			annoMap.put("template", announcement.getTemplate());
 			annoMap.put("content", announcement.getContent());
 			annoMap.put("categoryId", announcement.getCategoryId());
+			if(StringUtils.isNotBlank(announcement.getUrl())){
+				annoMap.put("url", announcement.getUrl());
+			}
 			String categoryName = "";
 			for (AnnouncementCategory announcementCategory : announcementCategoryList) {
 				if (announcementCategory.getAnnouncementCategoryId() == announcement.getCategoryId()) {
@@ -182,6 +200,7 @@ public class AnnouncementController {
 		String template = announcement.getTemplate();
 		int categoryId = announcement.getCategoryId();
 		String content = announcement.getContent();
+		String url = announcement.getUrl();
 		String validdate = request.getParameter("validdate");
 		Date currentTime = new Date();
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -200,7 +219,7 @@ public class AnnouncementController {
 				}
 				if (compareDate(sendedTime, validdate) == -1
 						|| compareDate(sendedTime, validdate) == 0) {
-					int isSuccess = announcementService.addAnnouncement(title,template, content, validdate, categoryId,sendedTime,releasePlatform);
+					int isSuccess = announcementService.addAnnouncement(title,template, content, validdate, categoryId,sendedTime,releasePlatform,url);
 					BackUserLogUtil.log(backUserLogService,
 							(isSuccess > 0) ? true : false, "",
 							BackUserLogService.ANNOUNCEMENT_ADD, request);
@@ -208,7 +227,7 @@ public class AnnouncementController {
 					return new MessageBean(false, "定时发送时间不能大于有效期时间");
 				}
 			} else {
-				int isSuccess = announcementService.addAnnouncement(title,template, content, validdate, categoryId, null,releasePlatform);
+				int isSuccess = announcementService.addAnnouncement(title,template, content, validdate, categoryId, null,releasePlatform,url);
 				BackUserLogUtil.log(backUserLogService, (isSuccess > 0) ? true
 						: false, "", BackUserLogService.ANNOUNCEMENT_ADD,
 						request);
@@ -536,6 +555,7 @@ public class AnnouncementController {
 		Integer status = announcement.getStatus();
 		String content = announcement.getContent();
 		String title = announcement.getTitle();
+		String url = announcement.getUrl();
 		String template = announcement.getTemplate();
 		String validdate = request.getParameter("validdate");
 		int releasePlatform = announcement.getReleasePlatform();
@@ -564,7 +584,7 @@ public class AnnouncementController {
 					}
 					if (compareDate(sendedTime, validdate) == -1
 							|| compareDate(sendedTime, validdate) == 0) {
-						int isSuccess = announcementService.modifyAnnouncement(announcementID, title, template, content,sendedTime, validdate, categoryId, status,releasePlatform);
+						int isSuccess = announcementService.modifyAnnouncement(announcementID, title, template, content,sendedTime, validdate, categoryId, status,releasePlatform,url);
 						BackUserLogUtil
 								.log(backUserLogService, (isSuccess > 0) ? true
 										: false, announcementID + "",
@@ -576,7 +596,7 @@ public class AnnouncementController {
 				} else {
 					int isSuccess = announcementService.modifyAnnouncement(
 							announcementID, title, template, content, null,
-							validdate, categoryId, status,releasePlatform);
+							validdate, categoryId, status,releasePlatform,url);
 					BackUserLogUtil.log(backUserLogService,
 							(isSuccess > 0) ? true : false,
 							announcementID + "",

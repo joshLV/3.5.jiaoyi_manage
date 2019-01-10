@@ -42,6 +42,17 @@ public class Announcement implements java.io.Serializable {
 	
 	@Column(name = "release_platform", type = DbType.Int)
 	private int releasePlatform;
+	
+	@Column(name = "url", type = DbType.Varchar)
+	private java.lang.String url;
+	
+	public java.lang.String getUrl() {
+		return url;
+	}
+
+	public void setUrl(java.lang.String url) {
+		this.url = url;
+	}
 
 	public java.util.Date getSendedTime() {
 		return sendedTime;

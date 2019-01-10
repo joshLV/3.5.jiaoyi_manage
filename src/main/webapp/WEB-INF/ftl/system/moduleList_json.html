@@ -9,6 +9,10 @@
            "isMenu":"${item.isMenu}",
            "status":"${item.status}",
            "orderNo":"${item.orderNo}"
+           <#if item.isMenu == 1>
+           ,"id":"${item.modId}",
+           "state" : "closed"
+           </#if>
           }<#if item_has_next>,</#if><#rt>
        </#list>] 
  }

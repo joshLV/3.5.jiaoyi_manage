@@ -17,9 +17,10 @@ KindEditor.plugin('image', function(K) {
 		imageTabIndex = K.undef(self.imageTabIndex, 0),
 		imgPath = self.pluginsPath + 'image/images/',
 		extraParams = K.undef(self.extraFileUploadParams, {}),
-		filePostName = K.undef(self.filePostName, 'file'),
+		filePostName = K.undef(self.filePostName, 'imgFile'),
 		fillDescAfterUploadImage = K.undef(self.fillDescAfterUploadImage, false),
 		lang = self.lang(name + '.');
+
 	self.plugin.imageDialog = function(options) {
 		var imageUrl = options.imageUrl,
 			imageWidth = K.undef(options.imageWidth, ''),
@@ -189,31 +190,23 @@ KindEditor.plugin('image', function(K) {
 			width: 60,
 			afterUpload : function(data) {
 				dialog.hideLoading();
-				var json = $.parseJSON(data);
 				if (data.error === 0) {
-					$.messager.show({
-						title : '成功',
-						msg : json.message
-					});
-//					var url = encodeURI(encodeURI(data.url));
-//					if (formatUploadUrl) {
-//						url = K.formatUrl(url, 'absolute');
-//					}
-//					if (self.afterUpload) {
-//						self.afterUpload.call(self, url, data, name);
-//					}
-//					if (!fillDescAfterUploadImage) {
-//						clickFn.call(self, url, data.title, data.width, data.height, data.border, data.align);
-//					} else {
-//						K(".ke-dialog-row #remoteUrl", div).val(url);
-//						K(".ke-tabs-li", div)[0].click();
-//						K(".ke-refresh-btn", div).click();
-//					}
+					var url = data.url;
+					if (formatUploadUrl) {
+						url = K.formatUrl(url, 'absolute');
+					}
+					if (self.afterUpload) {
+						self.afterUpload.call(self, url, data, name);
+					}
+					if (!fillDescAfterUploadImage) {
+						clickFn.call(self, url, data.title, data.width, data.height, data.border, data.align);
+					} else {
+						K(".ke-dialog-row #remoteUrl", div).val(url);
+						K(".ke-tabs-li", div)[0].click();
+						K(".ke-refresh-btn", div).click();
+					}
 				} else {
-					$.messager.show({
-						title : '失败',
-						msg : json.message
-					});
+					alert(data.message);
 				}
 			},
 			afterError : function(html) {
@@ -303,7 +296,17 @@ KindEditor.plugin('image', function(K) {
 				showLocal : allowImageUpload,
 				tabIndex: img ? 0 : imageTabIndex,
 				clickFn : function(url, title, width, height, border, align) {
-					self.exec('insertimage', url, title, width, height, border, align);
+					if (img) {
+						img.attr('src', url);
+						img.attr('data-ke-src', url);
+						img.attr('width', width);
+						img.attr('height', height);
+						img.attr('title', title);
+						img.attr('align', align);
+						img.attr('alt', title);
+					} else {
+						self.exec('insertimage', url, title, width, height, border, align);
+					}
 					// Bugfix: [Firefox] 上传图片后，总是出现正在加载的样式，需要延迟执行hideDialog
 					setTimeout(function() {
 						self.hideDialog().focus();

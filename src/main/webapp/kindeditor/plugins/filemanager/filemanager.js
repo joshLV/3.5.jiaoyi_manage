@@ -169,7 +169,7 @@ KindEditor.plugin('filemanager', function(K) {
 				div.append(photoDiv);
 				var fileUrl = result.current_url + data.filename,
 					iconUrl = data.is_dir ? imgPath + 'folder-64.gif' : (data.is_photo ? fileUrl : imgPath + 'file-64.gif');
-				var img = K('<img src="' + fileUrl + '" width="80" height="80" alt="' + data.filename + '" />');
+				var img = K('<img src="' + iconUrl + '" width="80" height="80" alt="' + data.filename + '" />');
 				if (!data.is_dir || data.has_file) {
 					photoDiv.css('cursor', 'pointer');
 					bindTitle(photoDiv, data);

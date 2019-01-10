@@ -43,6 +43,8 @@ import cn.juhaowan.banner.vo.PtBannerImages;
 import cn.juhaowan.log.service.BackUserLogService;
 import cn.juhaowan.util.AliyunImageUtils;
 
+import com.alibaba.fastjson.JSONObject;
+
 
 
 /**
@@ -212,9 +214,9 @@ public class PtBannerController {
 		String banremark = "";
 		String bantag = "";
 		try {
-			banName =   RequestUtils.getParameter(request, "banName", "");
-			banremark =RequestUtils.getParameter(request, "banremark", "");
-			bantag = RequestUtils.getParameter(request, "bantag", "");
+			banName =   RequestUtils.getParameter(request, "banName", "").trim();
+			banremark =RequestUtils.getParameter(request, "banremark", "").trim();
+			bantag = RequestUtils.getParameter(request, "bantag", "").trim();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -255,7 +257,6 @@ public class PtBannerController {
 				return new MessageBean(false,"添加数据失败");
 			}
 		}
-	    
 	
 		//横幅图片列表数据
 		String[] aids = request.getParameterValues("optionId"); 
@@ -266,8 +267,6 @@ public class PtBannerController {
 		String[] weight = request.getParameterValues("weight_sub"); 
 		String[] upTime = request.getParameterValues("upTime"); 
 		String[] downTime = request.getParameterValues("downTime"); 
-
-
 		
 		//循环添加或修改图片信息
 		for(int i = 0;i < name.length;i++){
@@ -628,6 +627,85 @@ public class PtBannerController {
 		}
 		
 	}
+    /**
+     * 上传banner图片文件(新的上传到ftp)
+     * @param requet
+     * @param fieldName
+     * @return
+     */
+    @RequestMapping(value = "/file/annUpload")
+    @ResponseBody
+    public JSONObject announcementUpload(HttpServletRequest request,MultipartFile  file, Model model){
+    	JSONObject jsonObject = new JSONObject();
+    	try {
+    		Thread.sleep(5);//sleep一下，防止图片重名
+    	} catch (Exception e) {
+    		logger.error("",e);
+    	}
+    	try {
+    		String filename = file.getOriginalFilename();
+    		if (filename.length() <= 0) {
+    			jsonObject.put("error", 1);
+    			jsonObject.put("message", "图片名字为空");
+    			return jsonObject;
+    		}
+    		//文件类型判断
+    		//上传图片类型
+    		List<String> imgTypeList = new ArrayList<>();
+    		imgTypeList.add("image/jpg");
+    		imgTypeList.add("image/jpeg");
+    		imgTypeList.add("image/png");
+    		imgTypeList.add("image/bmp");
+    		int i = imgTypeList.indexOf(file.getContentType());
+    		// 上传类型不匹配
+    		if (i < 0) {
+    			jsonObject.put("error", 1);
+    			jsonObject.put("message", "请上传图片格式文件");
+    			return jsonObject;
+    		}
+    		String imgtype = FilenameUtils.getExtension(filename);
+    		Random ran = new Random();
+//			String time = System.currentTimeMillis() + "" +  ran.nextInt(100);
+    		File myFile = File.createTempFile("pic", "." + imgtype);
+    		//把文件存到本地
+    		FileOutputStream fos = new FileOutputStream(myFile); 
+    		fos.write(file.getBytes());
+    		fos.close(); 
+    		//上传图片（新的）
+//			String imgServiceUrl =Config.getValue("upload.img.url");
+    		
+    		String fileUrl = "";
+    		try {
+    			//fileUrl = UploadImageUtil.doUpload(imgServiceUrl, myFile);
+    			//传到阿里云
+    			fileUrl = AliyunImageUtils.uploadAliyun(myFile, "pt_banner");
+    			if(StringUtils.isBlank(fileUrl)){
+    				logger.info("上传图片返回为空。。");
+    				jsonObject.put("error", 1);
+        			jsonObject.put("message", "上传图片返回为空。。");
+        			return jsonObject;
+    			}
+    		} catch (Exception e) {
+    			logger.error("",e);
+    			jsonObject.put("error", 1);
+    			jsonObject.put("message", "图片上传异常。");
+    			return jsonObject;
+    		}
+    		
+    		jsonObject.put("error", 0);
+			jsonObject.put("message", "图片保存成功");
+			jsonObject.put("url",fileUrl);
+    		
+    		myFile.delete();
+    		return jsonObject;
+    	} catch (IOException e) {
+    		logger.error("",e);
+    		jsonObject.put("error", 1);
+			jsonObject.put("message", "图片保存失败");
+    		return jsonObject;
+    	}
+    	
+    }
     
     
     

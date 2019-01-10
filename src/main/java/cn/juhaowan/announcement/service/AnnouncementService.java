@@ -25,7 +25,7 @@ public interface AnnouncementService {
 	 * @param validTime
 	 * @pdOid 56f78525-12e7-4548-8be7-4c5cb2790e97
 	 */
-	int addAnnouncement(String title, String template,String content, String validTime,int categoryId,String sendedTime, int releasePlatform );
+	int addAnnouncement(String title, String template,String content, String validTime,int categoryId,String sendedTime, int releasePlatform,String url);
 
 	/**
 	 * 删除公告
@@ -43,7 +43,7 @@ public interface AnnouncementService {
 	 * @param order
 	 * @pdOid b375cc21-8074-430e-b485-bf23cbfe0868
 	 */
-	PageInfo<Announcement> queryAnnouncementList(String title,int status, int pageSize, int pageNo, String sort, String order);
+	PageInfo<Announcement> queryAnnouncementList(String title,int status, int pageSize, int pageNo, String sort, String order,String url,String startTime,String endTime,int platform);
 	
 	/**
 	 * 显示公告列表 
@@ -142,6 +142,6 @@ public interface AnnouncementService {
 	 * @param status
 	 * @return
 	 */
-	int modifyAnnouncement(Integer announcementID, String title,String template, String content, String sendedTime, String validdate, int categoryId, Integer status, int releasePlatform );
+	int modifyAnnouncement(Integer announcementID, String title,String template, String content, String sendedTime, String validdate, int categoryId, Integer status, int releasePlatform,String url );
 
 }

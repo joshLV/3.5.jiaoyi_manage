@@ -27,16 +27,16 @@ public class DefaultAnnouncementService implements AnnouncementService {
 
 	@Override
 	public int addAnnouncement(String title, String template, String content,
-			String validTime, int categoryId, String sendedTime,int releasePlatform) {
+			String validTime, int categoryId, String sendedTime,int releasePlatform,String url) {
 		int i;
 		if (sendedTime != null) {
-			String sql = "insert announcement(title,content,createtime,validdate,category_id,sendedTime,status,template,release_platform) values(?,?,NOW(),DATE_FORMAT(?,'%Y-%m-%d %H:%i:%s'),?,?,2,?,?)";
+			String sql = "insert announcement(title,content,createtime,validdate,category_id,sendedTime,status,template,release_platform,url) values(?,?,NOW(),DATE_FORMAT(?,'%Y-%m-%d %H:%i:%s'),?,?,2,?,?,?)";
 			i = jdbcTemplate.update(sql, title, content, validTime, categoryId,
-					sendedTime, template,releasePlatform);
+					sendedTime, template,releasePlatform,url);
 		} else {
-			String sql = "insert announcement(title,content,createtime,validdate,category_id,sendedTime,template,release_platform) values(?,?,NOW(),DATE_FORMAT(?,'%Y-%m-%d %H:%i:%s'),?,NOW(),?,?)";
+			String sql = "insert announcement(title,content,createtime,validdate,category_id,sendedTime,template,release_platform,url) values(?,?,NOW(),DATE_FORMAT(?,'%Y-%m-%d %H:%i:%s'),?,NOW(),?,?,?)";
 			i = jdbcTemplate.update(sql, title, content, validTime, categoryId,
-					template,releasePlatform);
+					template,releasePlatform,url);
 		}
 		return i;
 	}
@@ -83,7 +83,7 @@ public class DefaultAnnouncementService implements AnnouncementService {
 	}
 
 	@Override
-	public PageInfo<Announcement> queryAnnouncementList(String title,int status,int pageSize, int pageNo, String sort, String order) {
+	public PageInfo<Announcement> queryAnnouncementList(String title,int status,int pageSize, int pageNo, String sort, String order,String url,String startTime,String endTime,int platform) {
 		if (null == sort || ("").equals(sort)) {
 			sort = "createtime";
 		}
@@ -93,6 +93,18 @@ public class DefaultAnnouncementService implements AnnouncementService {
 		String sql = "from announcement where status=? ";
 		if(!StringUtils.isEmpty(title)){
 			sql += " AND title like '%"+ title +"%' ";
+		}
+		if(platform != 3 ){
+			sql += " AND release_platform = " + platform + " ";
+		}
+		if(!StringUtils.isEmpty(url)){
+			sql += " AND url like '%"+ url +"%' ";
+		}
+		if(!StringUtils.isEmpty(startTime)){
+			sql += " AND validdate > '"+ startTime +" 00:00:00' ";
+		}
+		if(!StringUtils.isEmpty(endTime)){
+			sql += " AND validdate < '"+ endTime +" 23:59:59' ";
 		}
 		String sqlCount = "select count(announcement_id) " + sql;
 		int rowcount = jdbcTemplate.queryForInt(sqlCount, status);
@@ -288,16 +300,16 @@ public class DefaultAnnouncementService implements AnnouncementService {
 	@Override
 	public int modifyAnnouncement(Integer announcementID, String title,
 			String template, String content, String sendedTime,
-			String validdate, int categoryId, Integer status, int releasePlatform ) {
+			String validdate, int categoryId, Integer status, int releasePlatform,String url ) {
 		int i;
 		if (sendedTime != null) {
-			String sql = "update announcement set title=?,template=?,content=?,sendedTime=?,validdate=?,status=?,category_id=?,release_platform = ? where announcement_id=?";
+			String sql = "update announcement set title=?,template=?,content=?,sendedTime=?,validdate=?,status=?,category_id=?,release_platform=?,url=? where announcement_id=?";
 			i = jdbcTemplate.update(sql, title, template, content, sendedTime,
-					validdate, status, categoryId,releasePlatform ,announcementID);
+					validdate, status, categoryId,releasePlatform ,url,announcementID);
 		} else {
-			String sql = "update announcement set title=?,template=?,content=?,validdate=?,status=?,category_id=? ,release_platform = ? where announcement_id=?";
+			String sql = "update announcement set title=?,template=?,content=?,validdate=?,status=?,category_id=? ,release_platform=?,url=? where announcement_id=?";
 			i = jdbcTemplate.update(sql, title, template, content, validdate,
-					status, categoryId, releasePlatform,announcementID);
+					status, categoryId, releasePlatform,url,announcementID);
 		}
 		return i;
 	}

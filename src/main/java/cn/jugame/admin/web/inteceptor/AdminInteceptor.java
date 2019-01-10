@@ -35,7 +35,7 @@ public class AdminInteceptor implements HandlerInterceptor {
 	Logger viLog = LoggerFactory.getLogger("visit_log");
 	
 	//不需要权限拦截的url
-	String[] excludeUrl = {"/login_submit","/login.html","/logout.jsp"};
+	String[] excludeUrl = {"/login_submit","/login.html","/logout.jsp","/file/annUpload"};
 	@Override
 	public void afterCompletion(HttpServletRequest request,
 			HttpServletResponse response, Object o, Exception e)

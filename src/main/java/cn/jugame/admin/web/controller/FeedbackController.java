@@ -113,6 +113,9 @@ public class FeedbackController {
 				case 4:
 					categoryName = "VIP礼包申请";
 					break;
+				case 5:
+					categoryName = "游戏反馈";
+					break;
 				}
 				map.put("categoryName", categoryName);
 				
